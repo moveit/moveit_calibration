@@ -1,0 +1,27 @@
+# This config file for Travis CI utilizes https://github.com/ros-planning/moveit_ci/ package.
+sudo: required
+dist: xenial
+services:
+  - docker
+language: generic
+cache: ccache
+compiler: gcc
+
+notifications:
+  email:
+    recipients:
+      - yu.yan@intel.com
+env:
+  global:
+    - WARNINGS_OK=false
+    - ROS_DISTRO=melodic
+    - ROS_REPO=ros
+  matrix:
+    - TEST=catkin_lint
+    - ROS_DISTRO=melodic
+
+before_script:
+  - git clone -q --depth=1 https://github.com/ros-planning/moveit_ci.git .moveit_ci
+
+script:
+  - source .moveit_ci/travis.sh

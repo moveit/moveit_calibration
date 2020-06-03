@@ -52,7 +52,7 @@ protected:
     try
     {
       target_plugins_loader_.reset(new pluginlib::ClassLoader<moveit_handeye_calibration::HandEyeTargetBase>(
-          "moveit_ros_perception", "moveit_handeye_calibration::HandEyeTargetBase"));
+          "moveit_calibration_plugins", "moveit_handeye_calibration::HandEyeTargetBase"));
       target_ = target_plugins_loader_->createUniqueInstance("HandEyeTarget/Aruco");
       target_->initialize(4, 3, 200, 20, 1, "DICT_4X4_250", 0.0256, 0.0066);
     }
@@ -62,7 +62,7 @@ protected:
       return;
     }
 
-    std::string image_path = ros::package::getPath("moveit_ros_perception") +
+    std::string image_path = ros::package::getPath("moveit_calibration_plugins") +
                              "/handeye_calibration_target/test/test_aruco_marker_detection.png";
 
     image_ = cv::imread(image_path, cv::IMREAD_COLOR);

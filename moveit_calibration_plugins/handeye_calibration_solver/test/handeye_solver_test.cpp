@@ -50,7 +50,7 @@ protected:
     try
     {
       solver_plugins_loader_.reset(new pluginlib::ClassLoader<moveit_handeye_calibration::HandEyeSolverBase>(
-          "moveit_ros_perception", "moveit_handeye_calibration::HandEyeSolverBase"));
+          "moveit_calibration_plugins", "moveit_handeye_calibration::HandEyeSolverBase"));
       solver_ = solver_plugins_loader_->createUniqueInstance("crigroup");
       solver_->initialize();
     }
@@ -61,9 +61,9 @@ protected:
     }
 
     Json::Reader reader;
-    std::string moveit_ros_perception_package_path = ros::package::getPath("moveit_ros_perception");
-    moveit_ros_perception_package_path += "/handeye_calibration_solver/test/pose_samples.json";
-    std::ifstream ifs(moveit_ros_perception_package_path);
+    std::string moveit_calibration_plugins_package_path = ros::package::getPath("moveit_calibration_plugins");
+    moveit_calibration_plugins_package_path += "/handeye_calibration_solver/test/pose_samples.json";
+    std::ifstream ifs(moveit_calibration_plugins_package_path);
 
     if (ifs)
     {

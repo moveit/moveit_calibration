@@ -1,0 +1,39 @@
+<package format="2">
+  <name>moveit_calibration_plugins</name>
+  <version>0.1.0</version>
+  <description>Plugins of MoveIt calibration</description>
+
+  <author email="yu.yan@intel.com">Yu Yan</author>
+
+  <maintainer email="yu.yan@intel.com">Yu Yan</maintainer>
+
+  <license>BSD</license>
+
+  <url type="website">http://moveit.ros.org</url>
+  <url type="bugtracker">https://github.com/ros-planning/moveit_calibration/issues</url>
+  <url type="repository">https://github.com/ros-planning/moveit_calibration</url>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>roscpp</depend>
+  <depend>rosconsole</depend>
+  <depend version_gte="1.11.2">pluginlib</depend>
+  <depend>sensor_msgs</depend>
+  <depend>tf2</depend>
+  <depend>tf2_eigen</depend>
+  <depend>tf2_geometry_msgs</depend>
+
+  <build_depend>eigen</build_depend>
+
+  <exec_depend>handeye</exec_depend>
+  <exec_depend>criutils</exec_depend>
+  <exec_depend>baldor</exec_depend>
+
+  <test_depend>rosunit</test_depend>
+
+  <export>
+    <moveit_calibration_plugins plugin="${prefix}/handeye_calibration_target_plugin_description.xml"/>
+    <moveit_calibration_plugins plugin="${prefix}/handeye_calibration_solver_plugin_description.xml"/>
+  </export>
+
+</package>

@@ -3,7 +3,7 @@ sudo: required
 dist: xenial
 services:
   - docker
-language: generic
+language: cpp
 cache: ccache
 compiler: gcc
 
@@ -18,7 +18,8 @@ env:
     - ROS_REPO=ros
   matrix:
     - TEST=catkin_lint
-    - ROS_DISTRO=melodic
+    - UPSTREAM_WORKSPACE=https://raw.githubusercontent.com/ros-planning/moveit/master/moveit.rosinstall
+      TEST_BLACKLIST=moveit_ros_perception
 
 before_script:
   - git clone -q --depth=1 https://github.com/ros-planning/moveit_ci.git .moveit_ci

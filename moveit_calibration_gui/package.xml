@@ -1,0 +1,41 @@
+<package format="2">
+  <name>moveit_calibration_gui</name>
+  <version>0.1.0</version>
+  <description>MoveIt calibration gui</description>
+
+  <author email="yu.yan@intel.com">Yu Yan</author>
+
+  <maintainer email="yu.yan@intel.com">Yu Yan</maintainer>
+
+  <license>BSD</license>
+
+  <url type="website">http://moveit.ros.org</url>
+  <url type="bugtracker">https://github.com/ros-planning/moveit_calibration/issues</url>
+  <url type="repository">https://github.com/ros-planning/moveit_calibration</url>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <buildtool_depend>pkg-config</buildtool_depend>
+
+  <build_depend>class_loader</build_depend>
+  <build_depend>eigen</build_depend>
+  <build_depend>qtbase5-dev</build_depend>
+  <build_depend>image_geometry</build_depend>
+
+  <depend>geometric_shapes</depend>
+  <depend>moveit_ros_visualization</depend>
+  <depend>moveit_calibration_plugins</depend>
+  <depend>moveit_ros_planning_interface</depend>
+  <depend>moveit_visual_tools</depend>
+  <depend version_gte="1.11.2">pluginlib</depend>
+  <depend>rosconsole</depend>
+  <depend>roscpp</depend>
+  <depend>rviz</depend>
+  <depend>tf2_eigen</depend>
+
+  <test_depend>rostest</test_depend>
+
+  <export>
+    <rviz plugin="${prefix}/handeye_calibration_rviz_plugin_description.xml"/>
+  </export>
+
+</package>

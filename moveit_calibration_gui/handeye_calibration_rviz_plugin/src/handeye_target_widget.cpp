@@ -94,7 +94,7 @@ TargetTabWidget::TargetTabWidget(QWidget* parent)
   layout->addLayout(layout_left);
 
   // Target creation area
-  QGroupBox* group_left_top = new QGroupBox("Target_Intrinsic_Params", this);
+  QGroupBox* group_left_top = new QGroupBox("Target Intrinsic Params", this);
   layout_left->addWidget(group_left_top);
   QFormLayout* layout_left_top = new QFormLayout();
   group_left_top->setLayout(layout_left_top);
@@ -115,26 +115,26 @@ TargetTabWidget::TargetTabWidget(QWidget* parent)
 
   target_params_["markers_x"]->setText(QString("4"));
   target_params_["markers_x"]->setValidator(new QIntValidator(1, 50));
-  layout_left_top->addRow("Num_Markers_X", target_params_["markers_x"]);
+  layout_left_top->addRow("Num markers, X", target_params_["markers_x"]);
 
   target_params_["markers_y"]->setText(QString("5"));
   target_params_["markers_y"]->setValidator(new QIntValidator(1, 50));
-  layout_left_top->addRow("Num_Markers_Y", target_params_["markers_y"]);
+  layout_left_top->addRow("Num markers, Y", target_params_["markers_y"]);
 
   target_params_["marker_size"]->setText(QString("200"));
   target_params_["marker_size"]->setValidator(new QIntValidator(100, 1000));
-  layout_left_top->addRow("Marker_Size_(pixels)", target_params_["marker_size"]);
+  layout_left_top->addRow("Marker size (pixels)", target_params_["marker_size"]);
 
   target_params_["marker_dist"]->setText(QString("20"));
   target_params_["marker_dist"]->setValidator(new QIntValidator(10, 200));
-  layout_left_top->addRow("Marker_Dist_(pixels)", target_params_["marker_dist"]);
+  layout_left_top->addRow("Marker spacing (pixels)", target_params_["marker_dist"]);
 
   target_params_["marker_border"]->setText(QString("1"));
   target_params_["marker_border"]->setValidator(new QIntValidator(1, 4));
-  layout_left_top->addRow("Marker_Border_(bits)", target_params_["marker_border"]);
+  layout_left_top->addRow("Marker border (bits)", target_params_["marker_border"]);
 
   // Target 3D pose recognition area
-  QGroupBox* group_left_bottom = new QGroupBox("Target_Pose_Recognition", this);
+  QGroupBox* group_left_bottom = new QGroupBox("Target Pose Detection", this);
   layout_left->addWidget(group_left_bottom);
   QFormLayout* layout_left_bottom = new QFormLayout();
   group_left_bottom->setLayout(layout_left_bottom);
@@ -156,14 +156,14 @@ TargetTabWidget::TargetTabWidget(QWidget* parent)
 
   target_real_dims_["marker_size_real"]->setText("0.0256");
   target_real_dims_["marker_size_real"]->setValidator(new QDoubleValidator(0, 2, 4));
-  layout_left_bottom->addRow("Marker Size (m)", target_real_dims_["marker_size_real"]);
+  layout_left_bottom->addRow("Marker size (m)", target_real_dims_["marker_size_real"]);
 
   target_real_dims_["marker_dist_real"]->setText("0.0066");
   target_real_dims_["marker_dist_real"]->setValidator(new QDoubleValidator(0, 2, 4));
-  layout_left_bottom->addRow("Marker Dist (m)", target_real_dims_["marker_dist_real"]);
+  layout_left_bottom->addRow("Marker spacing (m)", target_real_dims_["marker_dist_real"]);
 
   // Target image dislay, create and save area
-  QGroupBox* group_right = new QGroupBox("Target_Create_Save", this);
+  QGroupBox* group_right = new QGroupBox("Target", this);
   group_right->setMinimumWidth(330);
   layout->addWidget(group_right);
   QVBoxLayout* layout_right = new QVBoxLayout();

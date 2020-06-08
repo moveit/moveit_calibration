@@ -171,9 +171,9 @@ ContextTabWidget::ContextTabWidget(QWidget* parent) : QWidget(parent), tf_listen
   group_left_top->setLayout(layout_left_top);
 
   sensor_mount_type_ = new QComboBox();
-  sensor_mount_type_->addItem("Eye-to-Hand");
+  sensor_mount_type_->addItem("Eye-to-hand");
   sensor_mount_type_->addItem("Eye-in-hand");
-  layout_left_top->addRow("Sensor Mount Type", sensor_mount_type_);
+  layout_left_top->addRow("Sensor configuration", sensor_mount_type_);
   connect(sensor_mount_type_, SIGNAL(activated(int)), this, SLOT(updateSensorMountType(int)));
 
   // Frame name selection area
@@ -183,16 +183,16 @@ ContextTabWidget::ContextTabWidget(QWidget* parent) : QWidget(parent), tf_listen
   frame_group->setLayout(frame_layout);
 
   frames_.insert(std::make_pair("sensor", new TFFrameNameComboBox(CAMERA_FRAME)));
-  frame_layout->addRow("Sensor Frame:", frames_["sensor"]);
+  frame_layout->addRow("Sensor frame:", frames_["sensor"]);
 
   frames_.insert(std::make_pair("object", new TFFrameNameComboBox(ENVIRONMENT_FRAME)));
-  frame_layout->addRow("Object Frame:", frames_["object"]);
+  frame_layout->addRow("Object frame:", frames_["object"]);
 
   frames_.insert(std::make_pair("eef", new TFFrameNameComboBox(ROBOT_FRAME)));
-  frame_layout->addRow("End-Effector Frame:", frames_["eef"]);
+  frame_layout->addRow("End-effector frame:", frames_["eef"]);
 
   frames_.insert(std::make_pair("base", new TFFrameNameComboBox(ROBOT_FRAME)));
-  frame_layout->addRow("Robot Base Frame:", frames_["base"]);
+  frame_layout->addRow("Robot base frame:", frames_["base"]);
 
   for (std::pair<const std::string, TFFrameNameComboBox*>& frame : frames_)
     connect(frame.second, SIGNAL(activated(int)), this, SLOT(updateFrameName(int)));
@@ -220,22 +220,22 @@ ContextTabWidget::ContextTabWidget(QWidget* parent) : QWidget(parent), tf_listen
   QFormLayout* pose_layout = new QFormLayout();
   pose_group->setLayout(pose_layout);
 
-  guess_pose_.insert(std::make_pair("Tx", new SliderWidget(this, "TranslX", -2.0, 2.0)));
+  guess_pose_.insert(std::make_pair("Tx", new SliderWidget(this, "X", -2.0, 2.0)));
   pose_layout->addRow(guess_pose_["Tx"]);
 
-  guess_pose_.insert(std::make_pair("Ty", new SliderWidget(this, "TranslY", -2.0, 2.0)));
+  guess_pose_.insert(std::make_pair("Ty", new SliderWidget(this, "Y", -2.0, 2.0)));
   pose_layout->addRow(guess_pose_["Ty"]);
 
-  guess_pose_.insert(std::make_pair("Tz", new SliderWidget(this, "TranslZ", -2.0, 2.0)));
+  guess_pose_.insert(std::make_pair("Tz", new SliderWidget(this, "Z", -2.0, 2.0)));
   pose_layout->addRow(guess_pose_["Tz"]);
 
-  guess_pose_.insert(std::make_pair("Rx", new SliderWidget(this, "RotateX", -M_PI, M_PI)));
+  guess_pose_.insert(std::make_pair("Rx", new SliderWidget(this, "Roll", -M_PI, M_PI)));
   pose_layout->addRow(guess_pose_["Rx"]);
 
-  guess_pose_.insert(std::make_pair("Ry", new SliderWidget(this, "RotateY", -M_PI, M_PI)));
+  guess_pose_.insert(std::make_pair("Ry", new SliderWidget(this, "Pitch", -M_PI, M_PI)));
   pose_layout->addRow(guess_pose_["Ry"]);
 
-  guess_pose_.insert(std::make_pair("Rz", new SliderWidget(this, "RotateZ", -M_PI, M_PI)));
+  guess_pose_.insert(std::make_pair("Rz", new SliderWidget(this, "Yaw", -M_PI, M_PI)));
   pose_layout->addRow(guess_pose_["Rz"]);
 
   for (std::pair<const std::string, SliderWidget*>& dim : guess_pose_)

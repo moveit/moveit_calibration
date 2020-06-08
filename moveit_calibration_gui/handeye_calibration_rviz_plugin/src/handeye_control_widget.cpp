@@ -116,7 +116,7 @@ ControlTabWidget::ControlTabWidget(QWidget* parent)
   layout->addWidget(auto_progress_);
 
   // Pose sample tree view area
-  QGroupBox* sample_group = new QGroupBox("Pose_sample");
+  QGroupBox* sample_group = new QGroupBox("Pose samples");
   sample_group->setMinimumWidth(280);
   calib_layout->addWidget(sample_group);
   QVBoxLayout* sample_layout = new QVBoxLayout();
@@ -131,11 +131,11 @@ ControlTabWidget::ControlTabWidget(QWidget* parent)
   sample_tree_view_->setIndentation(10);
   sample_layout->addWidget(sample_tree_view_);
 
-  // Setting area
+  // Settings area
   QVBoxLayout* layout_right = new QVBoxLayout();
   calib_layout->addLayout(layout_right);
 
-  QGroupBox* setting_group = new QGroupBox("Setting");
+  QGroupBox* setting_group = new QGroupBox("Settings");
   layout_right->addWidget(setting_group);
   QFormLayout* setting_layout = new QFormLayout();
   setting_group->setLayout(setting_layout);
@@ -147,15 +147,15 @@ ControlTabWidget::ControlTabWidget(QWidget* parent)
   connect(group_name_, SIGNAL(activated(const QString&)), this, SLOT(planningGroupNameChanged(const QString&)));
   setting_layout->addRow("Planning Group", group_name_);
 
-  load_joint_state_btn_ = new QPushButton("Load Joint States");
+  load_joint_state_btn_ = new QPushButton("Load joint states");
   connect(load_joint_state_btn_, SIGNAL(clicked(bool)), this, SLOT(loadJointStateBtnClicked(bool)));
   setting_layout->addRow(load_joint_state_btn_);
 
-  save_joint_state_btn_ = new QPushButton("Save Joint states");
+  save_joint_state_btn_ = new QPushButton("Save joint states");
   connect(save_joint_state_btn_, SIGNAL(clicked(bool)), this, SLOT(saveJointStateBtnClicked(bool)));
   setting_layout->addRow(save_joint_state_btn_);
 
-  save_camera_pose_btn_ = new QPushButton("Save Camera Pose");
+  save_camera_pose_btn_ = new QPushButton("Save camera pose");
   connect(save_camera_pose_btn_, SIGNAL(clicked(bool)), this, SLOT(saveCameraPoseBtnClicked(bool)));
   setting_layout->addRow(save_camera_pose_btn_);
 
@@ -165,12 +165,12 @@ ControlTabWidget::ControlTabWidget(QWidget* parent)
   QHBoxLayout* control_cal_layout = new QHBoxLayout();
   manual_cal_group->setLayout(control_cal_layout);
 
-  take_sample_btn_ = new QPushButton("Take Sample");
+  take_sample_btn_ = new QPushButton("Take sample");
   take_sample_btn_->setMinimumHeight(35);
   connect(take_sample_btn_, SIGNAL(clicked(bool)), this, SLOT(takeSampleBtnClicked(bool)));
   control_cal_layout->addWidget(take_sample_btn_);
 
-  reset_sample_btn_ = new QPushButton("Reset Sample");
+  reset_sample_btn_ = new QPushButton("Reset samples");
   reset_sample_btn_->setMinimumHeight(35);
   connect(reset_sample_btn_, SIGNAL(clicked(bool)), this, SLOT(resetSampleBtnClicked(bool)));
   control_cal_layout->addWidget(reset_sample_btn_);
@@ -430,12 +430,12 @@ void ControlTabWidget::addPoseSampleToTreeView(const geometry_msgs::TransformSta
 
   std::ostringstream ss;
 
-  QStandardItem* child_1 = new QStandardItem("bTe");
+  QStandardItem* child_1 = new QStandardItem("TF base-to-eef");
   ss << bTe.transform;
   child_1->appendRow(new QStandardItem(ss.str().c_str()));
   parent->appendRow(child_1);
 
-  QStandardItem* child_2 = new QStandardItem("cTo");
+  QStandardItem* child_2 = new QStandardItem("TF camera-to-target");
   ss.str("");
   ss << cTo.transform;
   child_2->appendRow(new QStandardItem(ss.str().c_str()));

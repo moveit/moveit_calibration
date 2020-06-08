@@ -19,6 +19,7 @@ env:
   matrix:
     - TEST=catkin_lint
     - ROS_DISTRO=melodic
+      BEFORE_SCRIPT="source moveit_calibration/.travis/before_script.sh"
 
 before_script:
   - git clone -q --depth=1 https://github.com/ros-planning/moveit_ci.git .moveit_ci

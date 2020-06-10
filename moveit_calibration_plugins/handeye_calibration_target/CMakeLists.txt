@@ -31,7 +31,7 @@ install(TARGETS ${MOVEIT_LIB_NAME} ${MOVEIT_LIB_NAME}_core
 install(
   FILES
     ./test/test_aruco_marker_detection.png
-    ./test/test_charuco_marker_detection.png
+    #./test/test_charuco_marker_detection.png
   DESTINATION
     ${CATKIN_PACKAGE_SHARE_DESTINATION}/handeye_calibration_target/test/)
 

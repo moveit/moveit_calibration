@@ -36,6 +36,9 @@
 
 #include <class_loader/class_loader.hpp>
 #include <moveit/handeye_calibration_target/handeye_target_aruco.h>
+#include <moveit/handeye_calibration_target/handeye_target_charuco.h>
 
 CLASS_LOADER_REGISTER_CLASS(moveit_handeye_calibration::HandEyeArucoTarget,
+                            moveit_handeye_calibration::HandEyeTargetBase)
+CLASS_LOADER_REGISTER_CLASS(moveit_handeye_calibration::HandEyeCharucoTarget,
                             moveit_handeye_calibration::HandEyeTargetBase)

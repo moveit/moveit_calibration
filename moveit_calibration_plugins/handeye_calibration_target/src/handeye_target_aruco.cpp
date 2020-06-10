@@ -132,10 +132,10 @@ bool HandEyeArucoTarget::setTargetDimension(double marker_measured_size, double 
   std::lock_guard<std::mutex> aruco_lock(aruco_mutex_);
   marker_size_real_ = marker_measured_size;
   marker_separation_real_ = marker_measured_separation;
-  ROS_INFO_STREAM_NAMED(LOGNAME, "Set target real dimensions: \n"
-                                     << "marker_measured_size " << std::to_string(marker_measured_size) << "\n"
-                                     << "marker_measured_separation " << std::to_string(marker_measured_separation)
-                                     << "\n");
+  ROS_INFO_STREAM_THROTTLE_NAMED(
+      2., LOGNAME, "Set target real dimensions: \n"
+                       << "marker_measured_size " << std::to_string(marker_measured_size) << "\n"
+                       << "marker_measured_separation " << std::to_string(marker_measured_separation) << "\n");
   return true;
 }
 
@@ -211,7 +211,7 @@ bool HandEyeArucoTarget::detectTargetPose(cv::Mat& image)
         std::log10(std::fabs(rotation_vect_[2])) > 10 || std::log10(std::fabs(translation_vect_[0])) > 10 ||
         std::log10(std::fabs(translation_vect_[1])) > 10 || std::log10(std::fabs(translation_vect_[2])) > 10)
     {
-      ROS_WARN_STREAM_NAMED(LOGNAME, "Invalid target pose, please check CameraInfo msg.");
+      ROS_WARN_STREAM_THROTTLE_NAMED(5.0, LOGNAME, "Invalid target pose, please check CameraInfo msg.");
       return false;
     }
 

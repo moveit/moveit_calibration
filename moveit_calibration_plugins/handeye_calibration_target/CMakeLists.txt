@@ -1,6 +1,7 @@
 set(HEADERS
   include/moveit/handeye_calibration_target/handeye_target_base.h
   include/moveit/handeye_calibration_target/handeye_target_aruco.h
+  include/moveit/handeye_calibration_target/handeye_target_charuco.h
 )
 
 #catkin_lint: ignore_once missing_directory
@@ -9,6 +10,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 # Plugin Source
 set(SOURCE_FILES
   src/handeye_target_aruco.cpp
+  src/handeye_target_charuco.cpp
 )
 
 set(MOVEIT_LIB_NAME moveit_handeye_calibration_target)
@@ -29,6 +31,7 @@ install(TARGETS ${MOVEIT_LIB_NAME} ${MOVEIT_LIB_NAME}_core
 install(
   FILES
     ./test/test_aruco_marker_detection.png
+    ./test/test_charuco_marker_detection.png
   DESTINATION
     ${CATKIN_PACKAGE_SHARE_DESTINATION}/handeye_calibration_target/test/)
 
@@ -37,4 +40,4 @@ if (CATKIN_ENABLE_TESTING)
   catkin_add_gtest(test_handeye_target test/handeye_target_test.cpp)
   target_link_libraries(test_handeye_target ${catkin_LIBRARIES} ${MOVEIT_LIB_NAME} ${OpenCV_LIBS})
 
-endif() 
+endif()

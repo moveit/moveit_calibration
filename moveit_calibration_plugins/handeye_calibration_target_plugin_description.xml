@@ -1,8 +1,16 @@
 <library path="libmoveit_handeye_calibration_target">
-  <class name="HandEyeTarget/Aruco" 
-         type="moveit_handeye_calibration::HandEyeArucoTarget" 
+  <class name="HandEyeTarget/Aruco"
+         type="moveit_handeye_calibration::HandEyeArucoTarget"
          base_class_type="moveit_handeye_calibration::HandEyeTargetBase">
     <description>
+      ArUco board calibration target for conducting hand-eye calibration.
+    </description>
+  </class>
+  <class name="HandEyeTarget/Charuco"
+         type="moveit_handeye_calibration::HandEyeCharucoTarget"
+         base_class_type="moveit_handeye_calibration::HandEyeTargetBase">
+    <description>
+      ChArUco board calibration target for conducting hand-eye calibration.
     </description>
   </class>
 </library>

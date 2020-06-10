@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   class_loader
   geometric_shapes
   moveit_calibration_plugins
+  moveit_ros_perception
   moveit_ros_planning_interface
   moveit_ros_visualization
   moveit_visual_tools
@@ -50,6 +51,7 @@ catkin_package(
   INCLUDE_DIRS
     handeye_calibration_rviz_plugin/include
   CATKIN_DEPENDS
+    moveit_ros_perception
     moveit_ros_planning_interface
     moveit_visual_tools
     moveit_calibration_plugins

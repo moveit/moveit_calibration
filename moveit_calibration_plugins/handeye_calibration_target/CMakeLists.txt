@@ -31,13 +31,16 @@ install(TARGETS ${MOVEIT_LIB_NAME} ${MOVEIT_LIB_NAME}_core
 install(
   FILES
     ./test/test_aruco_marker_detection.png
-    #./test/test_charuco_marker_detection.png
+    ./test/test_charuco_board_detection.jpg
   DESTINATION
     ${CATKIN_PACKAGE_SHARE_DESTINATION}/handeye_calibration_target/test/)
 
 if (CATKIN_ENABLE_TESTING)
 
-  catkin_add_gtest(test_handeye_target test/handeye_target_test.cpp)
-  target_link_libraries(test_handeye_target ${catkin_LIBRARIES} ${MOVEIT_LIB_NAME} ${OpenCV_LIBS})
+  catkin_add_gtest(test_handeye_target_aruco test/handeye_target_aruco_test.cpp)
+  target_link_libraries(test_handeye_target_aruco ${catkin_LIBRARIES} ${MOVEIT_LIB_NAME} ${OpenCV_LIBS})
+
+  catkin_add_gtest(test_handeye_target_charuco test/handeye_target_charuco_test.cpp)
+  target_link_libraries(test_handeye_target_charuco ${catkin_LIBRARIES} ${MOVEIT_LIB_NAME} ${OpenCV_LIBS})
 
 endif()

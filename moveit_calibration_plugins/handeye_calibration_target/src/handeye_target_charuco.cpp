@@ -105,7 +105,7 @@ bool HandEyeCharucoTarget::setTargetDimension(double board_size_meters_x, double
 {
   // Check for positive sizes and valid aspect ratio
   if (board_size_meters_y <= 0 || board_size_meters_x <= 0 ||
-      fabs(board_size_meters_y / board_size_meters_x - markers_y_ / markers_x_) > 1e-2)
+      fabs(board_size_meters_y / board_size_meters_x - static_cast<float>(markers_y_) / markers_x_) > 1e-2)
   {
     ROS_ERROR_NAMED(LOGNAME, "Invalid target measured dimensions: %f x %f", board_size_meters_x, board_size_meters_y);
     ROS_ERROR_NAMED(LOGNAME, "Expected aspect ratio: %d x %d", markers_x_, markers_y_);

@@ -37,6 +37,7 @@
 #pragma once
 
 #include <mutex>
+#include <algorithm>
 #include <ros/ros.h>
 #include <opencv2/opencv.hpp>
 #include <sensor_msgs/CameraInfo.h>
@@ -53,6 +54,29 @@ namespace moveit_handeye_calibration
 class HandEyeTargetBase
 {
 public:
+  class Parameter
+  {
+  public:
+    const enum ParameterType { Int, Float, Enum } parameter_type_;
+    const std::string name_;
+    union Value
+    {
+      int i;
+      float f;
+      std::size_t e;
+    } value_;
+    const std::vector<std::string> enum_values_;
+
+    Parameter(std::string name, ParameterType parameter_type) : name_(name), parameter_type_(parameter_type)
+    {
+    }
+
+    Parameter(std::string name, ParameterType parameter_type, std::vector<std::string> enum_values)
+      : name_(name), parameter_type_(parameter_type), enum_values_(enum_values)
+    {
+    }
+  };
+
   const std::string LOGNAME = "handeye_target_base";
   const std::size_t CAMERA_MATRIX_VECTOR_DIMENSION = 9;  // 3x3 camera intrinsic matrix
   const std::size_t CAMERA_MATRIX_WIDTH = 3;
@@ -67,42 +91,10 @@ public:
   }
 
   /**
-   * @brief Initialization function for the handeye target pose detecting, for use with marker array based target
-   * detectors.
-   * @param markers_x Number of markers along X axis.
-   * @param markers_y Number of markers along Y axis.
-   * @param marker_size The width or radius of a marker in a 2D target image (pixels).
-   * @param separation The distance between two neighbouring markers in a 2D target image (pixels).
-   * @param border_bits The distance from the markers to the target boarder (bits).
-   * @param dictionary_id Marker dictionary id.
-   * @param marker_measured_size Marker size measured from the printed image.
-   * @param marker_measured_separation Marker separation distance measured from the printed image.
+   * @brief Initialize handeye target. Call after setting the parameters.
    * @return True if initialization was successful, false otherwise.
    */
-  virtual bool initialize(int markers_x, int markers_y, int marker_size_, int separation, int border_bits,
-                          const std::string& dictionary_id, double marker_measured_size,
-                          double marker_measured_separation) = 0;
-
-  /**
-   * @brief Set the target intrinsic parameters, for updating the target intrinsic parameters.
-   * @param markers_x Number of markers along X axis.
-   * @param markers_y Number of markers along Y axis.
-   * @param marker_size_ The width or radius of a marker in a 2D target image (pixels).
-   * @param separation The distance between two neighbouring markers in a 2D target image (pixels).
-   * @param border_bits The margins between the markers and the target image boarder (bits).
-   * @param dictionary_id Marker dictionary id.
-   * @return True if parameters are correctly set, false otherwise.
-   */
-  virtual bool setTargetIntrinsicParams(int markers_x, int markers_y, int marker_size_, int separation, int border_bits,
-                                        const std::string& dictionary_id) = 0;
-
-  /**
-   * @brief Set the parameters of printed target, for updating the real target parameters.
-   * @param marker_measured_size Printed marker size.
-   * @param marker_measured_separation Printed marker separation distance.
-   * @return True if parameters are correctly set, false otherwise.
-   */
-  virtual bool setTargetDimension(double marker_measured_size, double marker_measured_separation) = 0;
+  virtual bool initialize() = 0;
 
   /**
    * @brief Create an target image, so that the target can be viewed and printed.
@@ -182,6 +174,119 @@ public:
     return true;
   }
 
+  virtual std::vector<Parameter> getParameters()
+  {
+    return parameters_;
+  }
+
+  virtual bool setParameter(std::string name, int value)
+  {
+    for (auto& param : parameters_)
+    {
+      if (param.name_ == name && param.parameter_type_ == Parameter::Int)
+      {
+        param.value_.i = value;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  virtual bool setParameter(std::string name, float value)
+  {
+    for (auto& param : parameters_)
+    {
+      if (param.name_ == name && param.parameter_type_ == Parameter::Float)
+      {
+        param.value_.f = value;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  virtual bool setParameter(std::string name, double value)
+  {
+    for (auto& param : parameters_)
+    {
+      if (param.name_ == name && param.parameter_type_ == Parameter::Float)
+      {
+        param.value_.f = value;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  virtual bool setParameter(std::string name, std::string value)
+  {
+    for (auto& param : parameters_)
+    {
+      if (param.name_ == name && param.parameter_type_ == Parameter::Enum)
+      {
+        auto it = std::find(param.enum_values_.begin(), param.enum_values_.end(), value);
+        if (it != param.enum_values_.end())
+        {
+          param.value_.e = std::distance(param.enum_values_.begin(), it);
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  virtual bool getParameter(std::string name, int& value) const
+  {
+    for (auto& param : parameters_)
+    {
+      if (param.name_ == name && param.parameter_type_ == Parameter::Int)
+      {
+        value = param.value_.i;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  virtual bool getParameter(std::string name, float& value) const
+  {
+    for (auto& param : parameters_)
+    {
+      if (param.name_ == name && param.parameter_type_ == Parameter::Float)
+      {
+        value = param.value_.f;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  virtual bool getParameter(std::string name, double& value) const
+  {
+    for (auto& param : parameters_)
+    {
+      if (param.name_ == name && param.parameter_type_ == Parameter::Float)
+      {
+        value = param.value_.f;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  virtual bool getParameter(std::string name, std::string& value) const
+  {
+    for (auto& param : parameters_)
+    {
+      if (param.name_ == name && param.parameter_type_ == Parameter::Enum)
+      {
+        value = param.enum_values_[param.value_.e];
+        return true;
+      }
+    }
+    return false;
+  }
+
 protected:
   // 3x3 floating-point camera matrix
   //     [fx  0 cx]
@@ -195,6 +300,8 @@ protected:
 
   // flag to indicate if target parameter values are correctly defined
   bool target_params_ready_;
+
+  static std::vector<Parameter> parameters_;
 
   std::mutex base_mutex_;
 };

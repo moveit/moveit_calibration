@@ -50,17 +50,10 @@ namespace moveit_handeye_calibration
 class HandEyeArucoTarget : public HandEyeTargetBase
 {
 public:
-  HandEyeArucoTarget() = default;
+  HandEyeArucoTarget();
   ~HandEyeArucoTarget() = default;
 
-  virtual bool initialize(int markers_x, int markers_y, int marker_size, int separation, int border_bits,
-                          const std::string& dictionary_id, double marker_measured_size,
-                          double marker_measured_separation) override;
-
-  virtual bool setTargetIntrinsicParams(int markers_x, int markers_y, int marker_size, int separation, int border_bits,
-                                        const std::string& dictionary_id) override;
-
-  virtual bool setTargetDimension(double marker_measured_size, double marker_measured_separation) override;
+  virtual bool initialize() override;
 
   virtual bool createTargetImage(cv::Mat& image) const override;
 
@@ -69,6 +62,11 @@ public:
   virtual std::vector<std::string> getDictionaryIds() const override;
 
   virtual geometry_msgs::TransformStamped getTransformStamped(const std::string& frame_id) const override;
+
+  virtual bool setTargetIntrinsicParams(int markers_x, int markers_y, int marker_size, int separation, int border_bits,
+                                        const std::string& dictionary_id);
+
+  virtual bool setTargetDimension(double marker_measured_size, double marker_measured_separation);
 
 protected:
   // Convert cv::Vec3d rotation vector to tf2::Quaternion

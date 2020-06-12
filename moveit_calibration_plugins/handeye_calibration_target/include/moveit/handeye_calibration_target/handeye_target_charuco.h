@@ -52,25 +52,21 @@ namespace moveit_handeye_calibration
 class HandEyeCharucoTarget : public HandEyeTargetBase
 {
 public:
-  HandEyeCharucoTarget() = default;
+  HandEyeCharucoTarget();
   ~HandEyeCharucoTarget() = default;
 
-  virtual bool initialize(int markers_x, int markers_y, int marker_size, int separation, int border_bits,
-                          const std::string& dictionary_id, double marker_measured_size,
-                          double marker_measured_separation) override;
-
-  virtual bool setTargetIntrinsicParams(int markers_x, int markers_y, int marker_size_pixels, int square_size_pixels,
-                                        int margin_size_pixels, const std::string& dictionary_id) override;
-
-  virtual bool setTargetDimension(double board_size_meters_x, double board_size_meters_y) override;
+  virtual bool initialize() override;
 
   virtual bool createTargetImage(cv::Mat& image) const override;
 
   virtual bool detectTargetPose(cv::Mat& image) override;
 
-  virtual std::vector<std::string> getDictionaryIds() const override;
-
   virtual geometry_msgs::TransformStamped getTransformStamped(const std::string& frame_id) const override;
+
+  virtual bool setTargetIntrinsicParams(int markers_x, int markers_y, int marker_size_pixels, int square_size_pixels,
+                                        int border_size_bits, int margin_size_pixels, const std::string& dictionary_id);
+
+  virtual bool setTargetDimension(double board_size_meters_x, double board_size_meters_y);
 
 protected:
   // Convert cv::Vec3d rotation vector to geometry_msgs::Quaternion
@@ -92,7 +88,8 @@ private:
   int markers_y_;                                        // Number of markers along Y axis
   int marker_size_pixels_;                               // Marker size in pixels
   int square_size_pixels_;                               // Checkerboard square size in pixels
-  int margin_size_pixels_;                               // Margin of white pixels around checkerboard
+  int border_size_bits_;                                 // Marker border width, in bits
+  int margin_size_pixels_;                               // Margin of white pixels around entire board
   cv::aruco::PREDEFINED_DICTIONARY_NAME dictionary_id_;  // Marker dictionary id
 
   // Target real dimensions in meters

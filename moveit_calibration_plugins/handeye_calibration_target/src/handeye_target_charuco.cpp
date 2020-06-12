@@ -1,7 +1,7 @@
 /*********************************************************************
  * Software License Agreement (BSD License)
  *
- *  Copyright (c) 2019,  Intel Corporation.
+ *  Copyright (c) 2020,  PickNik, Inc.
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -14,7 +14,7 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
- *   * Neither the name of Intel nor the names of its
+ *   * Neither the name of PickNik, Inc., nor the names of its
  *     contributors may be used to endorse or promote products derived
  *     from this software without specific prior written permission.
  *
@@ -49,33 +49,57 @@ const std::map<std::string, cv::aruco::PREDEFINED_DICTIONARY_NAME> ARUCO_DICTION
   { "DICT_ARUCO_ORIGINAL", cv::aruco::DICT_ARUCO_ORIGINAL }
 };
 
-bool HandEyeCharucoTarget::initialize(int markers_x, int markers_y, int marker_size_pixels, int square_size_pixels,
-                                      int margin_size_pixels, const std::string& dictionary_id,
-                                      double board_size_meters_x, double board_size_meters_y)
+HandEyeCharucoTarget::HandEyeCharucoTarget()
+{
+  parameters_.push_back(Parameter("markers X", Parameter::ParameterType::Int));
+  parameters_.push_back(Parameter("markers Y", Parameter::ParameterType::Int));
+  parameters_.push_back(Parameter("marker size", Parameter::ParameterType::Int));
+  parameters_.push_back(Parameter("square size", Parameter::ParameterType::Int));
+  parameters_.push_back(Parameter("margin size", Parameter::ParameterType::Int));
+  parameters_.push_back(Parameter("border bits", Parameter::ParameterType::Int));
+  std::vector<std::string> dictionaries;
+  for (const auto& kv : ARUCO_DICTIONARY)
+  {
+    dictionaries.push_back(kv.first);
+  }
+  parameters_.push_back(Parameter("dictionary", Parameter::ParameterType::Enum, dictionaries));
+  parameters_.push_back(Parameter("measured board size X", Parameter::ParameterType::Float));
+  parameters_.push_back(Parameter("measured board size Y", Parameter::ParameterType::Float));
+}
+
+bool HandEyeCharucoTarget::initialize()
 {
   marker_dictionaries_ = ARUCO_DICTIONARY;
 
-  target_params_ready_ = setTargetIntrinsicParams(markers_x, markers_y, marker_size_pixels, square_size_pixels,
-                                                  margin_size_pixels, dictionary_id) &&
-                         setTargetDimension(board_size_meters_x, board_size_meters_y);
+  int markers_x;
+  int markers_y;
+  int marker_size_pixels;
+  int square_size_pixels;
+  int border_size_bits;
+  int margin_size_pixels;
+  std::string dictionary_id;
+  double board_size_meters_x;
+  double board_size_meters_y;
+
+  target_params_ready_ =
+      getParameter("markers X", markers_x) && getParameter("markers Y", markers_y) &&
+      getParameter("marker size", marker_size_pixels) && getParameter("square size", square_size_pixels) &&
+      getParameter("border bits", border_size_bits) && getParameter("margin size", margin_size_pixels) &&
+      getParameter("dictionary", dictionary_id) && getParameter("measured board size X", board_size_meters_x) &&
+      getParameter("measured board size Y", board_size_meters_y) &&
+      setTargetIntrinsicParams(markers_x, markers_y, marker_size_pixels, square_size_pixels, border_size_bits,
+                               margin_size_pixels, dictionary_id) &&
+      setTargetDimension(board_size_meters_x, board_size_meters_y);
 
   return target_params_ready_;
 }
 
-std::vector<std::string> HandEyeCharucoTarget::getDictionaryIds() const
-{
-  std::vector<std::string> dictionary_ids;
-  for (const std::pair<const std::string, cv::aruco::PREDEFINED_DICTIONARY_NAME>& name : marker_dictionaries_)
-    dictionary_ids.push_back(name.first);
-  return dictionary_ids;
-}
-
 bool HandEyeCharucoTarget::setTargetIntrinsicParams(int markers_x, int markers_y, int marker_size_pixels,
-                                                    int square_size_pixels, int margin_size_pixels,
-                                                    const std::string& dictionary_id)
+                                                    int square_size_pixels, int border_size_bits,
+                                                    int margin_size_pixels, const std::string& dictionary_id)
 {
   if (markers_x <= 0 || markers_y <= 0 || marker_size_pixels <= 0 || square_size_pixels <= 0 ||
-      margin_size_pixels < 0 || square_size_pixels <= marker_size_pixels ||
+      margin_size_pixels < 0 || border_size_bits <= 0 || square_size_pixels <= marker_size_pixels ||
       0 == marker_dictionaries_.count(dictionary_id))
   {
     ROS_ERROR_STREAM_NAMED(LOGNAME, "Invalid target intrinsic params.\n"
@@ -83,6 +107,7 @@ bool HandEyeCharucoTarget::setTargetIntrinsicParams(int markers_x, int markers_y
                                         << "markers_y " << std::to_string(markers_y) << "\n"
                                         << "marker_size_pixels " << std::to_string(marker_size_pixels) << "\n"
                                         << "square_size_pixels " << std::to_string(square_size_pixels) << "\n"
+                                        << "border_size_bits" << std::to_string(border_size_bits) << "\n"
                                         << "margin_size_pixels " << std::to_string(margin_size_pixels) << "\n"
                                         << "dictionary_id " << dictionary_id << "\n");
     return false;
@@ -93,6 +118,7 @@ bool HandEyeCharucoTarget::setTargetIntrinsicParams(int markers_x, int markers_y
   markers_y_ = markers_y;
   marker_size_pixels_ = marker_size_pixels;
   square_size_pixels_ = square_size_pixels;
+  border_size_bits_ = border_size_bits;
   margin_size_pixels_ = margin_size_pixels;
 
   const auto& it = marker_dictionaries_.find(dictionary_id);

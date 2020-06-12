@@ -91,14 +91,6 @@ bool HandEyeArucoTarget::initialize()
   return target_params_ready_;
 }
 
-std::vector<std::string> HandEyeArucoTarget::getDictionaryIds() const
-{
-  std::vector<std::string> dictionary_ids;
-  for (const std::pair<const std::string, cv::aruco::PREDEFINED_DICTIONARY_NAME>& name : marker_dictionaries_)
-    dictionary_ids.push_back(name.first);
-  return dictionary_ids;
-}
-
 bool HandEyeArucoTarget::setTargetIntrinsicParams(int markers_x, int markers_y, int marker_size, int separation,
                                                   int border_bits, const std::string& dictionary_id)
 {

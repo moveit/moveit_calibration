@@ -113,13 +113,6 @@ public:
   virtual bool detectTargetPose(cv::Mat& image) = 0;
 
   /**
-   * @brief Get available target dictionary ids that can be used to fill the dropdown list of the handeye calibration
-   * GUI component.
-   * @return A vector of dictinary names.
-   */
-  virtual std::vector<std::string> getDictionaryIds() const = 0;
-
-  /**
    * @brief Get `TransformStamped` message from the target detection result, use for TF publish.
    * @param frame_id The name of the frame this transform is with respect to.
    * @return A `TransformStamped` message.

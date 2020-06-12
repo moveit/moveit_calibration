@@ -59,8 +59,6 @@ public:
 
   virtual bool detectTargetPose(cv::Mat& image) override;
 
-  virtual std::vector<std::string> getDictionaryIds() const override;
-
   virtual geometry_msgs::TransformStamped getTransformStamped(const std::string& frame_id) const override;
 
   virtual bool setTargetIntrinsicParams(int markers_x, int markers_y, int marker_size, int separation, int border_bits,

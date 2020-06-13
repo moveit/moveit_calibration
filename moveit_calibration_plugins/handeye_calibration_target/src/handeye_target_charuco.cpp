@@ -107,7 +107,7 @@ bool HandEyeCharucoTarget::setTargetIntrinsicParams(int squares_x, int squares_y
                                         << "squares_y " << std::to_string(squares_y) << "\n"
                                         << "marker_size_pixels " << std::to_string(marker_size_pixels) << "\n"
                                         << "square_size_pixels " << std::to_string(square_size_pixels) << "\n"
-                                        << "border_size_bits" << std::to_string(border_size_bits) << "\n"
+                                        << "border_size_bits " << std::to_string(border_size_bits) << "\n"
                                         << "margin_size_pixels " << std::to_string(margin_size_pixels) << "\n"
                                         << "dictionary_id " << dictionary_id << "\n");
     return false;
@@ -150,6 +150,8 @@ bool HandEyeCharucoTarget::setTargetDimension(double board_size_meters, double m
 
 bool HandEyeCharucoTarget::createTargetImage(cv::Mat& image) const
 {
+  if (!target_params_ready_)
+    return false;
   cv::Size image_size;
   image_size.width = squares_x_ * square_size_pixels_ + 2 * margin_size_pixels_;
   image_size.height = squares_y_ * square_size_pixels_ + 2 * margin_size_pixels_;
@@ -175,6 +177,8 @@ bool HandEyeCharucoTarget::createTargetImage(cv::Mat& image) const
 
 bool HandEyeCharucoTarget::detectTargetPose(cv::Mat& image)
 {
+  if (!target_params_ready_)
+    return false;
   std::lock_guard<std::mutex> base_lock(base_mutex_);
   try
   {

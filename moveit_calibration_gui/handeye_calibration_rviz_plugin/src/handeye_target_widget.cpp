@@ -32,7 +32,7 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *********************************************************************/
 
-/* Author: Yu Yan */
+/* Author: Yu Yan, John Stechschulte */
 
 #include <moveit/handeye_calibration_rviz_plugin/handeye_target_widget.h>
 
@@ -85,7 +85,12 @@ void RosTopicComboBox::mousePressEvent(QMouseEvent* event)
 }
 
 TargetTabWidget::TargetTabWidget(QWidget* parent)
-  : QWidget(parent), nh_("~"), it_(nh_), target_plugins_loader_(nullptr), target_(nullptr)
+  : QWidget(parent)
+  , nh_("~")
+  , it_(nh_)
+  , target_plugins_loader_(nullptr)
+  , target_(nullptr)
+  , target_param_layout_(new QFormLayout())
 {
   // Target setting tab area -----------------------------------------------
   QHBoxLayout* layout = new QHBoxLayout();
@@ -94,44 +99,14 @@ TargetTabWidget::TargetTabWidget(QWidget* parent)
   layout->addLayout(layout_left);
 
   // Target creation area
-  QGroupBox* group_left_top = new QGroupBox("Target Intrinsic Params", this);
+  QGroupBox* group_left_top = new QGroupBox("Target Params", this);
+
   layout_left->addWidget(group_left_top);
-  QFormLayout* layout_left_top = new QFormLayout();
-  group_left_top->setLayout(layout_left_top);
+  group_left_top->setLayout(target_param_layout_);
 
   target_type_ = new QComboBox();
   connect(target_type_, SIGNAL(activated(const QString&)), this, SLOT(targetTypeComboboxChanged(const QString&)));
-  layout_left_top->addRow("Target Type", target_type_);
-
-  dictionary_id_ = new QComboBox();
-  layout_left_top->addRow("Dictionary", dictionary_id_);
-
-  target_params_.clear();
-  target_params_.insert(std::make_pair("markers_x", new QLineEdit()));
-  target_params_.insert(std::make_pair("markers_y", new QLineEdit()));
-  target_params_.insert(std::make_pair("marker_size", new QLineEdit()));
-  target_params_.insert(std::make_pair("marker_dist", new QLineEdit()));
-  target_params_.insert(std::make_pair("marker_border", new QLineEdit()));
-
-  target_params_["markers_x"]->setText(QString("4"));
-  target_params_["markers_x"]->setValidator(new QIntValidator(1, 50));
-  layout_left_top->addRow("Num markers, X", target_params_["markers_x"]);
-
-  target_params_["markers_y"]->setText(QString("5"));
-  target_params_["markers_y"]->setValidator(new QIntValidator(1, 50));
-  layout_left_top->addRow("Num markers, Y", target_params_["markers_y"]);
-
-  target_params_["marker_size"]->setText(QString("200"));
-  target_params_["marker_size"]->setValidator(new QIntValidator(100, 1000));
-  layout_left_top->addRow("Marker size (pixels)", target_params_["marker_size"]);
-
-  target_params_["marker_dist"]->setText(QString("20"));
-  target_params_["marker_dist"]->setValidator(new QIntValidator(10, 200));
-  layout_left_top->addRow("Marker spacing (pixels)", target_params_["marker_dist"]);
-
-  target_params_["marker_border"]->setText(QString("1"));
-  target_params_["marker_border"]->setValidator(new QIntValidator(1, 4));
-  layout_left_top->addRow("Marker border (bits)", target_params_["marker_border"]);
+  target_param_layout_->addRow("Target Type", target_type_);
 
   // Target 3D pose recognition area
   QGroupBox* group_left_bottom = new QGroupBox("Target Pose Detection", this);
@@ -150,17 +125,6 @@ TargetTabWidget::TargetTabWidget(QWidget* parent)
   layout_left_bottom->addRow("CameraInfo Topic", ros_topics_["camera_info_topic"]);
   connect(ros_topics_["camera_info_topic"], SIGNAL(activated(const QString&)), this,
           SLOT(cameraInfoComboBoxChanged(const QString&)));
-
-  target_real_dims_.insert(std::make_pair("marker_size_real", new QLineEdit()));
-  target_real_dims_.insert(std::make_pair("marker_dist_real", new QLineEdit()));
-
-  target_real_dims_["marker_size_real"]->setText("0.0256");
-  target_real_dims_["marker_size_real"]->setValidator(new QDoubleValidator(0, 2, 4));
-  layout_left_bottom->addRow("Marker size (m)", target_real_dims_["marker_size_real"]);
-
-  target_real_dims_["marker_dist_real"]->setText("0.0066");
-  target_real_dims_["marker_dist_real"]->setValidator(new QDoubleValidator(0, 2, 4));
-  layout_left_bottom->addRow("Marker spacing (m)", target_real_dims_["marker_dist_real"]);
 
   // Target image dislay, create and save area
   QGroupBox* group_right = new QGroupBox("Target", this);
@@ -181,9 +145,8 @@ TargetTabWidget::TargetTabWidget(QWidget* parent)
   layout_right->addWidget(save_target_btn);
   connect(save_target_btn, SIGNAL(clicked(bool)), this, SLOT(saveTargetImageBtnClicked(bool)));
 
-  // Load target availible plugins
-  if (loadTargetPlugin() && createTargetInstance(target_type_->currentText().toStdString()))
-    fillDictionaryIds();
+  // Load availible target plugins
+  loadAvailableTargetPlugins();
 
   // Initialize image publisher
   image_pub_ = it_.advertise("/handeye_calibration/target_detection", 1);
@@ -198,77 +161,74 @@ TargetTabWidget::TargetTabWidget(QWidget* parent)
 
 void TargetTabWidget::loadWidget(const rviz::Config& config)
 {
-  if (target_type_->count() > 0)
-  {
-    QString type;
-    if (config.mapGetString("target_type", &type) && target_type_->findText(type, Qt::MatchCaseSensitive) != -1)
-      target_type_->setCurrentText(type);
+  // TODO: get all this to work
+  // if (target_type_->count() > 0)
+  //{
+  //  QString type;
+  //  if (config.mapGetString("target_type", &type) && target_type_->findText(type, Qt::MatchCaseSensitive) != -1)
+  //    target_type_->setCurrentText(type);
 
-    createTargetInstance(target_type_->currentText().toStdString());
+  //}
 
-    QString dict_name;
-    config.mapGetString("dictionary", &dict_name);
-    fillDictionaryIds(dict_name.toStdString());
-  }
+  // int param_int;
+  // for (const std::pair<const std::string, QLineEdit*>& param : target_params_)
+  //  if (config.mapGetInt(param.first.c_str(), &param_int))
+  //    param.second->setText(std::to_string(param_int).c_str());
 
-  int param_int;
-  for (const std::pair<const std::string, QLineEdit*>& param : target_params_)
-    if (config.mapGetInt(param.first.c_str(), &param_int))
-      param.second->setText(std::to_string(param_int).c_str());
+  // for (const std::pair<const std::string, RosTopicComboBox*>& topic : ros_topics_)
+  //{
+  //  QString topic_name;
+  //  if (config.mapGetString(topic.first.c_str(), &topic_name))
+  //  {
+  //    if (topic.second->hasTopic(topic_name))
+  //    {
+  //      topic.second->setCurrentText(topic_name);
+  //      try
+  //      {
+  //        if (!topic.first.compare("image_topic"))
+  //        {
+  //          image_sub_.shutdown();
+  //          image_sub_ = it_.subscribe(topic_name.toStdString(), 1, &TargetTabWidget::imageCallback, this);
+  //        }
 
-  for (const std::pair<const std::string, RosTopicComboBox*>& topic : ros_topics_)
-  {
-    QString topic_name;
-    if (config.mapGetString(topic.first.c_str(), &topic_name))
-    {
-      if (topic.second->hasTopic(topic_name))
-      {
-        topic.second->setCurrentText(topic_name);
-        try
-        {
-          if (!topic.first.compare("image_topic"))
-          {
-            image_sub_.shutdown();
-            image_sub_ = it_.subscribe(topic_name.toStdString(), 1, &TargetTabWidget::imageCallback, this);
-          }
+  //        if (!topic.first.compare("camera_info_topic"))
+  //        {
+  //          camerainfo_sub_.shutdown();
+  //          camerainfo_sub_ = nh_.subscribe(topic_name.toStdString(), 1, &TargetTabWidget::cameraInfoCallback, this);
+  //        }
+  //      }
+  //      catch (const image_transport::TransportLoadException& e)
+  //      {
+  //        ROS_ERROR_STREAM_NAMED(LOGNAME, "Subscribe to " << topic_name.toStdString() << " fail: " << e.what());
+  //      }
+  //    }
+  //  }
+  //}
 
-          if (!topic.first.compare("camera_info_topic"))
-          {
-            camerainfo_sub_.shutdown();
-            camerainfo_sub_ = nh_.subscribe(topic_name.toStdString(), 1, &TargetTabWidget::cameraInfoCallback, this);
-          }
-        }
-        catch (const image_transport::TransportLoadException& e)
-        {
-          ROS_ERROR_STREAM_NAMED(LOGNAME, "Subscribe to " << topic_name.toStdString() << " fail: " << e.what());
-        }
-      }
-    }
-  }
-
-  for (const std::pair<const std::string, QLineEdit*>& param : target_real_dims_)
-  {
-    float param_double;
-    if (config.mapGetFloat(param.first.c_str(), &param_double))
-      param.second->setText(std::to_string(param_double).c_str());
-  }
+  // for (const std::pair<const std::string, QLineEdit*>& param : target_real_dims_)
+  //{
+  //  float param_double;
+  //  if (config.mapGetFloat(param.first.c_str(), &param_double))
+  //    param.second->setText(std::to_string(param_double).c_str());
+  //}
 }
 
 void TargetTabWidget::saveWidget(rviz::Config& config)
 {
-  config.mapSetValue("target_type", target_type_->currentText());
-  config.mapSetValue("dictionary", dictionary_id_->currentText());
-  for (const std::pair<const std::string, QLineEdit*>& param : target_params_)
-    config.mapSetValue(param.first.c_str(), param.second->text().toInt());
+  // TODO: get all this to work
+  // config.mapSetValue("target_type", target_type_->currentText());
+  // config.mapSetValue("dictionary", dictionary_id_->currentText());
+  // for (const std::pair<const std::string, QLineEdit*>& param : target_params_)
+  //  config.mapSetValue(param.first.c_str(), param.second->text().toInt());
 
-  for (const std::pair<const std::string, RosTopicComboBox*>& topic : ros_topics_)
-    config.mapSetValue(topic.first.c_str(), topic.second->currentText());
+  // for (const std::pair<const std::string, RosTopicComboBox*>& topic : ros_topics_)
+  //  config.mapSetValue(topic.first.c_str(), topic.second->currentText());
 
-  for (const std::pair<const std::string, QLineEdit*>& param : target_real_dims_)
-    config.mapSetValue(param.first.c_str(), param.second->text().toDouble());
+  // for (const std::pair<const std::string, QLineEdit*>& param : target_real_dims_)
+  //  config.mapSetValue(param.first.c_str(), param.second->text().toDouble());
 }
 
-bool TargetTabWidget::loadTargetPlugin()
+bool TargetTabWidget::loadAvailableTargetPlugins()
 {
   if (!target_plugins_loader_)
   {
@@ -300,7 +260,7 @@ bool TargetTabWidget::loadTargetPlugin()
   return true;
 }
 
-bool TargetTabWidget::createTargetInstance(const std::string& plugin_name)
+bool TargetTabWidget::loadInputWidgetsForTargetType(const std::string& plugin_name)
 {
   if (plugin_name.empty())
     return false;
@@ -308,11 +268,70 @@ bool TargetTabWidget::createTargetInstance(const std::string& plugin_name)
   try
   {
     target_ = target_plugins_loader_->createUniqueInstance(plugin_name);
-    target_->initialize(target_params_["markers_x"]->text().toInt(), target_params_["markers_y"]->text().toInt(),
-                        target_params_["marker_size"]->text().toInt(), target_params_["marker_dist"]->text().toInt(),
-                        target_params_["marker_border"]->text().toInt(), dictionary_id_->currentText().toStdString(),
-                        target_real_dims_["marker_size_real"]->text().toDouble(),
-                        target_real_dims_["marker_dist_real"]->text().toDouble());
+    target_plugin_params_ = target_->getParameters();
+    target_param_inputs_.clear();
+    // clear out layout, except target type
+    while (target_param_layout_->rowCount() > 1)
+    {
+      target_param_layout_->removeRow(1);
+    }
+    for (const auto& param : target_plugin_params_)
+    {
+      switch (param.parameter_type_)
+      {
+        case moveit_handeye_calibration::HandEyeTargetBase::Parameter::ParameterType::Int:
+        case moveit_handeye_calibration::HandEyeTargetBase::Parameter::ParameterType::Float:
+          target_param_inputs_.insert(std::make_pair(param.name_, new QLineEdit()));
+          target_param_layout_->addRow(param.name_.c_str(), target_param_inputs_[param.name_]);
+          break;
+        case moveit_handeye_calibration::HandEyeTargetBase::Parameter::ParameterType::Enum:
+          QComboBox* combo_box = new QComboBox();
+          for (const std::string& value : param.enum_values_)
+          {
+            combo_box->addItem(tr(value.c_str()));
+          }
+          target_param_inputs_.insert(std::make_pair(param.name_, combo_box));
+          target_param_layout_->addRow(param.name_.c_str(), target_param_inputs_[param.name_]);
+          break;
+      }
+    }
+  }
+  catch (pluginlib::PluginlibException& ex)
+  {
+    QMessageBox::warning(this, tr("Exception while loading a handeye target plugin"), tr(ex.what()));
+    target_ = nullptr;
+    return false;
+  }
+  return true;
+}
+
+bool TargetTabWidget::createTargetInstance()
+{
+  if (!target_)
+    return false;
+
+  try
+  {
+    // TODO: load parameters from GUI
+    for (const auto& param : target_plugin_params_)
+    {
+      switch (param.parameter_type_)
+      {
+        case moveit_handeye_calibration::HandEyeTargetBase::Parameter::ParameterType::Int:
+          target_->setParameter(param.name_,
+                                static_cast<QLineEdit*>(target_param_inputs_[param.name_])->text().toInt());
+          break;
+        case moveit_handeye_calibration::HandEyeTargetBase::Parameter::ParameterType::Float:
+          target_->setParameter(param.name_,
+                                static_cast<QLineEdit*>(target_param_inputs_[param.name_])->text().toFloat());
+          break;
+        case moveit_handeye_calibration::HandEyeTargetBase::Parameter::ParameterType::Enum:
+          target_->setParameter(
+              param.name_, static_cast<QComboBox*>(target_param_inputs_[param.name_])->currentText().toStdString());
+          break;
+      }
+    }
+    target_->initialize();
   }
   catch (pluginlib::PluginlibException& ex)
   {
@@ -324,31 +343,9 @@ bool TargetTabWidget::createTargetInstance(const std::string& plugin_name)
   return true;
 }
 
-void TargetTabWidget::fillDictionaryIds(std::string id)
-{
-  if (target_)
-  {
-    // Get dictionary ids
-    const std::vector<std::string>& ids = target_->getDictionaryIds();
-    dictionary_id_->clear();
-    for (const std::string& id : ids)
-    {
-      dictionary_id_->addItem(tr(id.c_str()));
-    }
-
-    // Check if 'id' exists in the list
-    if (!id.empty())
-    {
-      auto it = std::find(ids.begin(), ids.end(), id);
-      if (it != ids.end())
-        dictionary_id_->setCurrentText(QString(id.c_str()));
-    }
-  }
-}
-
 void TargetTabWidget::imageCallback(const sensor_msgs::ImageConstPtr& msg)
 {
-  targetParamsSet();
+  createTargetInstance();
 
   // Depth image format `16UC1` cannot be converted to `MONO8`
   if (msg->encoding == "16UC1")
@@ -432,18 +429,15 @@ void TargetTabWidget::targetTypeComboboxChanged(const QString& text)
 {
   if (!text.isEmpty())
   {
-    if (createTargetInstance(text.toStdString()))
-    {
-      fillDictionaryIds();
-    }
+    loadInputWidgetsForTargetType(text.toStdString());
   }
 }
 
 void TargetTabWidget::createTargetImageBtnClicked(bool clicked)
 {
+  createTargetInstance();
   if (target_)
   {
-    targetParamsSet();
     target_->createTargetImage(target_image_);
   }
   else
@@ -458,19 +452,6 @@ void TargetTabWidget::createTargetImageBtnClicked(bool clicked)
     else
       qimage = qimage.scaledToHeight(260, Qt::SmoothTransformation);
     target_display_label_->setPixmap(QPixmap::fromImage(qimage));
-  }
-}
-
-void TargetTabWidget::targetParamsSet(const QString& text)
-{
-  if (target_)
-  {
-    target_->setTargetIntrinsicParams(
-        target_params_["markers_x"]->text().toInt(), target_params_["markers_y"]->text().toInt(),
-        target_params_["marker_size"]->text().toInt(), target_params_["marker_dist"]->text().toInt(),
-        target_params_["marker_border"]->text().toInt(), dictionary_id_->currentText().toStdString());
-    target_->setTargetDimension(target_real_dims_["marker_size_real"]->text().toDouble(),
-                                target_real_dims_["marker_dist_real"]->text().toDouble());
   }
 }
 

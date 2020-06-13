@@ -119,9 +119,9 @@ public:
   void loadWidget(const rviz::Config& config);
   void saveWidget(rviz::Config& config);
 
-  bool loadTargetPlugin();
+  bool loadAvailableTargetPlugins();
 
-  bool createTargetInstance(const std::string& plugin_name);
+  bool createTargetInstance();
 
   void fillDictionaryIds(std::string id = "");
 
@@ -134,14 +134,14 @@ private Q_SLOTS:
   // Called when the current item of target_type_ changed
   void targetTypeComboboxChanged(const QString& text);
 
+  // Called to update GUI inputs to match selected target type
+  bool loadInputWidgetsForTargetType(const std::string& plugin_name);
+
   // Called when the create_target_btn clicked
   void createTargetImageBtnClicked(bool clicked);
 
   // Called when the save_target_btn clicked
   void saveTargetImageBtnClicked(bool clicked);
-
-  // Called when the intrinsic or real params of the target changed
-  void targetParamsSet(const QString& text = "");
 
   // Called when the item of image_topic_field_ combobox is selected
   void imageTopicComboboxChanged(const QString& topic);
@@ -160,16 +160,16 @@ private:
   // Qt components
   // **************************************************************
 
-  // Target intrinsic params
+  // Target params
+  QFormLayout* target_param_layout_;
   QComboBox* target_type_;
-  QComboBox* dictionary_id_;
-  std::map<std::string, QLineEdit*> target_params_;
+  std::vector<moveit_handeye_calibration::HandEyeTargetBase::Parameter> target_plugin_params_;
+  std::map<std::string, QWidget*> target_param_inputs_;
 
   // Target 3D pose recognition
   RosTopicComboBox* image_topic_;
   RosTopicComboBox* camera_info_topic_;
   std::map<std::string, RosTopicComboBox*> ros_topics_;
-  std::map<std::string, QLineEdit*> target_real_dims_;
 
   // Target Image display, create and save
   QLabel* target_display_label_;

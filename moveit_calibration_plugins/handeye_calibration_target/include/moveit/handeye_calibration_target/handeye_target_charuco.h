@@ -37,7 +37,6 @@
 #pragma once
 
 #include <vector>
-#include <sensor_msgs/CameraInfo.h>
 #include <moveit/handeye_calibration_target/handeye_target_base.h>
 
 // opencv
@@ -60,15 +59,15 @@ public:
   virtual bool setTargetIntrinsicParams(int markers_x, int markers_y, int marker_size_pixels, int square_size_pixels,
                                         int border_size_bits, int margin_size_pixels, const std::string& dictionary_id);
 
-  virtual bool setTargetDimension(double board_size_meters_x, double board_size_meters_y);
+  virtual bool setTargetDimension(double board_size_meters, double marker_size_meters);
 
 private:
   // Predefined dictionary map
   std::map<std::string, cv::aruco::PREDEFINED_DICTIONARY_NAME> marker_dictionaries_;
 
   // Target intrinsic params
-  int markers_x_;                                        // Number of markers along X axis
-  int markers_y_;                                        // Number of markers along Y axis
+  int squares_x_;                                        // Number of squares along X axis
+  int squares_y_;                                        // Number of squares along Y axis
   int marker_size_pixels_;                               // Marker size in pixels
   int square_size_pixels_;                               // Checkerboard square size in pixels
   int border_size_bits_;                                 // Marker border width, in bits
@@ -76,8 +75,8 @@ private:
   cv::aruco::PREDEFINED_DICTIONARY_NAME dictionary_id_;  // Marker dictionary id
 
   // Target real dimensions in meters
-  double board_size_meters_x_;  // Printed board size, x dimension
-  double board_size_meters_y_;  // Printed board size, y dimension
+  double board_size_meters_;   // Printed board size, longest dimension
+  double marker_size_meters_;  // Printed marker size
 
   std::mutex charuco_mutex_;
 };

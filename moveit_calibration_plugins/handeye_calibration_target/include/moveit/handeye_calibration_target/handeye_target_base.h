@@ -389,7 +389,7 @@ protected:
   bool target_params_ready_;
 
   // List of parameters for this target type
-  static std::vector<Parameter> parameters_;
+  std::vector<Parameter> parameters_;
 
   // Rotation and translation of the board w.r.t the camera frame
   cv::Vec3d translation_vect_;

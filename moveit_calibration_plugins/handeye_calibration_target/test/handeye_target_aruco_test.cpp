@@ -54,7 +54,16 @@ protected:
       target_plugins_loader_.reset(new pluginlib::ClassLoader<moveit_handeye_calibration::HandEyeTargetBase>(
           "moveit_calibration_plugins", "moveit_handeye_calibration::HandEyeTargetBase"));
       target_ = target_plugins_loader_->createUniqueInstance("HandEyeTarget/Aruco");
-      target_->initialize(4, 3, 200, 20, 1, "DICT_4X4_250", 0.0256, 0.0066);
+      ASSERT_TRUE(target_->setParameter("markers X", 4));
+      ASSERT_TRUE(target_->setParameter("markers Y", 3));
+      ASSERT_TRUE(target_->setParameter("marker size", 200));
+      ASSERT_TRUE(target_->setParameter("marker separation", 20));
+      ASSERT_TRUE(target_->setParameter("border bits", 1));
+      ASSERT_TRUE(target_->setParameter("dictionary", "DICT_4X4_250"));
+      ASSERT_TRUE(target_->setParameter("measured marker size", 0.0256));
+      ASSERT_TRUE(target_->setParameter("measured separation", 0.0066));
+
+      ASSERT_TRUE(target_->initialize());
     }
     catch (const pluginlib::PluginlibException& ex)
     {
@@ -93,7 +102,6 @@ TEST_F(MoveItHandEyeTargetTester, InitOK)
   ASSERT_EQ(image_.cols, 640);
   ASSERT_EQ(image_.rows, 480);
   ASSERT_TRUE(target_);
-  ASSERT_EQ(target_->getDictionaryIds().size(), 5);
 }
 
 TEST_F(MoveItHandEyeTargetTester, DetectArucoMarkerPose)
@@ -128,7 +136,9 @@ TEST_F(MoveItHandEyeTargetTester, DetectArucoMarkerPose)
   ros::Time::init();
   camera_transform = target_->getTransformStamped(camera_info->header.frame_id);
   Eigen::Affine3d ret = tf2::transformToEigen(camera_transform);
-  std::cout << "Translation:\n" << ret.translation() << "\nRotation:\n" << ret.rotation().eulerAngles(0, 1, 2) << std::endl;
+  std::cout << "Translation:\n"
+            << ret.translation() << "\nRotation:\n"
+            << ret.rotation().eulerAngles(0, 1, 2) << std::endl;
   Eigen::Vector3d t(0.412949, -0.198895, 11.1761);
   Eigen::Vector3d r(0.324172, -2.03144, 2.90114);
   ASSERT_TRUE(ret.translation().isApprox(t, 0.01));

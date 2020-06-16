@@ -51,8 +51,8 @@ const std::map<std::string, cv::aruco::PREDEFINED_DICTIONARY_NAME> ARUCO_DICTION
 
 HandEyeCharucoTarget::HandEyeCharucoTarget()
 {
-  parameters_.push_back(Parameter("markers X", Parameter::ParameterType::Int));
-  parameters_.push_back(Parameter("markers Y", Parameter::ParameterType::Int));
+  parameters_.push_back(Parameter("squares X", Parameter::ParameterType::Int));
+  parameters_.push_back(Parameter("squares Y", Parameter::ParameterType::Int));
   parameters_.push_back(Parameter("marker size", Parameter::ParameterType::Int));
   parameters_.push_back(Parameter("square size", Parameter::ParameterType::Int));
   parameters_.push_back(Parameter("margin size", Parameter::ParameterType::Int));
@@ -63,48 +63,48 @@ HandEyeCharucoTarget::HandEyeCharucoTarget()
     dictionaries.push_back(kv.first);
   }
   parameters_.push_back(Parameter("dictionary", Parameter::ParameterType::Enum, dictionaries));
-  parameters_.push_back(Parameter("measured board size X", Parameter::ParameterType::Float));
-  parameters_.push_back(Parameter("measured board size Y", Parameter::ParameterType::Float));
+  parameters_.push_back(Parameter("measured board size", Parameter::ParameterType::Float));
+  parameters_.push_back(Parameter("measured marker size", Parameter::ParameterType::Float));
 }
 
 bool HandEyeCharucoTarget::initialize()
 {
   marker_dictionaries_ = ARUCO_DICTIONARY;
 
-  int markers_x;
-  int markers_y;
+  int squares_x;
+  int squares_y;
   int marker_size_pixels;
   int square_size_pixels;
   int border_size_bits;
   int margin_size_pixels;
   std::string dictionary_id;
-  double board_size_meters_x;
-  double board_size_meters_y;
+  double board_size_meters;
+  double marker_size_meters;
 
   target_params_ready_ =
-      getParameter("markers X", markers_x) && getParameter("markers Y", markers_y) &&
+      getParameter("squares X", squares_x) && getParameter("squares Y", squares_y) &&
       getParameter("marker size", marker_size_pixels) && getParameter("square size", square_size_pixels) &&
       getParameter("border bits", border_size_bits) && getParameter("margin size", margin_size_pixels) &&
-      getParameter("dictionary", dictionary_id) && getParameter("measured board size X", board_size_meters_x) &&
-      getParameter("measured board size Y", board_size_meters_y) &&
-      setTargetIntrinsicParams(markers_x, markers_y, marker_size_pixels, square_size_pixels, border_size_bits,
+      getParameter("dictionary", dictionary_id) && getParameter("measured board size", board_size_meters) &&
+      getParameter("measured marker size", marker_size_meters) &&
+      setTargetIntrinsicParams(squares_x, squares_y, marker_size_pixels, square_size_pixels, border_size_bits,
                                margin_size_pixels, dictionary_id) &&
-      setTargetDimension(board_size_meters_x, board_size_meters_y);
+      setTargetDimension(board_size_meters, marker_size_meters);
 
   return target_params_ready_;
 }
 
-bool HandEyeCharucoTarget::setTargetIntrinsicParams(int markers_x, int markers_y, int marker_size_pixels,
+bool HandEyeCharucoTarget::setTargetIntrinsicParams(int squares_x, int squares_y, int marker_size_pixels,
                                                     int square_size_pixels, int border_size_bits,
                                                     int margin_size_pixels, const std::string& dictionary_id)
 {
-  if (markers_x <= 0 || markers_y <= 0 || marker_size_pixels <= 0 || square_size_pixels <= 0 ||
+  if (squares_x <= 0 || squares_y <= 0 || marker_size_pixels <= 0 || square_size_pixels <= 0 ||
       margin_size_pixels < 0 || border_size_bits <= 0 || square_size_pixels <= marker_size_pixels ||
       0 == marker_dictionaries_.count(dictionary_id))
   {
     ROS_ERROR_STREAM_NAMED(LOGNAME, "Invalid target intrinsic params.\n"
-                                        << "markers_x " << std::to_string(markers_x) << "\n"
-                                        << "markers_y " << std::to_string(markers_y) << "\n"
+                                        << "squares_x " << std::to_string(squares_x) << "\n"
+                                        << "squares_y " << std::to_string(squares_y) << "\n"
                                         << "marker_size_pixels " << std::to_string(marker_size_pixels) << "\n"
                                         << "square_size_pixels " << std::to_string(square_size_pixels) << "\n"
                                         << "border_size_bits" << std::to_string(border_size_bits) << "\n"
@@ -114,8 +114,8 @@ bool HandEyeCharucoTarget::setTargetIntrinsicParams(int markers_x, int markers_y
   }
 
   std::lock_guard<std::mutex> charuco_lock(charuco_mutex_);
-  markers_x_ = markers_x;
-  markers_y_ = markers_y;
+  squares_x_ = squares_x;
+  squares_y_ = squares_y;
   marker_size_pixels_ = marker_size_pixels;
   square_size_pixels_ = square_size_pixels;
   border_size_bits_ = border_size_bits;
@@ -127,39 +127,39 @@ bool HandEyeCharucoTarget::setTargetIntrinsicParams(int markers_x, int markers_y
   return true;
 }
 
-bool HandEyeCharucoTarget::setTargetDimension(double board_size_meters_x, double board_size_meters_y)
+bool HandEyeCharucoTarget::setTargetDimension(double board_size_meters, double marker_size_meters)
 {
   // Check for positive sizes and valid aspect ratio
-  if (board_size_meters_y <= 0 || board_size_meters_x <= 0 ||
-      fabs(board_size_meters_y / board_size_meters_x - static_cast<float>(markers_y_) / markers_x_) > 1e-2)
+  if (board_size_meters <= 0 || marker_size_meters <= 0 ||
+      board_size_meters < marker_size_meters * std::max(squares_x_, squares_y_))
   {
-    ROS_ERROR_NAMED(LOGNAME, "Invalid target measured dimensions: %f x %f", board_size_meters_x, board_size_meters_y);
-    ROS_ERROR_NAMED(LOGNAME, "Expected aspect ratio: %d x %d", markers_x_, markers_y_);
+    ROS_ERROR_NAMED(LOGNAME, "Invalid target measured dimensions. Longest board dimension: %f. Marker size: %f",
+                    board_size_meters, marker_size_meters);
     return false;
   }
 
   std::lock_guard<std::mutex> charuco_lock(charuco_mutex_);
-  board_size_meters_x_ = board_size_meters_x;
-  board_size_meters_y_ = board_size_meters_y;
   ROS_INFO_STREAM_NAMED(LOGNAME, "Set target real dimensions: \n"
-                                     << "board_size_meters_x " << std::to_string(board_size_meters_x_) << "\n"
-                                     << "board_size_meters_y " << std::to_string(board_size_meters_y_) << "\n"
+                                     << "board_size_meters " << std::to_string(board_size_meters) << "\n"
+                                     << "marker_size_meters " << std::to_string(marker_size_meters) << "\n"
                                      << "\n");
+  board_size_meters_ = board_size_meters;
+  marker_size_meters_ = marker_size_meters;
   return true;
 }
 
 bool HandEyeCharucoTarget::createTargetImage(cv::Mat& image) const
 {
   cv::Size image_size;
-  image_size.width = markers_x_ * square_size_pixels_ + 2 * margin_size_pixels_;
-  image_size.height = markers_y_ * square_size_pixels_ + 2 * margin_size_pixels_;
+  image_size.width = squares_x_ * square_size_pixels_ + 2 * margin_size_pixels_;
+  image_size.height = squares_y_ * square_size_pixels_ + 2 * margin_size_pixels_;
 
   try
   {
     // Create target
     cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(dictionary_id_);
     cv::Ptr<cv::aruco::CharucoBoard> board = cv::aruco::CharucoBoard::create(
-        markers_x_, markers_y_, float(square_size_pixels_), float(marker_size_pixels_), dictionary);
+        squares_x_, squares_y_, float(square_size_pixels_), float(marker_size_pixels_), dictionary);
 
     // Create target image
     board->draw(image_size, image, margin_size_pixels_, border_size_bits_);
@@ -181,10 +181,9 @@ bool HandEyeCharucoTarget::detectTargetPose(cv::Mat& image)
     // Detect aruco board
     charuco_mutex_.lock();
     cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(dictionary_id_);
-    float square_size_meters = board_size_meters_y_ / markers_y_;
-    float marker_size_meters = square_size_meters * marker_size_pixels_ / square_size_pixels_;
+    float square_size_meters = board_size_meters_ / std::max(squares_x_, squares_y_);
     cv::Ptr<cv::aruco::CharucoBoard> board =
-        cv::aruco::CharucoBoard::create(markers_x_, markers_y_, square_size_meters, marker_size_meters, dictionary);
+        cv::aruco::CharucoBoard::create(squares_x_, squares_y_, square_size_meters, marker_size_meters_, dictionary);
     charuco_mutex_.unlock();
     cv::Ptr<cv::aruco::DetectorParameters> params_ptr(new cv::aruco::DetectorParameters());
 #if CV_MAJOR_VERSION == 3 && CV_MINOR_VERSION == 2
@@ -198,7 +197,7 @@ bool HandEyeCharucoTarget::detectTargetPose(cv::Mat& image)
     cv::aruco::detectMarkers(image, dictionary, marker_corners, marker_ids, params_ptr);
     if (marker_ids.empty())
     {
-      ROS_DEBUG_STREAM_NAMED(LOGNAME, "No aruco marker detected.");
+      ROS_DEBUG_STREAM_NAMED(LOGNAME, "No aruco marker detected. Dictionary ID: " << dictionary_id_);
       return false;
     }
 

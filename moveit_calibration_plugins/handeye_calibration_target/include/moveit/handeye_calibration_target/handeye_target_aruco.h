@@ -59,23 +59,10 @@ public:
 
   virtual bool detectTargetPose(cv::Mat& image) override;
 
-  virtual geometry_msgs::TransformStamped getTransformStamped(const std::string& frame_id) const override;
-
   virtual bool setTargetIntrinsicParams(int markers_x, int markers_y, int marker_size, int separation, int border_bits,
                                         const std::string& dictionary_id);
 
   virtual bool setTargetDimension(double marker_measured_size, double marker_measured_separation);
-
-protected:
-  // Convert cv::Vec3d rotation vector to tf2::Quaternion
-  bool convertToTFQuaternion(const cv::Vec3d& input_rvect, tf2::Quaternion& quaternion) const;
-
-  // Convert cv::Vec3d translation vector to std::vector<double>
-  bool convertToStdVector(const cv::Vec3d& input_tvect, std::vector<double>& translation) const;
-
-  // Replace OpenCV drawAxis func with custom one, drawing (x, y, z) -axes in red, green, blue color
-  void drawAxis(cv::InputOutputArray _image, cv::InputArray _cameraMatrix, cv::InputArray _distCoeffs,
-                cv::InputArray _rvec, cv::InputArray _tvec, float length) const;
 
 private:
   // Predefined dictionary map
@@ -92,10 +79,6 @@ private:
   // Target real dimensions in meters
   double marker_size_real_;        // Printed marker size
   double marker_separation_real_;  // Printed marker separation distance
-
-  // Rotation and translation of the board w.r.t the camera frame
-  cv::Vec3d translation_vect_;
-  cv::Vec3d rotation_vect_;
 
   std::mutex aruco_mutex_;
 };

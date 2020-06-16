@@ -162,7 +162,7 @@ bool HandEyeCharucoTarget::createTargetImage(cv::Mat& image) const
         markers_x_, markers_y_, float(square_size_pixels_), float(marker_size_pixels_), dictionary);
 
     // Create target image
-    board->draw(image_size, image, margin_size_pixels_);
+    board->draw(image_size, image, margin_size_pixels_, border_size_bits_);
   }
   catch (const cv::Exception& e)
   {
@@ -239,60 +239,6 @@ bool HandEyeCharucoTarget::detectTargetPose(cv::Mat& image)
   }
 
   return true;
-}
-
-geometry_msgs::TransformStamped HandEyeCharucoTarget::getTransformStamped(const std::string& frame_id) const
-{
-  geometry_msgs::TransformStamped transform_stamped;
-  transform_stamped.header.stamp = ros::Time::now();
-  transform_stamped.header.frame_id = frame_id;
-  transform_stamped.child_frame_id = "handeye_target";
-
-  transform_stamped.transform.rotation = convertToQuaternionROSMsg(rotation_vect_);
-  transform_stamped.transform.translation = convertToVectorROSMsg(translation_vect_);
-
-  return transform_stamped;
-}
-
-geometry_msgs::Quaternion HandEyeCharucoTarget::convertToQuaternionROSMsg(const cv::Vec3d& input_rvect) const
-{
-  cv::Mat cv_rotation_matrix;
-  cv::Rodrigues(input_rvect, cv_rotation_matrix);
-
-  Eigen::Matrix3d eigen_rotation_matrix;
-  cv::cv2eigen(cv_rotation_matrix, eigen_rotation_matrix);
-  return tf2::toMsg(Eigen::Quaterniond(eigen_rotation_matrix));
-}
-
-geometry_msgs::Vector3 HandEyeCharucoTarget::convertToVectorROSMsg(const cv::Vec3d& input_tvect) const
-{
-  Eigen::Vector3d eigen_tvect;
-  cv::cv2eigen(input_tvect, eigen_tvect);
-  geometry_msgs::Vector3 msg_tvect;
-  tf2::toMsg(eigen_tvect, msg_tvect);
-  return msg_tvect;
-}
-
-void HandEyeCharucoTarget::drawAxis(cv::InputOutputArray _image, cv::InputArray _cameraMatrix,
-                                    cv::InputArray _distCoeffs, cv::InputArray _rvec, cv::InputArray _tvec,
-                                    float length) const
-{
-  CV_Assert(_image.getMat().total() != 0 && (_image.getMat().channels() == 1 || _image.getMat().channels() == 3));
-  CV_Assert(length > 0);
-
-  // project axis points
-  std::vector<cv::Point3f> axis_points;
-  axis_points.push_back(cv::Point3f(0, 0, 0));
-  axis_points.push_back(cv::Point3f(length, 0, 0));
-  axis_points.push_back(cv::Point3f(0, length, 0));
-  axis_points.push_back(cv::Point3f(0, 0, length));
-  std::vector<cv::Point2f> image_points;
-  cv::projectPoints(axis_points, _rvec, _tvec, _cameraMatrix, _distCoeffs, image_points);
-
-  // draw axis lines
-  cv::line(_image, image_points[0], image_points[1], cv::Scalar(255, 0, 0), 3);
-  cv::line(_image, image_points[0], image_points[2], cv::Scalar(0, 255, 0), 3);
-  cv::line(_image, image_points[0], image_points[3], cv::Scalar(0, 0, 255), 3);
 }
 
 }  // namespace moveit_handeye_calibration

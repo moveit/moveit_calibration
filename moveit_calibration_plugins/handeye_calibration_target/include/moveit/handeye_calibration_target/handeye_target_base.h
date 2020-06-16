@@ -41,7 +41,11 @@
 #include <ros/ros.h>
 #include <opencv2/opencv.hpp>
 #include <sensor_msgs/CameraInfo.h>
+#include <tf2/LinearMath/Matrix3x3.h>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2_eigen/tf2_eigen.h>
 #include <geometry_msgs/TransformStamped.h>
+#include <opencv2/core/eigen.hpp>
 
 namespace moveit_handeye_calibration
 {
@@ -117,12 +121,66 @@ public:
    * @param frame_id The name of the frame this transform is with respect to.
    * @return A `TransformStamped` message.
    */
-  virtual geometry_msgs::TransformStamped getTransformStamped(const std::string& frame_id) const = 0;
+  virtual geometry_msgs::TransformStamped getTransformStamped(const std::string& frame_id) const
+  {
+    geometry_msgs::TransformStamped transform_stamped;
+    transform_stamped.header.stamp = ros::Time::now();
+    transform_stamped.header.frame_id = frame_id;
+    transform_stamped.child_frame_id = "handeye_target";
+
+    transform_stamped.transform.rotation = convertToQuaternionROSMsg(rotation_vect_);
+    transform_stamped.transform.translation = convertToVectorROSMsg(translation_vect_);
+
+    return transform_stamped;
+  }
+
+  // Convert cv::Vec3d rotation vector to geometry_msgs::Quaternion
+  geometry_msgs::Quaternion convertToQuaternionROSMsg(const cv::Vec3d& input_rvect) const
+  {
+    cv::Mat cv_rotation_matrix;
+    cv::Rodrigues(input_rvect, cv_rotation_matrix);
+
+    Eigen::Matrix3d eigen_rotation_matrix;
+    cv::cv2eigen(cv_rotation_matrix, eigen_rotation_matrix);
+    return tf2::toMsg(Eigen::Quaterniond(eigen_rotation_matrix));
+  }
+
+  // Convert cv::Vec3d translation vector to geometry_msgs::Vector3
+  geometry_msgs::Vector3 convertToVectorROSMsg(const cv::Vec3d& input_tvect) const
+  {
+    Eigen::Vector3d eigen_tvect;
+    cv::cv2eigen(input_tvect, eigen_tvect);
+    geometry_msgs::Vector3 msg_tvect;
+    tf2::toMsg(eigen_tvect, msg_tvect);
+    return msg_tvect;
+  }
+
+  // Replace OpenCV drawAxis func with custom one, drawing (x, y, z) -axes in red, green, blue color
+  void drawAxis(cv::InputOutputArray _image, cv::InputArray _cameraMatrix, cv::InputArray _distCoeffs,
+                cv::InputArray _rvec, cv::InputArray _tvec, float length) const
+  {
+    CV_Assert(_image.getMat().total() != 0 && (_image.getMat().channels() == 1 || _image.getMat().channels() == 3));
+    CV_Assert(length > 0);
+
+    // project axis points
+    std::vector<cv::Point3f> axis_points;
+    axis_points.push_back(cv::Point3f(0, 0, 0));
+    axis_points.push_back(cv::Point3f(length, 0, 0));
+    axis_points.push_back(cv::Point3f(0, length, 0));
+    axis_points.push_back(cv::Point3f(0, 0, length));
+    std::vector<cv::Point2f> image_points;
+    cv::projectPoints(axis_points, _rvec, _tvec, _cameraMatrix, _distCoeffs, image_points);
+
+    // draw axis lines
+    cv::line(_image, image_points[0], image_points[1], cv::Scalar(255, 0, 0), 3);
+    cv::line(_image, image_points[0], image_points[2], cv::Scalar(0, 255, 0), 3);
+    cv::line(_image, image_points[0], image_points[3], cv::Scalar(0, 0, 255), 3);
+  }
 
   /**
    * @brief Set camera intrinsic parameters, e.g. camera intrinsic matrix and distortion coefficients.
    * @param msg Input camera info message.
-   * @return Ture if the input camera info format is correct, false otherwise.
+   * @return True if the input camera info format is correct, false otherwise.
    */
   virtual bool setCameraIntrinsicParams(const sensor_msgs::CameraInfoPtr& msg)
   {
@@ -167,11 +225,19 @@ public:
     return true;
   }
 
+  /**
+   * @brief Get parameters relevant to this target.
+   * @return List of parameter objects
+   */
   virtual std::vector<Parameter> getParameters()
   {
     return parameters_;
   }
 
+  /**
+   * @brief Set target parameter to integer value
+   * @return True if successful setting parameter
+   */
   virtual bool setParameter(std::string name, int value)
   {
     for (auto& param : parameters_)
@@ -185,6 +251,10 @@ public:
     return false;
   }
 
+  /**
+   * @brief Set target parameter to float value
+   * @return True if successful setting parameter
+   */
   virtual bool setParameter(std::string name, float value)
   {
     for (auto& param : parameters_)
@@ -198,6 +268,10 @@ public:
     return false;
   }
 
+  /**
+   * @brief Set target parameter to double value
+   * @return True if successful setting parameter
+   */
   virtual bool setParameter(std::string name, double value)
   {
     for (auto& param : parameters_)
@@ -211,6 +285,10 @@ public:
     return false;
   }
 
+  /**
+   * @brief Set target enum parameter to option specified by string
+   * @return True if successful setting parameter
+   */
   virtual bool setParameter(std::string name, std::string value)
   {
     for (auto& param : parameters_)
@@ -228,6 +306,10 @@ public:
     return false;
   }
 
+  /**
+   * @brief Get target parameter integer value
+   * @return True if successful getting parameter
+   */
   virtual bool getParameter(std::string name, int& value) const
   {
     for (auto& param : parameters_)
@@ -241,6 +323,10 @@ public:
     return false;
   }
 
+  /**
+   * @brief Get target parameter float value
+   * @return True if successful getting parameter
+   */
   virtual bool getParameter(std::string name, float& value) const
   {
     for (auto& param : parameters_)
@@ -254,6 +340,10 @@ public:
     return false;
   }
 
+  /**
+   * @brief Get target parameter double value
+   * @return True if successful getting parameter
+   */
   virtual bool getParameter(std::string name, double& value) const
   {
     for (auto& param : parameters_)
@@ -267,6 +357,10 @@ public:
     return false;
   }
 
+  /**
+   * @brief Get target parameter enum option, as string representation
+   * @return True if successful getting parameter
+   */
   virtual bool getParameter(std::string name, std::string& value) const
   {
     for (auto& param : parameters_)
@@ -294,7 +388,12 @@ protected:
   // flag to indicate if target parameter values are correctly defined
   bool target_params_ready_;
 
+  // List of parameters for this target type
   static std::vector<Parameter> parameters_;
+
+  // Rotation and translation of the board w.r.t the camera frame
+  cv::Vec3d translation_vect_;
+  cv::Vec3d rotation_vect_;
 
   std::mutex base_mutex_;
 };

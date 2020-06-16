@@ -54,14 +54,14 @@ protected:
       target_plugins_loader_.reset(new pluginlib::ClassLoader<moveit_handeye_calibration::HandEyeTargetBase>(
           "moveit_calibration_plugins", "moveit_handeye_calibration::HandEyeTargetBase"));
       target_ = target_plugins_loader_->createUniqueInstance("HandEyeTarget/Aruco");
-      ASSERT_TRUE(target_->setParameter("markers X", 4));
-      ASSERT_TRUE(target_->setParameter("markers Y", 3));
-      ASSERT_TRUE(target_->setParameter("marker size", 200));
-      ASSERT_TRUE(target_->setParameter("marker separation", 20));
-      ASSERT_TRUE(target_->setParameter("border bits", 1));
-      ASSERT_TRUE(target_->setParameter("dictionary", "DICT_4X4_250"));
-      ASSERT_TRUE(target_->setParameter("measured marker size", 0.0256));
-      ASSERT_TRUE(target_->setParameter("measured separation", 0.0066));
+      ASSERT_TRUE(target_->setParameter("markers, X", 4));
+      ASSERT_TRUE(target_->setParameter("markers, Y", 3));
+      ASSERT_TRUE(target_->setParameter("marker size (px)", 200));
+      ASSERT_TRUE(target_->setParameter("marker separation (px)", 20));
+      ASSERT_TRUE(target_->setParameter("marker border (bits)", 1));
+      ASSERT_TRUE(target_->setParameter("ArUco dictionary", "DICT_4X4_250"));
+      ASSERT_TRUE(target_->setParameter("measured marker size (m)", 0.0256));
+      ASSERT_TRUE(target_->setParameter("measured separation (m)", 0.0066));
 
       ASSERT_TRUE(target_->initialize());
     }

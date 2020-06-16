@@ -54,15 +54,15 @@ protected:
       target_plugins_loader_.reset(new pluginlib::ClassLoader<moveit_handeye_calibration::HandEyeTargetBase>(
           "moveit_calibration_plugins", "moveit_handeye_calibration::HandEyeTargetBase"));
       target_ = target_plugins_loader_->createUniqueInstance("HandEyeTarget/Charuco");
-      ASSERT_TRUE(target_->setParameter("squares X", 5));
-      ASSERT_TRUE(target_->setParameter("squares Y", 7));
-      ASSERT_TRUE(target_->setParameter("marker size", 50));
-      ASSERT_TRUE(target_->setParameter("square size", 80));
-      ASSERT_TRUE(target_->setParameter("margin size", 2));
-      ASSERT_TRUE(target_->setParameter("border bits", 1));
-      ASSERT_TRUE(target_->setParameter("dictionary", "DICT_5X5_250"));
-      ASSERT_TRUE(target_->setParameter("measured board size", 0.1971));
-      ASSERT_TRUE(target_->setParameter("measured marker size", 0.0176));
+      ASSERT_TRUE(target_->setParameter("squares, X", 5));
+      ASSERT_TRUE(target_->setParameter("squares, Y", 7));
+      ASSERT_TRUE(target_->setParameter("marker size (px)", 50));
+      ASSERT_TRUE(target_->setParameter("square size (px)", 80));
+      ASSERT_TRUE(target_->setParameter("margin size (px)", 2));
+      ASSERT_TRUE(target_->setParameter("marker border (bits)", 1));
+      ASSERT_TRUE(target_->setParameter("ArUco dictionary", "DICT_5X5_250"));
+      ASSERT_TRUE(target_->setParameter("longest board side (m)", 0.1971));
+      ASSERT_TRUE(target_->setParameter("measured marker size (m)", 0.0176));
 
       ASSERT_TRUE(target_->initialize());
     }

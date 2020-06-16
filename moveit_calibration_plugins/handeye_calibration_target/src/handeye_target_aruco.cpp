@@ -51,19 +51,19 @@ const std::map<std::string, cv::aruco::PREDEFINED_DICTIONARY_NAME> ARUCO_DICTION
 
 HandEyeArucoTarget::HandEyeArucoTarget()
 {
-  parameters_.push_back(Parameter("markers X", Parameter::ParameterType::Int));
-  parameters_.push_back(Parameter("markers Y", Parameter::ParameterType::Int));
-  parameters_.push_back(Parameter("marker size", Parameter::ParameterType::Int));
-  parameters_.push_back(Parameter("marker separation", Parameter::ParameterType::Int));
-  parameters_.push_back(Parameter("border bits", Parameter::ParameterType::Int));
+  parameters_.push_back(Parameter("markers, X", Parameter::ParameterType::Int));
+  parameters_.push_back(Parameter("markers, Y", Parameter::ParameterType::Int));
+  parameters_.push_back(Parameter("marker size (px)", Parameter::ParameterType::Int));
+  parameters_.push_back(Parameter("marker separation (px)", Parameter::ParameterType::Int));
+  parameters_.push_back(Parameter("marker border (bits)", Parameter::ParameterType::Int));
   std::vector<std::string> dictionaries;
   for (const auto& kv : ARUCO_DICTIONARY)
   {
     dictionaries.push_back(kv.first);
   }
-  parameters_.push_back(Parameter("dictionary", Parameter::ParameterType::Enum, dictionaries));
-  parameters_.push_back(Parameter("measured marker size", Parameter::ParameterType::Float));
-  parameters_.push_back(Parameter("measured separation", Parameter::ParameterType::Float));
+  parameters_.push_back(Parameter("ArUco dictionary", Parameter::ParameterType::Enum, dictionaries));
+  parameters_.push_back(Parameter("measured marker size (m)", Parameter::ParameterType::Float));
+  parameters_.push_back(Parameter("measured separation (m)", Parameter::ParameterType::Float));
 }
 
 bool HandEyeArucoTarget::initialize()
@@ -80,11 +80,11 @@ bool HandEyeArucoTarget::initialize()
   float marker_measured_separation;
 
   target_params_ready_ =
-      getParameter("markers X", markers_x) && getParameter("markers Y", markers_y) &&
-      getParameter("marker size", marker_size) && getParameter("marker separation", separation) &&
-      getParameter("border bits", border_bits) && getParameter("dictionary", dictionary_id) &&
-      getParameter("measured marker size", marker_measured_size) &&
-      getParameter("measured separation", marker_measured_separation) &&
+      getParameter("markers, X", markers_x) && getParameter("markers, Y", markers_y) &&
+      getParameter("marker size (px)", marker_size) && getParameter("marker separation (px)", separation) &&
+      getParameter("marker border (bits)", border_bits) && getParameter("ArUco dictionary", dictionary_id) &&
+      getParameter("measured marker size (m)", marker_measured_size) &&
+      getParameter("measured separation (m)", marker_measured_separation) &&
       setTargetIntrinsicParams(markers_x, markers_y, marker_size, separation, border_bits, dictionary_id) &&
       setTargetDimension(marker_measured_size, marker_measured_separation);
 

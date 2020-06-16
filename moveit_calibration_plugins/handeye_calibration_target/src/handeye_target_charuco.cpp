@@ -51,20 +51,20 @@ const std::map<std::string, cv::aruco::PREDEFINED_DICTIONARY_NAME> ARUCO_DICTION
 
 HandEyeCharucoTarget::HandEyeCharucoTarget()
 {
-  parameters_.push_back(Parameter("squares X", Parameter::ParameterType::Int));
-  parameters_.push_back(Parameter("squares Y", Parameter::ParameterType::Int));
-  parameters_.push_back(Parameter("marker size", Parameter::ParameterType::Int));
-  parameters_.push_back(Parameter("square size", Parameter::ParameterType::Int));
-  parameters_.push_back(Parameter("margin size", Parameter::ParameterType::Int));
-  parameters_.push_back(Parameter("border bits", Parameter::ParameterType::Int));
+  parameters_.push_back(Parameter("squares, X", Parameter::ParameterType::Int));
+  parameters_.push_back(Parameter("squares, Y", Parameter::ParameterType::Int));
+  parameters_.push_back(Parameter("marker size (px)", Parameter::ParameterType::Int));
+  parameters_.push_back(Parameter("square size (px)", Parameter::ParameterType::Int));
+  parameters_.push_back(Parameter("margin size (px)", Parameter::ParameterType::Int));
+  parameters_.push_back(Parameter("marker border (bits)", Parameter::ParameterType::Int));
   std::vector<std::string> dictionaries;
   for (const auto& kv : ARUCO_DICTIONARY)
   {
     dictionaries.push_back(kv.first);
   }
-  parameters_.push_back(Parameter("dictionary", Parameter::ParameterType::Enum, dictionaries));
-  parameters_.push_back(Parameter("measured board size", Parameter::ParameterType::Float));
-  parameters_.push_back(Parameter("measured marker size", Parameter::ParameterType::Float));
+  parameters_.push_back(Parameter("ArUco dictionary", Parameter::ParameterType::Enum, dictionaries));
+  parameters_.push_back(Parameter("longest board side (m)", Parameter::ParameterType::Float));
+  parameters_.push_back(Parameter("measured marker size (m)", Parameter::ParameterType::Float));
 }
 
 bool HandEyeCharucoTarget::initialize()
@@ -82,11 +82,11 @@ bool HandEyeCharucoTarget::initialize()
   double marker_size_meters;
 
   target_params_ready_ =
-      getParameter("squares X", squares_x) && getParameter("squares Y", squares_y) &&
-      getParameter("marker size", marker_size_pixels) && getParameter("square size", square_size_pixels) &&
-      getParameter("border bits", border_size_bits) && getParameter("margin size", margin_size_pixels) &&
-      getParameter("dictionary", dictionary_id) && getParameter("measured board size", board_size_meters) &&
-      getParameter("measured marker size", marker_size_meters) &&
+      getParameter("squares, X", squares_x) && getParameter("squares, Y", squares_y) &&
+      getParameter("marker size (px)", marker_size_pixels) && getParameter("square size (px)", square_size_pixels) &&
+      getParameter("marker border (bits)", border_size_bits) && getParameter("margin size (px)", margin_size_pixels) &&
+      getParameter("ArUco dictionary", dictionary_id) && getParameter("longest board side (m)", board_size_meters) &&
+      getParameter("measured marker size (m)", marker_size_meters) &&
       setTargetIntrinsicParams(squares_x, squares_y, marker_size_pixels, square_size_pixels, border_size_bits,
                                margin_size_pixels, dictionary_id) &&
       setTargetDimension(board_size_meters, marker_size_meters);

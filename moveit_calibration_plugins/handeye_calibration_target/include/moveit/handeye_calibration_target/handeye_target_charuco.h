@@ -38,14 +38,10 @@
 
 #include <vector>
 #include <sensor_msgs/CameraInfo.h>
-#include <tf2/LinearMath/Matrix3x3.h>
-#include <tf2/LinearMath/Quaternion.h>
-#include <tf2_eigen/tf2_eigen.h>
 #include <moveit/handeye_calibration_target/handeye_target_base.h>
 
 // opencv
 #include <opencv2/aruco/charuco.hpp>
-#include <opencv2/core/eigen.hpp>
 
 namespace moveit_handeye_calibration
 {
@@ -61,23 +57,10 @@ public:
 
   virtual bool detectTargetPose(cv::Mat& image) override;
 
-  virtual geometry_msgs::TransformStamped getTransformStamped(const std::string& frame_id) const override;
-
   virtual bool setTargetIntrinsicParams(int markers_x, int markers_y, int marker_size_pixels, int square_size_pixels,
                                         int border_size_bits, int margin_size_pixels, const std::string& dictionary_id);
 
   virtual bool setTargetDimension(double board_size_meters_x, double board_size_meters_y);
-
-protected:
-  // Convert cv::Vec3d rotation vector to geometry_msgs::Quaternion
-  geometry_msgs::Quaternion convertToQuaternionROSMsg(const cv::Vec3d& input_rvect) const;
-
-  // Convert cv::Vec3d translation vector to geometry_msgs::Vector3
-  geometry_msgs::Vector3 convertToVectorROSMsg(const cv::Vec3d& input_tvect) const;
-
-  // Replace OpenCV drawAxis func with custom one, drawing (x, y, z) -axes in red, green, blue color
-  void drawAxis(cv::InputOutputArray _image, cv::InputArray _cameraMatrix, cv::InputArray _distCoeffs,
-                cv::InputArray _rvec, cv::InputArray _tvec, float length) const;
 
 private:
   // Predefined dictionary map
@@ -95,10 +78,6 @@ private:
   // Target real dimensions in meters
   double board_size_meters_x_;  // Printed board size, x dimension
   double board_size_meters_y_;  // Printed board size, y dimension
-
-  // Rotation and translation of the board w.r.t the camera frame
-  cv::Vec3d translation_vect_;
-  cv::Vec3d rotation_vect_;
 
   std::mutex charuco_mutex_;
 };

@@ -56,6 +56,7 @@ public:
 
   virtual bool detectTargetPose(cv::Mat& image) override;
 
+protected:
   virtual bool setTargetIntrinsicParams(int markers_x, int markers_y, int marker_size, int separation, int border_bits,
                                         const std::string& dictionary_id);
 

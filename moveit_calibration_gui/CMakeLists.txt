@@ -21,6 +21,7 @@ find_package(catkin REQUIRED COMPONENTS
   rosconsole
   roscpp
   rviz
+  rviz_visual_tools
   tf2_eigen
 )
 
@@ -57,6 +58,7 @@ catkin_package(
     moveit_calibration_plugins
     roscpp
     rviz
+    rviz_visual_tools
   DEPENDS
     EIGEN3
 )

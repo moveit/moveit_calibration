@@ -161,71 +161,95 @@ TargetTabWidget::TargetTabWidget(QWidget* parent)
 
 void TargetTabWidget::loadWidget(const rviz::Config& config)
 {
-  // TODO: get all this to work
-  // if (target_type_->count() > 0)
-  //{
-  //  QString type;
-  //  if (config.mapGetString("target_type", &type) && target_type_->findText(type, Qt::MatchCaseSensitive) != -1)
-  //    target_type_->setCurrentText(type);
+  if (target_type_->count() > 0)
+  {
+    QString type;
+    if (config.mapGetString("target_type", &type) && target_type_->findText(type, Qt::MatchCaseSensitive) != -1)
+    {
+      target_type_->setCurrentText(type);
+      targetTypeComboboxChanged(type);
+    }
+  }
 
-  //}
+  int param_int;
+  float param_float;
+  QString param_enum;
+  for (const moveit_handeye_calibration::HandEyeTargetBase::Parameter& param : target_plugin_params_)
+  {
+    switch (param.parameter_type_)
+    {
+      case moveit_handeye_calibration::HandEyeTargetBase::Parameter::ParameterType::Int:
+        if (config.mapGetInt(param.name_.c_str(), &param_int))
+          static_cast<QLineEdit*>(target_param_inputs_[param.name_])->setText(std::to_string(param_int).c_str());
+        break;
+      case moveit_handeye_calibration::HandEyeTargetBase::Parameter::ParameterType::Float:
+        if (config.mapGetFloat(param.name_.c_str(), &param_float))
+          static_cast<QLineEdit*>(target_param_inputs_[param.name_])->setText(std::to_string(param_float).c_str());
+        break;
+      case moveit_handeye_calibration::HandEyeTargetBase::Parameter::ParameterType::Enum:
+        if (config.mapGetString(param.name_.c_str(), &param_enum))
+        {
+          int index = static_cast<QComboBox*>(target_param_inputs_[param.name_])->findText(param_enum);
+          static_cast<QComboBox*>(target_param_inputs_[param.name_])->setCurrentIndex(index);
+        }
+        break;
+    }
+  }
 
-  // int param_int;
-  // for (const std::pair<const std::string, QLineEdit*>& param : target_params_)
-  //  if (config.mapGetInt(param.first.c_str(), &param_int))
-  //    param.second->setText(std::to_string(param_int).c_str());
+  for (const std::pair<const std::string, RosTopicComboBox*>& topic : ros_topics_)
+  {
+    QString topic_name;
+    if (config.mapGetString(topic.first.c_str(), &topic_name))
+    {
+      if (topic.second->hasTopic(topic_name))
+      {
+        topic.second->setCurrentText(topic_name);
+        try
+        {
+          if (!topic.first.compare("image_topic"))
+          {
+            image_sub_.shutdown();
+            image_sub_ = it_.subscribe(topic_name.toStdString(), 1, &TargetTabWidget::imageCallback, this);
+          }
 
-  // for (const std::pair<const std::string, RosTopicComboBox*>& topic : ros_topics_)
-  //{
-  //  QString topic_name;
-  //  if (config.mapGetString(topic.first.c_str(), &topic_name))
-  //  {
-  //    if (topic.second->hasTopic(topic_name))
-  //    {
-  //      topic.second->setCurrentText(topic_name);
-  //      try
-  //      {
-  //        if (!topic.first.compare("image_topic"))
-  //        {
-  //          image_sub_.shutdown();
-  //          image_sub_ = it_.subscribe(topic_name.toStdString(), 1, &TargetTabWidget::imageCallback, this);
-  //        }
-
-  //        if (!topic.first.compare("camera_info_topic"))
-  //        {
-  //          camerainfo_sub_.shutdown();
-  //          camerainfo_sub_ = nh_.subscribe(topic_name.toStdString(), 1, &TargetTabWidget::cameraInfoCallback, this);
-  //        }
-  //      }
-  //      catch (const image_transport::TransportLoadException& e)
-  //      {
-  //        ROS_ERROR_STREAM_NAMED(LOGNAME, "Subscribe to " << topic_name.toStdString() << " fail: " << e.what());
-  //      }
-  //    }
-  //  }
-  //}
-
-  // for (const std::pair<const std::string, QLineEdit*>& param : target_real_dims_)
-  //{
-  //  float param_double;
-  //  if (config.mapGetFloat(param.first.c_str(), &param_double))
-  //    param.second->setText(std::to_string(param_double).c_str());
-  //}
+          if (!topic.first.compare("camera_info_topic"))
+          {
+            camerainfo_sub_.shutdown();
+            camerainfo_sub_ = nh_.subscribe(topic_name.toStdString(), 1, &TargetTabWidget::cameraInfoCallback, this);
+          }
+        }
+        catch (const image_transport::TransportLoadException& e)
+        {
+          ROS_ERROR_STREAM_NAMED(LOGNAME, "Subscribe to " << topic_name.toStdString() << " fail: " << e.what());
+        }
+      }
+    }
+  }
 }
 
 void TargetTabWidget::saveWidget(rviz::Config& config)
 {
-  // TODO: get all this to work
-  // config.mapSetValue("target_type", target_type_->currentText());
-  // config.mapSetValue("dictionary", dictionary_id_->currentText());
-  // for (const std::pair<const std::string, QLineEdit*>& param : target_params_)
-  //  config.mapSetValue(param.first.c_str(), param.second->text().toInt());
+  config.mapSetValue("target_type", target_type_->currentText());
 
-  // for (const std::pair<const std::string, RosTopicComboBox*>& topic : ros_topics_)
-  //  config.mapSetValue(topic.first.c_str(), topic.second->currentText());
+  QString param_value;
+  for (const moveit_handeye_calibration::HandEyeTargetBase::Parameter& param : target_plugin_params_)
+  {
+    switch (param.parameter_type_)
+    {
+      case moveit_handeye_calibration::HandEyeTargetBase::Parameter::ParameterType::Int:
+      case moveit_handeye_calibration::HandEyeTargetBase::Parameter::ParameterType::Float:
+        param_value = static_cast<QLineEdit*>(target_param_inputs_[param.name_])->text();
+        config.mapSetValue(param.name_.c_str(), param_value);
+        break;
+      case moveit_handeye_calibration::HandEyeTargetBase::Parameter::ParameterType::Enum:
+        param_value = static_cast<QComboBox*>(target_param_inputs_[param.name_])->currentText();
+        config.mapSetValue(param.name_.c_str(), param_value);
+        break;
+    }
+  }
 
-  // for (const std::pair<const std::string, QLineEdit*>& param : target_real_dims_)
-  //  config.mapSetValue(param.first.c_str(), param.second->text().toDouble());
+  for (const std::pair<const std::string, RosTopicComboBox*>& topic : ros_topics_)
+    config.mapSetValue(topic.first.c_str(), topic.second->currentText());
 }
 
 bool TargetTabWidget::loadAvailableTargetPlugins()

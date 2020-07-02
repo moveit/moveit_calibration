@@ -280,6 +280,7 @@ bool TargetTabWidget::loadAvailableTargetPlugins()
 
   for (const std::string& it : classes)
     target_type_->addItem(tr(it.c_str()));
+  loadInputWidgetsForTargetType(classes[0]);
 
   return true;
 }

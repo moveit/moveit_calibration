@@ -190,7 +190,7 @@ bool HandEyeCharucoTarget::detectTargetPose(cv::Mat& image)
         cv::aruco::CharucoBoard::create(squares_x_, squares_y_, square_size_meters, marker_size_meters_, dictionary);
     charuco_mutex_.unlock();
     cv::Ptr<cv::aruco::DetectorParameters> params_ptr(new cv::aruco::DetectorParameters());
-#if CV_MAJOR_VERSION == 3 && CV_MINOR_VERSION >= 2
+#if CV_MAJOR_VERSION == 3 && CV_MINOR_VERSION == 2
     params_ptr->doCornerRefinement = true;
 #else
     params_ptr->cornerRefinementMethod = cv::aruco::CORNER_REFINE_NONE;

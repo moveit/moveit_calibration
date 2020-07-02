@@ -304,9 +304,14 @@ bool TargetTabWidget::loadInputWidgetsForTargetType(const std::string& plugin_na
       switch (param.parameter_type_)
       {
         case moveit_handeye_calibration::HandEyeTargetBase::Parameter::ParameterType::Int:
+          target_param_inputs_.insert(std::make_pair(param.name_, new QLineEdit()));
+          target_param_layout_->addRow(param.name_.c_str(), target_param_inputs_[param.name_]);
+          static_cast<QLineEdit*>(target_param_inputs_[param.name_])->setText(std::to_string(param.value_.i).c_str());
+          break;
         case moveit_handeye_calibration::HandEyeTargetBase::Parameter::ParameterType::Float:
           target_param_inputs_.insert(std::make_pair(param.name_, new QLineEdit()));
           target_param_layout_->addRow(param.name_.c_str(), target_param_inputs_[param.name_]);
+          static_cast<QLineEdit*>(target_param_inputs_[param.name_])->setText(std::to_string(param.value_.f).c_str());
           break;
         case moveit_handeye_calibration::HandEyeTargetBase::Parameter::ParameterType::Enum:
           QComboBox* combo_box = new QComboBox();
@@ -316,6 +321,7 @@ bool TargetTabWidget::loadInputWidgetsForTargetType(const std::string& plugin_na
           }
           target_param_inputs_.insert(std::make_pair(param.name_, combo_box));
           target_param_layout_->addRow(param.name_.c_str(), target_param_inputs_[param.name_]);
+          static_cast<QComboBox*>(target_param_inputs_[param.name_])->setCurrentIndex(param.value_.e);
           break;
       }
     }

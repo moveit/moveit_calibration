@@ -51,19 +51,19 @@ const std::map<std::string, cv::aruco::PREDEFINED_DICTIONARY_NAME> ARUCO_DICTION
 
 HandEyeArucoTarget::HandEyeArucoTarget()
 {
-  parameters_.push_back(Parameter("markers, X", Parameter::ParameterType::Int));
-  parameters_.push_back(Parameter("markers, Y", Parameter::ParameterType::Int));
-  parameters_.push_back(Parameter("marker size (px)", Parameter::ParameterType::Int));
-  parameters_.push_back(Parameter("marker separation (px)", Parameter::ParameterType::Int));
-  parameters_.push_back(Parameter("marker border (bits)", Parameter::ParameterType::Int));
+  parameters_.push_back(Parameter("markers, X", Parameter::ParameterType::Int, 3));
+  parameters_.push_back(Parameter("markers, Y", Parameter::ParameterType::Int, 4));
+  parameters_.push_back(Parameter("marker size (px)", Parameter::ParameterType::Int, 200));
+  parameters_.push_back(Parameter("marker separation (px)", Parameter::ParameterType::Int, 20));
+  parameters_.push_back(Parameter("marker border (bits)", Parameter::ParameterType::Int, 1));
   std::vector<std::string> dictionaries;
   for (const auto& kv : ARUCO_DICTIONARY)
   {
     dictionaries.push_back(kv.first);
   }
-  parameters_.push_back(Parameter("ArUco dictionary", Parameter::ParameterType::Enum, dictionaries));
-  parameters_.push_back(Parameter("measured marker size (m)", Parameter::ParameterType::Float));
-  parameters_.push_back(Parameter("measured separation (m)", Parameter::ParameterType::Float));
+  parameters_.push_back(Parameter("ArUco dictionary", Parameter::ParameterType::Enum, dictionaries, 1));
+  parameters_.push_back(Parameter("measured marker size (m)", Parameter::ParameterType::Float, 0.2));
+  parameters_.push_back(Parameter("measured separation (m)", Parameter::ParameterType::Float, 0.02));
 }
 
 bool HandEyeArucoTarget::initialize()

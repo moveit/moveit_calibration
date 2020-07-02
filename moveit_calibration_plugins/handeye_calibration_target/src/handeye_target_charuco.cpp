@@ -51,20 +51,20 @@ const std::map<std::string, cv::aruco::PREDEFINED_DICTIONARY_NAME> ARUCO_DICTION
 
 HandEyeCharucoTarget::HandEyeCharucoTarget()
 {
-  parameters_.push_back(Parameter("squares, X", Parameter::ParameterType::Int));
-  parameters_.push_back(Parameter("squares, Y", Parameter::ParameterType::Int));
-  parameters_.push_back(Parameter("marker size (px)", Parameter::ParameterType::Int));
-  parameters_.push_back(Parameter("square size (px)", Parameter::ParameterType::Int));
-  parameters_.push_back(Parameter("margin size (px)", Parameter::ParameterType::Int));
-  parameters_.push_back(Parameter("marker border (bits)", Parameter::ParameterType::Int));
+  parameters_.push_back(Parameter("squares, X", Parameter::ParameterType::Int, 5));
+  parameters_.push_back(Parameter("squares, Y", Parameter::ParameterType::Int, 7));
+  parameters_.push_back(Parameter("marker size (px)", Parameter::ParameterType::Int, 50));
+  parameters_.push_back(Parameter("square size (px)", Parameter::ParameterType::Int, 80));
+  parameters_.push_back(Parameter("margin size (px)", Parameter::ParameterType::Int, 2));
+  parameters_.push_back(Parameter("marker border (bits)", Parameter::ParameterType::Int, 1));
   std::vector<std::string> dictionaries;
   for (const auto& kv : ARUCO_DICTIONARY)
   {
     dictionaries.push_back(kv.first);
   }
-  parameters_.push_back(Parameter("ArUco dictionary", Parameter::ParameterType::Enum, dictionaries));
-  parameters_.push_back(Parameter("longest board side (m)", Parameter::ParameterType::Float));
-  parameters_.push_back(Parameter("measured marker size (m)", Parameter::ParameterType::Float));
+  parameters_.push_back(Parameter("ArUco dictionary", Parameter::ParameterType::Enum, dictionaries, 1));
+  parameters_.push_back(Parameter("longest board side (m)", Parameter::ParameterType::Float, 0.56));
+  parameters_.push_back(Parameter("measured marker size (m)", Parameter::ParameterType::Float, 0.06));
 }
 
 bool HandEyeCharucoTarget::initialize()

@@ -176,7 +176,7 @@ bool HandEyeArucoTarget::detectTargetPose(cv::Mat& image)
         cv::aruco::GridBoard::create(markers_x_, markers_y_, marker_size_real_, marker_separation_real_, dictionary);
     aruco_mutex_.unlock();
     cv::Ptr<cv::aruco::DetectorParameters> params_ptr(new cv::aruco::DetectorParameters());
-#if CV_MAJOR_VERSION == 3 && CV_MINOR_VERSION >= 2
+#if CV_MAJOR_VERSION == 3 && CV_MINOR_VERSION == 2
     params_ptr->doCornerRefinement = true;
 #else
     params_ptr->cornerRefinementMethod = cv::aruco::CORNER_REFINE_NONE;

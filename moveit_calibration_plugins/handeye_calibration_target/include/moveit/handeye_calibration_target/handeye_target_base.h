@@ -71,13 +71,41 @@ public:
     } value_;
     const std::vector<std::string> enum_values_;
 
-    Parameter(std::string name, ParameterType parameter_type) : name_(name), parameter_type_(parameter_type)
+    Parameter(std::string name, ParameterType parameter_type, int default_value = 0)
+      : name_(name), parameter_type_(parameter_type)
     {
+      if (parameter_type_ == ParameterType::Int)
+        value_.i = default_value;
+      else
+        ROS_ERROR("Integer default value specified for non-integer parameter %s", name.c_str());
     }
 
-    Parameter(std::string name, ParameterType parameter_type, std::vector<std::string> enum_values)
+    Parameter(std::string name, ParameterType parameter_type, float default_value = 0.)
+      : name_(name), parameter_type_(parameter_type)
+    {
+      if (parameter_type_ == ParameterType::Float)
+        value_.f = default_value;
+      else
+        ROS_ERROR("Float default value specified for non-float parameter %s", name.c_str());
+    }
+
+    Parameter(std::string name, ParameterType parameter_type, double default_value = 0.)
+      : name_(name), parameter_type_(parameter_type)
+    {
+      if (parameter_type_ == ParameterType::Float)
+        value_.f = default_value;
+      else
+        ROS_ERROR("Float default value specified for non-float parameter %s", name.c_str());
+    }
+
+    Parameter(std::string name, ParameterType parameter_type, std::vector<std::string> enum_values,
+              size_t default_option = 0)
       : name_(name), parameter_type_(parameter_type), enum_values_(enum_values)
     {
+      if (default_option < enum_values_.size())
+        value_.e = default_option;
+      else
+        ROS_ERROR("Invalid default option for enum parameter %s", name.c_str());
     }
   };
 

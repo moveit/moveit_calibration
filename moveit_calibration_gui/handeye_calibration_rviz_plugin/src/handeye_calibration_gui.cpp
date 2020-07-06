@@ -70,6 +70,7 @@ HandEyeCalibrationGui::HandEyeCalibrationGui(QWidget* parent) : rviz::Panel(pare
 
   tab_control_ = new ControlTabWidget();
   tab_control_->setTFTool(tf_tools_);
+  tab_control_->UpdateSensorMountType(0);
   connect(tab_context_, SIGNAL(sensorMountTypeChanged(int)), tab_control_, SLOT(UpdateSensorMountType(int)));
   connect(tab_context_, SIGNAL(frameNameChanged(std::map<std::string, std::string>)), tab_control_,
           SLOT(updateFrameNames(std::map<std::string, std::string>)));

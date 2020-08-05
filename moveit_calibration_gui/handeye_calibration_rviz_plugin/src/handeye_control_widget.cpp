@@ -171,9 +171,9 @@ ControlTabWidget::ControlTabWidget(QWidget* parent)
   connect(take_sample_btn_, SIGNAL(clicked(bool)), this, SLOT(takeSampleBtnClicked(bool)));
   control_cal_layout->addWidget(take_sample_btn_);
 
-  reset_sample_btn_ = new QPushButton("Reset samples");
+  reset_sample_btn_ = new QPushButton("Clear samples");
   reset_sample_btn_->setMinimumHeight(35);
-  connect(reset_sample_btn_, SIGNAL(clicked(bool)), this, SLOT(resetSampleBtnClicked(bool)));
+  connect(reset_sample_btn_, SIGNAL(clicked(bool)), this, SLOT(clearSamplesBtnClicked(bool)));
   control_cal_layout->addWidget(reset_sample_btn_);
 
   // Auto calibration area
@@ -341,25 +341,25 @@ std::string ControlTabWidget::parseSolverName(const std::string& solver_name, ch
   return tokens.back();
 }
 
-bool ControlTabWidget::takeTranformSamples()
+bool ControlTabWidget::takeTransformSamples()
 {
   // Store the pair of two tf transforms and calculate camera_robot pose
   try
   {
-    geometry_msgs::TransformStamped cTo;
-    geometry_msgs::TransformStamped bTe;
+    geometry_msgs::TransformStamped camera_to_object_tf;
+    geometry_msgs::TransformStamped base_to_eef_tf;
 
     // Get the transform of the object w.r.t the camera
-    cTo = tf_buffer_->lookupTransform(frame_names_["sensor"], frame_names_["object"], ros::Time(0));
+    camera_to_object_tf = tf_buffer_->lookupTransform(frame_names_["sensor"], frame_names_["object"], ros::Time(0));
 
     // Get the transform of the end-effector w.r.t the robot base
-    bTe = tf_buffer_->lookupTransform(frame_names_["base"], frame_names_["eef"], ros::Time(0));
+    base_to_eef_tf = tf_buffer_->lookupTransform(frame_names_["base"], frame_names_["eef"], ros::Time(0));
 
     // save the pose samples
-    effector_wrt_world_.push_back(tf2::transformToEigen(bTe));
-    object_wrt_sensor_.push_back(tf2::transformToEigen(cTo));
+    effector_wrt_world_.push_back(tf2::transformToEigen(base_to_eef_tf));
+    object_wrt_sensor_.push_back(tf2::transformToEigen(camera_to_object_tf));
 
-    ControlTabWidget::addPoseSampleToTreeView(cTo, bTe, effector_wrt_world_.size());
+    ControlTabWidget::addPoseSampleToTreeView(camera_to_object_tf, base_to_eef_tf, effector_wrt_world_.size());
   }
   catch (tf2::TransformException& e)
   {
@@ -406,7 +406,7 @@ bool ControlTabWidget::solveCameraRobotPose()
   }
   else
   {
-    ROS_ERROR_STREAM_NAMED(LOGNAME, "No available handeye calibration solver instance.");
+    QMessageBox::warning(this, tr("No Solver Available"), tr("No available handeye calibration solver instance."));
     return false;
   }
 }
@@ -440,8 +440,8 @@ void ControlTabWidget::setTFTool(rviz_visual_tools::TFVisualToolsPtr& tf_pub)
   tf_tools_ = tf_pub;
 }
 
-void ControlTabWidget::addPoseSampleToTreeView(const geometry_msgs::TransformStamped& cTo,
-                                               const geometry_msgs::TransformStamped& bTe, int id)
+void ControlTabWidget::addPoseSampleToTreeView(const geometry_msgs::TransformStamped& camera_to_object_tf,
+                                               const geometry_msgs::TransformStamped& base_to_eef_tf, int id)
 {
   std::string item_name = "Sample " + std::to_string(id);
   QStandardItem* parent = new QStandardItem(QString(item_name.c_str()));
@@ -450,13 +450,13 @@ void ControlTabWidget::addPoseSampleToTreeView(const geometry_msgs::TransformSta
   std::ostringstream ss;
 
   QStandardItem* child_1 = new QStandardItem("TF base-to-eef");
-  ss << bTe.transform;
+  ss << base_to_eef_tf.transform;
   child_1->appendRow(new QStandardItem(ss.str().c_str()));
   parent->appendRow(child_1);
 
   QStandardItem* child_2 = new QStandardItem("TF camera-to-target");
   ss.str("");
-  ss << cTo.transform;
+  ss << camera_to_object_tf.transform;
   child_2->appendRow(new QStandardItem(ss.str().c_str()));
   parent->appendRow(child_2);
 }
@@ -491,7 +491,7 @@ void ControlTabWidget::updateFrameNames(std::map<std::string, std::string> names
 
 void ControlTabWidget::takeSampleBtnClicked(bool clicked)
 {
-  if (frameNamesEmpty() || !takeTranformSamples())
+  if (frameNamesEmpty() || !takeTransformSamples())
     return;
 
   if (effector_wrt_world_.size() == object_wrt_sensor_.size() && effector_wrt_world_.size() > 4)
@@ -526,7 +526,7 @@ void ControlTabWidget::takeSampleBtnClicked(bool clicked)
   }
 }
 
-void ControlTabWidget::resetSampleBtnClicked(bool clicked)
+void ControlTabWidget::clearSamplesBtnClicked(bool clicked)
 {
   // Clear recorded transforms
   effector_wrt_world_.clear();
@@ -832,7 +832,7 @@ void ControlTabWidget::executeFinished()
   {
     auto_progress_->setValue(auto_progress_->getValue() + 1);
     if (!frameNamesEmpty())
-      takeTranformSamples();
+      takeTransformSamples();
 
     if (effector_wrt_world_.size() == object_wrt_sensor_.size() && effector_wrt_world_.size() > 4)
       solveCameraRobotPose();

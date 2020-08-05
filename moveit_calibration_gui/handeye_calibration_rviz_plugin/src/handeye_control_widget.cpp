@@ -97,6 +97,7 @@ ControlTabWidget::ControlTabWidget(QWidget* parent)
   , tf_buffer_(new tf2_ros::Buffer())
   , tf_listener_(*tf_buffer_)
   , sensor_mount_type_(mhc::EYE_TO_HAND)
+  , from_frame_tag_("base")
   , solver_plugins_loader_(nullptr)
   , solver_(nullptr)
   , move_group_(nullptr)
@@ -185,13 +186,13 @@ ControlTabWidget::ControlTabWidget(QWidget* parent)
   auto_cal_layout->addLayout(auto_btns_layout);
   auto_plan_btn_ = new QPushButton("Plan");
   auto_plan_btn_->setMinimumHeight(35);
-  auto_plan_btn_->setToolTip("Start or resume auto calibration process");
+  auto_plan_btn_->setToolTip("Plan next calibration pose");
   connect(auto_plan_btn_, SIGNAL(clicked(bool)), this, SLOT(autoPlanBtnClicked(bool)));
   auto_btns_layout->addWidget(auto_plan_btn_);
 
   auto_execute_btn_ = new QPushButton("Execute");
   auto_execute_btn_->setMinimumHeight(35);
-  auto_execute_btn_->setToolTip("Pause the auto calibration process");
+  auto_execute_btn_->setToolTip("Execute the planned motion to next calibration pose");
   connect(auto_execute_btn_, SIGNAL(clicked(bool)), this, SLOT(autoExecuteBtnClicked(bool)));
   auto_btns_layout->addWidget(auto_execute_btn_);
 
@@ -398,6 +399,10 @@ bool ControlTabWidget::solveCameraRobotPose()
         return false;
       }
     }
+    else
+    {
+      QMessageBox::warning(this, tr("Solver Failed"), tr("Solver failed to return a calibration."));
+    }
   }
   else
   {
@@ -541,7 +546,8 @@ void ControlTabWidget::saveCameraPoseBtnClicked(bool clicked)
 
   if (from_frame.empty() || to_frame.empty())
   {
-    QMessageBox::warning(this, tr("Empty Frame Name"), tr("Make sure you have set correct frame names."));
+    QMessageBox::warning(this, tr("Empty Frame Name"),
+                         tr("Make sure you have selected the correct frames in the Context tab."));
     return;
   }
 

@@ -255,6 +255,20 @@ void ControlTabWidget::loadWidget(const rviz::Config& config)
       Q_EMIT group_name_->activated(group_name);
     }
   }
+  QString solver_name;
+  config.mapGetString("solver", &solver_name);
+  if (!solver_name.isEmpty())
+  {
+    for (size_t i = 0; i < calibration_solver_->count(); ++i)
+    {
+      if (calibration_solver_->itemText(i) == solver_name)
+      {
+        calibration_solver_->setCurrentText(solver_name);
+        Q_EMIT calibration_solver_->activated(solver_name);
+        break;
+      }
+    }
+  }
 }
 
 void ControlTabWidget::saveWidget(rviz::Config& config)

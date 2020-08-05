@@ -117,8 +117,8 @@ public:
 
   void setTFTool(rviz_visual_tools::TFVisualToolsPtr& tf_pub);
 
-  void addPoseSampleToTreeView(const geometry_msgs::TransformStamped& cTo, const geometry_msgs::TransformStamped& bTe,
-                               int id);
+  void addPoseSampleToTreeView(const geometry_msgs::TransformStamped& camera_to_object_tf,
+                               const geometry_msgs::TransformStamped& base_to_eef_tf, int id);
 
   bool loadSolverPlugin(std::vector<std::string>& plugins);
 
@@ -128,7 +128,7 @@ public:
 
   std::string parseSolverName(const std::string& solver_name, char delimiter);
 
-  bool takeTranformSamples();
+  bool takeTransformSamples();
 
   bool solveCameraRobotPose();
 
@@ -154,7 +154,7 @@ private Q_SLOTS:
 
   void takeSampleBtnClicked(bool clicked);
 
-  void resetSampleBtnClicked(bool clicked);
+  void clearSamplesBtnClicked(bool clicked);
 
   void saveCameraPoseBtnClicked(bool clicked);
 

@@ -404,6 +404,7 @@ bool ControlTabWidget::solveCameraRobotPose()
     else
     {
       QMessageBox::warning(this, tr("Solver Failed"), tr("Solver failed to return a calibration."));
+      return false;
     }
   }
   else

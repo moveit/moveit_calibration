@@ -100,6 +100,18 @@ public:
 class ControlTabWidget : public QWidget
 {
   Q_OBJECT
+
+  enum PLANNING_RESULT
+  {
+    SUCCESS = 0,
+    FAILURE_NO_JOINT_STATE = 1,
+    FAILURE_INVALID_JOINT_STATE = 2,
+    FAILURE_NO_PSM = 3,
+    FAILURE_NO_MOVE_GROUP = 4,
+    FAILURE_WRONG_MOVE_GROUP = 5,
+    FAILURE_PLAN_FAILED = 6
+  };
+
 public:
   explicit ControlTabWidget(QWidget* parent = Q_NULLPTR);
   ~ControlTabWidget()
@@ -219,7 +231,7 @@ private:
   std::vector<std::vector<double>> joint_states_;
   std::vector<std::string> joint_names_;
   bool auto_started_;
-  bool planning_res_;
+  PLANNING_RESULT planning_res_;
 
   // **************************************************************
   // Ros components

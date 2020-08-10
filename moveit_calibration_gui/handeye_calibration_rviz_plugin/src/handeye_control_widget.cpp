@@ -105,7 +105,7 @@ ControlTabWidget::ControlTabWidget(QWidget* parent)
   , move_group_(nullptr)
   , camera_robot_pose_(Eigen::Isometry3d::Identity())
   , auto_started_(false)
-  , planning_res_(false)
+  , planning_res_(ControlTabWidget::SUCCESS)
 // spinner_(0, &callback_queue_)
 {
   QVBoxLayout* layout = new QVBoxLayout();
@@ -742,30 +742,36 @@ void ControlTabWidget::autoPlanBtnClicked(bool clicked)
 
 void ControlTabWidget::computePlan()
 {
-  planning_res_ = true;
+  planning_res_ = ControlTabWidget::SUCCESS;
   int max = auto_progress_->bar_->maximum();
 
   if (max != joint_states_.size() || auto_progress_->getValue() == max)
   {
-    planning_res_ = false;
+    planning_res_ = ControlTabWidget::FAILURE_NO_JOINT_STATE;
     return;
   }
 
   if (!checkJointStates())
   {
-    planning_res_ = false;
+    planning_res_ = ControlTabWidget::FAILURE_INVALID_JOINT_STATE;
     return;
   }
 
   if (!planning_scene_monitor_)
   {
-    planning_res_ = false;
+    planning_res_ = ControlTabWidget::FAILURE_NO_PSM;
     return;
   }
 
-  if (!move_group_ || move_group_->getActiveJoints() != joint_names_)
+  if (!move_group_)
   {
-    planning_res_ = false;
+    planning_res_ = ControlTabWidget::FAILURE_NO_MOVE_GROUP;
+    return;
+  }
+
+  if (move_group_->getActiveJoints() != joint_names_)
+  {
+    planning_res_ = ControlTabWidget::FAILURE_WRONG_MOVE_GROUP;
     return;
   }
 
@@ -785,9 +791,11 @@ void ControlTabWidget::computePlan()
     move_group_->setMaxVelocityScalingFactor(0.5);
     move_group_->setMaxAccelerationScalingFactor(0.5);
     current_plan_.reset(new moveit::planning_interface::MoveGroupInterface::Plan());
-    planning_res_ = (move_group_->plan(*current_plan_) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
+    planning_res_ = (move_group_->plan(*current_plan_) == moveit::planning_interface::MoveItErrorCode::SUCCESS) ?
+                        ControlTabWidget::SUCCESS :
+                        ControlTabWidget::FAILURE_PLAN_FAILED;
 
-    if (planning_res_)
+    if (planning_res_ == ControlTabWidget::SUCCESS)
       ROS_DEBUG_STREAM_NAMED(LOGNAME, "Planning succeed.");
     else
       ROS_ERROR_STREAM_NAMED(LOGNAME, "Planning failed.");
@@ -808,9 +816,11 @@ void ControlTabWidget::autoExecuteBtnClicked(bool clicked)
 void ControlTabWidget::computeExecution()
 {
   if (move_group_ && current_plan_)
-    planning_res_ = (move_group_->execute(*current_plan_) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
+    planning_res_ = (move_group_->execute(*current_plan_) == moveit::planning_interface::MoveItErrorCode::SUCCESS) ?
+                        ControlTabWidget::SUCCESS :
+                        ControlTabWidget::FAILURE_PLAN_FAILED;
 
-  if (planning_res_)
+  if (planning_res_ == ControlTabWidget::SUCCESS)
   {
     ROS_DEBUG_STREAM_NAMED(LOGNAME, "Execution succeed.");
   }
@@ -821,9 +831,33 @@ void ControlTabWidget::computeExecution()
 void ControlTabWidget::planFinished()
 {
   auto_plan_btn_->setEnabled(true);
-  if (!planning_res_)
-    QMessageBox::warning(this, tr("Error"),
-                         tr("Please check if move_group is started or there are recorded joint states."));
+  switch (planning_res_)
+  {
+    case ControlTabWidget::FAILURE_NO_JOINT_STATE:
+      QMessageBox::warning(this, tr("Error"),
+                           tr("Could not compute plan. No more prerecorded joint states to execute."));
+      break;
+    case ControlTabWidget::FAILURE_INVALID_JOINT_STATE:
+      QMessageBox::warning(this, tr("Error"),
+                           tr("Could not compute plan. Invalid joint states (names wrong or missing)."));
+      break;
+    case ControlTabWidget::FAILURE_NO_PSM:
+      QMessageBox::warning(this, tr("Error"), tr("Could not compute plan. No planning scene monitor."));
+      break;
+    case ControlTabWidget::FAILURE_NO_MOVE_GROUP:
+      QMessageBox::warning(this, tr("Error"), tr("Could not compute plan. Missing move_group."));
+      break;
+    case ControlTabWidget::FAILURE_WRONG_MOVE_GROUP:
+      QMessageBox::warning(
+          this, tr("Error"),
+          tr("Could not compute plan. Joint names for recorded state do not match names from current planning group."));
+      break;
+    case ControlTabWidget::FAILURE_PLAN_FAILED:
+      QMessageBox::warning(this, tr("Error"), tr("Could not compute plan. Planning failed."));
+      break;
+    case ControlTabWidget::SUCCESS:
+      break;
+  }
   ROS_DEBUG_NAMED(LOGNAME, "Plan finished");
 }
 

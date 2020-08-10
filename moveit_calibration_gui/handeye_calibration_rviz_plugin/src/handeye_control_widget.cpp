@@ -46,7 +46,7 @@ ProgressBarWidget::ProgressBarWidget(QWidget* parent, int min, int max, int valu
   row->setContentsMargins(0, 10, 0, 10);
 
   // QLabel init
-  name_label_ = new QLabel("joint_state:", this);
+  name_label_ = new QLabel("Recorded joint state progress:", this);
   name_label_->setContentsMargins(0, 0, 0, 0);
   row->addWidget(name_label_);
 
@@ -61,6 +61,7 @@ ProgressBarWidget::ProgressBarWidget(QWidget* parent, int min, int max, int valu
   bar_->setMaximum(max);
   bar_->setValue(value);
   bar_->setContentsMargins(0, 0, 0, 0);
+  bar_->setDisabled(max == 0);
   row->addWidget(bar_);
 
   max_label_ = new QLabel(QString::number(max), this);
@@ -73,6 +74,7 @@ ProgressBarWidget::ProgressBarWidget(QWidget* parent, int min, int max, int valu
 void ProgressBarWidget::setMax(int value)
 {
   bar_->setMaximum(value);
+  bar_->setDisabled(value == 0);
   max_label_->setText(QString::number(value));
 }
 
@@ -177,7 +179,7 @@ ControlTabWidget::ControlTabWidget(QWidget* parent)
   control_cal_layout->addWidget(reset_sample_btn_);
 
   // Auto calibration area
-  QGroupBox* auto_cal_group = new QGroupBox("Auto Calibration");
+  QGroupBox* auto_cal_group = new QGroupBox("Calibrate With Recorded Joint States");
   layout_right->addWidget(auto_cal_group);
   QVBoxLayout* auto_cal_layout = new QVBoxLayout();
   auto_cal_group->setLayout(auto_cal_layout);

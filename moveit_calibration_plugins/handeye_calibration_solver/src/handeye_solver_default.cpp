@@ -84,9 +84,11 @@ bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_
   }
 
   char program_name[7] = "python";
-  wchar_t progname[strlen(program_name) + 1];
-  mbstowcs(progname, program_name, strlen(program_name) + 1);
-  Py_SetProgramName(progname);
+  #if PY_MAJOR_VERSION >= 3
+    Py_SetProgramName(Py_DecodeLocale(program_name, NULL));
+  #else
+    Py_SetProgramName(program_name);
+  #endif
   static bool numpy_loaded{ false };
   if (!numpy_loaded)  // Py_Initialize() can only be called once when numpy is
                       // loaded, otherwise will segfault

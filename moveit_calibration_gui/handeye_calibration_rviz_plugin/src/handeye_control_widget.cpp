@@ -559,7 +559,8 @@ void ControlTabWidget::saveCameraPoseBtnClicked(bool clicked)
   }
 
   QString file_name =
-      QFileDialog::getSaveFileName(this, tr("Save Camera Robot Pose"), "", tr("Target File (*.launch);;All Files (*)"));
+      QFileDialog::getSaveFileName(this, tr("Save Camera Robot Pose"), "", tr("Target File (*.launch);;All Files (*)"),
+                                   nullptr, QFileDialog::DontUseNativeDialog);
 
   if (file_name.isEmpty())
     return;
@@ -624,7 +625,8 @@ void ControlTabWidget::saveJointStateBtnClicked(bool clicked)
   }
 
   QString file_name =
-      QFileDialog::getSaveFileName(this, tr("Save Joint States"), "", tr("Target File (*.yaml);;All Files (*)"));
+      QFileDialog::getSaveFileName(this, tr("Save Joint States"), "", tr("Target File (*.yaml);;All Files (*)"),
+                                   nullptr, QFileDialog::DontUseNativeDialog);
 
   if (file_name.isEmpty())
     return;
@@ -721,7 +723,8 @@ void ControlTabWidget::saveSamplesBtnClicked(bool clicked)
 void ControlTabWidget::loadJointStateBtnClicked(bool clicked)
 {
   QString file_name =
-      QFileDialog::getOpenFileName(this, tr("Load Joint States"), "", tr("Target File (*.yaml);;All Files (*)"));
+      QFileDialog::getOpenFileName(this, tr("Load Joint States"), "", tr("Target File (*.yaml);;All Files (*)"),
+                                   nullptr, QFileDialog::DontUseNativeDialog);
 
   if (file_name.isEmpty() || !file_name.endsWith(".yaml"))
     return;

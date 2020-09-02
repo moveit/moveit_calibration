@@ -495,7 +495,8 @@ void TargetTabWidget::saveTargetImageBtnClicked(bool clicked)
   }
 
   QString fileName =
-      QFileDialog::getSaveFileName(this, tr("Save Target Image"), "", tr("Target Image (*.png);;All Files (*)"));
+      QFileDialog::getSaveFileName(this, tr("Save Target Image"), "", tr("Target Image (*.png);;All Files (*)"),
+                                   nullptr, QFileDialog::DontUseNativeDialog);
 
   if (fileName.isEmpty())
     return;

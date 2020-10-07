@@ -97,13 +97,13 @@ bool HandEyeArucoTarget::setTargetIntrinsicParams(int markers_x, int markers_y, 
   if (markers_x <= 0 || markers_y <= 0 || marker_size <= 0 || separation <= 0 || border_bits <= 0 ||
       marker_dictionaries_.find(dictionary_id) == marker_dictionaries_.end())
   {
-    ROS_ERROR_STREAM_NAMED(LOGNAME, "Invalid target intrinsic params.\n"
-                                        << "markers_x_ " << std::to_string(markers_x) << "\n"
-                                        << "markers_y_ " << std::to_string(markers_y) << "\n"
-                                        << "marker_size " << std::to_string(marker_size) << "\n"
-                                        << "separation " << std::to_string(separation) << "\n"
-                                        << "border_bits " << std::to_string(border_bits) << "\n"
-                                        << "dictionary_id " << dictionary_id << "\n");
+    ROS_ERROR_STREAM_THROTTLE_NAMED(2., LOGNAME, "Invalid target intrinsic params.\n"
+                                                     << "markers_x_ " << std::to_string(markers_x) << "\n"
+                                                     << "markers_y_ " << std::to_string(markers_y) << "\n"
+                                                     << "marker_size " << std::to_string(marker_size) << "\n"
+                                                     << "separation " << std::to_string(separation) << "\n"
+                                                     << "border_bits " << std::to_string(border_bits) << "\n"
+                                                     << "dictionary_id " << dictionary_id << "\n");
     return false;
   }
 
@@ -124,18 +124,18 @@ bool HandEyeArucoTarget::setTargetDimension(double marker_measured_size, double 
 {
   if (marker_measured_size <= 0 || marker_measured_separation <= 0)
   {
-    ROS_ERROR_NAMED(LOGNAME, "Invalid target measured dimensions: marker_size %f, marker_seperation %f",
-                    marker_measured_size, marker_measured_separation);
+    ROS_ERROR_THROTTLE_NAMED(2., LOGNAME, "Invalid target measured dimensions: marker_size %f, marker_seperation %f",
+                             marker_measured_size, marker_measured_separation);
     return false;
   }
 
   std::lock_guard<std::mutex> aruco_lock(aruco_mutex_);
   marker_size_real_ = marker_measured_size;
   marker_separation_real_ = marker_measured_separation;
-  ROS_INFO_STREAM_NAMED(LOGNAME, "Set target real dimensions: \n"
-                                     << "marker_measured_size " << std::to_string(marker_measured_size) << "\n"
-                                     << "marker_measured_separation " << std::to_string(marker_measured_separation)
-                                     << "\n");
+  ROS_INFO_STREAM_THROTTLE_NAMED(
+      2., LOGNAME, "Set target real dimensions: \n"
+                       << "marker_measured_size " << std::to_string(marker_measured_size) << "\n"
+                       << "marker_measured_separation " << std::to_string(marker_measured_separation) << "\n");
   return true;
 }
 
@@ -187,7 +187,7 @@ bool HandEyeArucoTarget::detectTargetPose(cv::Mat& image)
     cv::aruco::detectMarkers(image, dictionary, marker_corners, marker_ids, params_ptr);
     if (marker_ids.empty())
     {
-      ROS_DEBUG_STREAM_NAMED(LOGNAME, "No aruco marker detected.");
+      ROS_DEBUG_STREAM_THROTTLE_NAMED(1., LOGNAME, "No aruco marker detected.");
       return false;
     }
 
@@ -203,7 +203,7 @@ bool HandEyeArucoTarget::detectTargetPose(cv::Mat& image)
     // Draw the markers and frame axis if at least one marker is detected
     if (valid == 0)
     {
-      ROS_WARN_STREAM_NAMED(LOGNAME, "Cannot estimate aruco board pose.");
+      ROS_WARN_STREAM_THROTTLE_NAMED(1., LOGNAME, "Cannot estimate aruco board pose.");
       return false;
     }
 
@@ -211,7 +211,7 @@ bool HandEyeArucoTarget::detectTargetPose(cv::Mat& image)
         std::log10(std::fabs(rotation_vect_[2])) > 10 || std::log10(std::fabs(translation_vect_[0])) > 10 ||
         std::log10(std::fabs(translation_vect_[1])) > 10 || std::log10(std::fabs(translation_vect_[2])) > 10)
     {
-      ROS_WARN_STREAM_NAMED(LOGNAME, "Invalid target pose, please check CameraInfo msg.");
+      ROS_WARN_STREAM_THROTTLE_NAMED(1., LOGNAME, "Invalid target pose, please check CameraInfo msg.");
       return false;
     }
 
@@ -223,7 +223,7 @@ bool HandEyeArucoTarget::detectTargetPose(cv::Mat& image)
   }
   catch (const cv::Exception& e)
   {
-    ROS_ERROR_STREAM_NAMED(LOGNAME, "Aruco target detection exception: " << e.what());
+    ROS_ERROR_STREAM_THROTTLE_NAMED(1., LOGNAME, "Aruco target detection exception: " << e.what());
     return false;
   }
 

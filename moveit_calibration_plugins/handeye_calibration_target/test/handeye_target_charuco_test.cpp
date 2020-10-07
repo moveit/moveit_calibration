@@ -51,6 +51,7 @@ protected:
   {
     try
     {
+      ros::Time::init();
       target_plugins_loader_.reset(new pluginlib::ClassLoader<moveit_handeye_calibration::HandEyeTargetBase>(
           "moveit_calibration_plugins", "moveit_handeye_calibration::HandEyeTargetBase"));
       target_ = target_plugins_loader_->createUniqueInstance("HandEyeTarget/Charuco");

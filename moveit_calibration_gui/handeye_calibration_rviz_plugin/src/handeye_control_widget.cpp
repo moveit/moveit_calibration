@@ -693,7 +693,7 @@ void ControlTabWidget::saveSamplesBtnClicked(bool clicked)
   YAML::Emitter emitter;
   emitter << YAML::BeginSeq;
   for (size_t i=0; i<effector_wrt_world_.size(); i++) {
-    emitter << YAML::BeginMap;
+    emitter << YAML::Value << YAML::BeginMap;
     emitter << YAML::Key << "effector_wrt_world";
     emitter << YAML::Value << YAML::BeginSeq;
     for (size_t y=0; y<4; y++) {

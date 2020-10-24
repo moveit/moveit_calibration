@@ -157,6 +157,10 @@ ControlTabWidget::ControlTabWidget(QWidget* parent)
   save_joint_state_btn_ = new QPushButton("Save joint states");
   connect(save_joint_state_btn_, SIGNAL(clicked(bool)), this, SLOT(saveJointStateBtnClicked(bool)));
   setting_layout->addRow(save_joint_state_btn_);
+  
+  save_samples_btn_ = new QPushButton("Save samples");
+  connect(save_samples_btn_, SIGNAL(clicked(bool)), this, SLOT(saveSamplesBtnClicked(bool)));
+  setting_layout->addRow(save_samples_btn_);
 
   save_camera_pose_btn_ = new QPushButton("Save camera pose");
   connect(save_camera_pose_btn_, SIGNAL(clicked(bool)), this, SLOT(saveCameraPoseBtnClicked(bool)));
@@ -658,6 +662,57 @@ void ControlTabWidget::saveJointStateBtnClicked(bool clicked)
   emitter << YAML::EndSeq;
 
   emitter << YAML::EndMap;
+
+  QTextStream out(&file);
+  out << emitter.c_str();
+}
+
+void ControlTabWidget::saveSamplesBtnClicked(bool clicked)
+{
+  if (effector_wrt_world_.size() != object_wrt_sensor_.size()) {
+    ROS_ERROR_STREAM_NAMED(LOGNAME, "Different number of poses");
+    return;
+  }
+
+  QString file_name =
+      QFileDialog::getSaveFileName(this, tr("Save Samples"), "", tr("Target File (*.yaml);;All Files (*)"));
+
+  if (file_name.isEmpty())
+    return;
+
+  if (!file_name.endsWith(".yaml"))
+    file_name += ".yaml";
+
+  QFile file(file_name);
+  if (!file.open(QIODevice::WriteOnly))
+  {
+    QMessageBox::warning(this, tr("Unable to open file"), file.errorString());
+    return;
+  }
+
+  YAML::Emitter emitter;
+  emitter << YAML::BeginSeq;
+  for (size_t i=0; i<effector_wrt_world_.size(); i++) {
+    emitter << YAML::BeginMap;
+    emitter << YAML::Key << "effector_wrt_world";
+    emitter << YAML::Value << YAML::BeginSeq;
+    for (size_t y=0; y<4; y++) {
+      for (size_t x=0; x<4; x++) {
+        emitter << YAML::Value << effector_wrt_world_[i](y, x);
+      }
+    }
+    emitter << YAML::EndSeq;
+    emitter << YAML::Key << "object_wrt_sensor";
+    emitter << YAML::Value << YAML::BeginSeq;
+    for (size_t y=0; y<4; y++) {
+      for (size_t x=0; x<4; x++) {
+        emitter << YAML::Value << object_wrt_sensor_[i](y, x);
+      }
+    }
+    emitter << YAML::EndSeq;
+    emitter << YAML::EndMap;
+  }
+  emitter << YAML::EndSeq;
 
   QTextStream out(&file);
   out << emitter.c_str();

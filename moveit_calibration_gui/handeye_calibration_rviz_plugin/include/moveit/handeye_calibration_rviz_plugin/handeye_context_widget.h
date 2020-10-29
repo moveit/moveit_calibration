@@ -53,6 +53,7 @@
 #include <rviz/frame_manager.h>
 #include <tf2_eigen/tf2_eigen.h>
 #include <sensor_msgs/CameraInfo.h>
+#include <tf2_ros/transform_listener.h>
 #include <rviz_visual_tools/tf_visual_tools.h>
 #include <rviz_visual_tools/rviz_visual_tools.h>
 #include <image_geometry/pinhole_camera_model.h>

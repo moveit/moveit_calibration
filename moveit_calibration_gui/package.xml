@@ -21,6 +21,7 @@
   <build_depend>qtbase5-dev</build_depend>
   <build_depend>image_geometry</build_depend>
 
+  <depend>cv_bridge</depend>
   <depend>geometric_shapes</depend>
   <depend>moveit_ros_visualization</depend>
   <depend>moveit_calibration_plugins</depend>

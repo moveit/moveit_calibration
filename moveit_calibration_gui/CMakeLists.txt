@@ -10,6 +10,7 @@ endif()
 
 find_package(catkin REQUIRED COMPONENTS
   class_loader
+  cv_bridge
   geometric_shapes
   image_geometry
   moveit_calibration_plugins

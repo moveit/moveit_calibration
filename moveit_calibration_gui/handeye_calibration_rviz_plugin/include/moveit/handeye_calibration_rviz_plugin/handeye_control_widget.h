@@ -170,6 +170,8 @@ private Q_SLOTS:
 
   void saveCameraPoseBtnClicked(bool clicked);
 
+  void saveSamplesBtnClicked(bool clicked);
+
   void planningGroupNameChanged(const QString& text);
 
   void saveJointStateBtnClicked(bool clicked);
@@ -200,6 +202,7 @@ private:
   QPushButton* save_joint_state_btn_;
   QPushButton* load_joint_state_btn_;
   QPushButton* save_camera_pose_btn_;
+  QPushButton* save_samples_btn_;
 
   // Manual calibration
   QPushButton* take_sample_btn_;

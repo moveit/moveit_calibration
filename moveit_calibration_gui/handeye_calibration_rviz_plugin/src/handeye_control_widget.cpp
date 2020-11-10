@@ -677,7 +677,8 @@ void ControlTabWidget::saveSamplesBtnClicked(bool clicked)
   }
 
   QString file_name =
-      QFileDialog::getSaveFileName(this, tr("Save Samples"), "", tr("Target File (*.yaml);;All Files (*)"));
+      QFileDialog::getSaveFileName(this, tr("Save Samples"), "", tr("Target File (*.yaml);;All Files (*)"),
+                                   nullptr, QFileDialog::DontUseNativeDialog);
 
   if (file_name.isEmpty())
     return;

@@ -157,7 +157,7 @@ ControlTabWidget::ControlTabWidget(QWidget* parent)
   save_joint_state_btn_ = new QPushButton("Save joint states");
   connect(save_joint_state_btn_, SIGNAL(clicked(bool)), this, SLOT(saveJointStateBtnClicked(bool)));
   setting_layout->addRow(save_joint_state_btn_);
-  
+
   save_samples_btn_ = new QPushButton("Save samples");
   connect(save_samples_btn_, SIGNAL(clicked(bool)), this, SLOT(saveSamplesBtnClicked(bool)));
   setting_layout->addRow(save_samples_btn_);
@@ -558,6 +558,7 @@ void ControlTabWidget::saveCameraPoseBtnClicked(bool clicked)
     return;
   }
 
+  // DontUseNativeDialog option set to avoid this issue: https://github.com/ros-planning/moveit/issues/2357
   QString file_name =
       QFileDialog::getSaveFileName(this, tr("Save Camera Robot Pose"), "", tr("Target File (*.launch);;All Files (*)"),
                                    nullptr, QFileDialog::DontUseNativeDialog);
@@ -624,6 +625,7 @@ void ControlTabWidget::saveJointStateBtnClicked(bool clicked)
     return;
   }
 
+  // DontUseNativeDialog option set to avoid this issue: https://github.com/ros-planning/moveit/issues/2357
   QString file_name =
       QFileDialog::getSaveFileName(this, tr("Save Joint States"), "", tr("Target File (*.yaml);;All Files (*)"),
                                    nullptr, QFileDialog::DontUseNativeDialog);
@@ -671,14 +673,16 @@ void ControlTabWidget::saveJointStateBtnClicked(bool clicked)
 
 void ControlTabWidget::saveSamplesBtnClicked(bool clicked)
 {
-  if (effector_wrt_world_.size() != object_wrt_sensor_.size()) {
+  if (effector_wrt_world_.size() != object_wrt_sensor_.size())
+  {
     ROS_ERROR_STREAM_NAMED(LOGNAME, "Different number of poses");
     return;
   }
 
+  // DontUseNativeDialog option set to avoid this issue: https://github.com/ros-planning/moveit/issues/2357
   QString file_name =
-      QFileDialog::getSaveFileName(this, tr("Save Samples"), "", tr("Target File (*.yaml);;All Files (*)"),
-                                   nullptr, QFileDialog::DontUseNativeDialog);
+      QFileDialog::getSaveFileName(this, tr("Save Samples"), "", tr("Target File (*.yaml);;All Files (*)"), nullptr,
+                                   QFileDialog::DontUseNativeDialog);
 
   if (file_name.isEmpty())
     return;
@@ -695,20 +699,25 @@ void ControlTabWidget::saveSamplesBtnClicked(bool clicked)
 
   YAML::Emitter emitter;
   emitter << YAML::BeginSeq;
-  for (size_t i=0; i<effector_wrt_world_.size(); i++) {
+  for (size_t i = 0; i < effector_wrt_world_.size(); i++)
+  {
     emitter << YAML::Value << YAML::BeginMap;
     emitter << YAML::Key << "effector_wrt_world";
     emitter << YAML::Value << YAML::BeginSeq;
-    for (size_t y=0; y<4; y++) {
-      for (size_t x=0; x<4; x++) {
+    for (size_t y = 0; y < 4; y++)
+    {
+      for (size_t x = 0; x < 4; x++)
+      {
         emitter << YAML::Value << effector_wrt_world_[i](y, x);
       }
     }
     emitter << YAML::EndSeq;
     emitter << YAML::Key << "object_wrt_sensor";
     emitter << YAML::Value << YAML::BeginSeq;
-    for (size_t y=0; y<4; y++) {
-      for (size_t x=0; x<4; x++) {
+    for (size_t y = 0; y < 4; y++)
+    {
+      for (size_t x = 0; x < 4; x++)
+      {
         emitter << YAML::Value << object_wrt_sensor_[i](y, x);
       }
     }
@@ -723,6 +732,7 @@ void ControlTabWidget::saveSamplesBtnClicked(bool clicked)
 
 void ControlTabWidget::loadJointStateBtnClicked(bool clicked)
 {
+  // DontUseNativeDialog option set to avoid this issue: https://github.com/ros-planning/moveit/issues/2357
   QString file_name =
       QFileDialog::getOpenFileName(this, tr("Load Joint States"), "", tr("Target File (*.yaml);;All Files (*)"),
                                    nullptr, QFileDialog::DontUseNativeDialog);

@@ -494,8 +494,10 @@ void TargetTabWidget::saveTargetImageBtnClicked(bool clicked)
     return;
   }
 
+  // DontUseNativeDialog option set to avoid this issue: https://github.com/ros-planning/moveit/issues/2357
   QString fileName =
-      QFileDialog::getSaveFileName(this, tr("Save Target Image"), "", tr("Target Image (*.png);;All Files (*)"));
+      QFileDialog::getSaveFileName(this, tr("Save Target Image"), "", tr("Target Image (*.png);;All Files (*)"),
+                                   nullptr, QFileDialog::DontUseNativeDialog);
 
   if (fileName.isEmpty())
     return;

@@ -1,8 +1,16 @@
 <library path="libmoveit_handeye_calibration_solver">
-  <class name="crigroup" 
-         type="moveit_handeye_calibration::HandEyeSolverDefault" 
+  <class name="crigroup"
+         type="moveit_handeye_calibration::HandEyeSolverDefault"
          base_class_type="moveit_handeye_calibration::HandEyeSolverBase">
     <description>
+      CRI Group solvers for AX=XB calibration
+    </description>
+  </class>
+  <class name="crigroup"
+         type="moveit_handeye_calibration::HandEyeSolverOpenCV"
+         base_class_type="moveit_handeye_calibration::HandEyeSolverBase">
+    <description>
+      OpenCV solvers for AX=XB calibration
     </description>
   </class>
 </library>

@@ -4,6 +4,7 @@ add_compile_options(-Wno-unused-function)
 set(HEADERS
   include/moveit/handeye_calibration_solver/handeye_solver_base.h
   include/moveit/handeye_calibration_solver/handeye_solver_default.h
+  include/moveit/handeye_calibration_solver/handeye_solver_opencv.h
 )
 
 # ---[ Using cmake scripts and modules
@@ -18,6 +19,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR} ${PYTHON_INCLUDE_DIRS})
 # Plugin Source
 set(SOURCE_FILES
   src/handeye_solver_default.cpp
+  src/handeye_solver_opencv.cpp
 )
 
 set(MOVEIT_LIB_NAME moveit_handeye_calibration_solver)

@@ -79,14 +79,29 @@ bool HandEyeSolverOpenCV::solve(const std::vector<Eigen::Isometry3d>& effector_w
     return false;
   }
 
-  // if (setup == EYE_TO_HAND)
-  //  python_value = PyString_FromString("Fixed");
-  // else if (setup == EYE_IN_HAND)
-  //  python_value = PyString_FromString("Moving");
+  std::vector<cv::Mat> R_eef_to_base, t_eef_to_base;
+  std::vector<cv::Mat> R_obj_to_cam, t_obj_to_cam;
+
+  if (setup == EYE_TO_HAND)
+  {
+    ROS_ERROR_NAMED(LOGNAME, "Not implemented");
+    return false;
+  }
+  else if (setup == EYE_IN_HAND)
+  {
+    // probably nothing to do here
+  }
 
   for (size_t i = 0; i < number_of_poses; ++i)
   {
+    // load matrices
   }
+
+  cv::Mat R_cam_to_eef, t_cam_to_eef;
+  cv::calibrateHandEye(R_eef_to_base, t_eef_to_base, R_obj_to_cam, t_obj_to_cam, R_cam_to_eef,
+                       t_cam_to_eef /*, method*/);
+
+  // copy result into output
 
   return true;
 }

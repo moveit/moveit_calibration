@@ -39,6 +39,8 @@
 
 #include <moveit/handeye_calibration_solver/handeye_solver_base.h>
 #include <ros/ros.h>
+#include <opencv2/opencv.hpp>
+#include <opencv2/calib3d.hpp>
 
 namespace moveit_handeye_calibration
 {

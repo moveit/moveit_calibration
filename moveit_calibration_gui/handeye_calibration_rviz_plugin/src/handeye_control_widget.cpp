@@ -583,6 +583,11 @@ void ControlTabWidget::saveCameraPoseBtnClicked(bool clicked)
   Eigen::Vector3d r_euler = camera_robot_pose_.rotation().eulerAngles(0, 1, 2);
   std::stringstream ss;
   ss << "<launch>" << std::endl;
+  ss << "  <!-- The rpy in the comment uses the extrinsic XYZ convention, which is the same as is used in a URDF. See"
+     << std::endl;
+  ss << "       http://wiki.ros.org/geometry2/RotationMethods and https://en.wikipedia.org/wiki/Euler_angles for more "
+        "info. -->"
+     << std::endl;
   ss << "  <!-- xyz=\"" << t[0] << " " << t[1] << " " << t[2] << "\" rpy=\"" << r_euler[0] << " " << r_euler[1] << " "
      << r_euler[2] << "\" -->" << std::endl;
   ss << "  <node pkg=\"tf2_ros\" type=\"static_transform_publisher\" name=\"camera_link_broadcaster\"" << std::endl;

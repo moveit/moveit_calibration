@@ -579,13 +579,21 @@ void ControlTabWidget::saveCameraPoseBtnClicked(bool clicked)
   QTextStream out(&file);
 
   Eigen::Vector3d t = camera_robot_pose_.translation();
-  Eigen::Vector3d r = camera_robot_pose_.rotation().eulerAngles(0, 1, 2);
+  Eigen::Quaterniond r_quat(camera_robot_pose_.rotation());
+  Eigen::Vector3d r_euler = camera_robot_pose_.rotation().eulerAngles(0, 1, 2);
   std::stringstream ss;
-  ss << "<launch>\n";
-  ss << "<node pkg=\"tf2_ros\" type=\"static_transform_publisher\" name=\"camera_link_broadcaster\"\n";
-  ss << "      args=\"" << t[0] << " " << t[1] << " " << t[2] << " " << r[0] << " " << r[1] << " " << r[2] << " "
-     << from_frame << " " << to_frame << "\" />\n";
-  ss << "</launch>";
+  ss << "<launch>" << std::endl;
+  ss << "  <!-- The rpy in the comment uses the extrinsic XYZ convention, which is the same as is used in a URDF. See"
+     << std::endl;
+  ss << "       http://wiki.ros.org/geometry2/RotationMethods and https://en.wikipedia.org/wiki/Euler_angles for more "
+        "info. -->"
+     << std::endl;
+  ss << "  <!-- xyz=\"" << t[0] << " " << t[1] << " " << t[2] << "\" rpy=\"" << r_euler[0] << " " << r_euler[1] << " "
+     << r_euler[2] << "\" -->" << std::endl;
+  ss << "  <node pkg=\"tf2_ros\" type=\"static_transform_publisher\" name=\"camera_link_broadcaster\"" << std::endl;
+  ss << "      args=\"" << t[0] << " " << t[1] << " " << t[2] << "   " << r_quat.x() << " " << r_quat.y() << " "
+     << r_quat.z() << " " << r_quat.w() << " " << from_frame << " " << to_frame << "\" />" << std::endl;
+  ss << "</launch>" << std::endl;
   out << ss.str().c_str();
 }
 

@@ -158,6 +158,10 @@ ControlTabWidget::ControlTabWidget(QWidget* parent)
   connect(save_joint_state_btn_, SIGNAL(clicked(bool)), this, SLOT(saveJointStateBtnClicked(bool)));
   setting_layout->addRow(save_joint_state_btn_);
 
+  load_samples_btn_ = new QPushButton("Load samples");
+  connect(load_samples_btn_, SIGNAL(clicked(bool)), this, SLOT(loadSamplesBtnClicked(bool)));
+  setting_layout->addRow(load_samples_btn_);
+
   save_samples_btn_ = new QPushButton("Save samples");
   connect(save_samples_btn_, SIGNAL(clicked(bool)), this, SLOT(saveSamplesBtnClicked(bool)));
   setting_layout->addRow(save_samples_btn_);
@@ -181,6 +185,11 @@ ControlTabWidget::ControlTabWidget(QWidget* parent)
   reset_sample_btn_->setMinimumHeight(35);
   connect(reset_sample_btn_, SIGNAL(clicked(bool)), this, SLOT(clearSamplesBtnClicked(bool)));
   control_cal_layout->addWidget(reset_sample_btn_);
+
+  solve_btn_ = new QPushButton("Solve");
+  solve_btn_->setMinimumHeight(35);
+  connect(solve_btn_, SIGNAL(clicked(bool)), this, SLOT(solveBtnClicked(bool)));
+  control_cal_layout->addWidget(solve_btn_);
 
   // Auto calibration area
   QGroupBox* auto_cal_group = new QGroupBox("Calibrate With Recorded Joint States");
@@ -376,6 +385,11 @@ bool ControlTabWidget::takeTransformSamples()
   return true;
 }
 
+void ControlTabWidget::solveBtnClicked(bool clicked)
+{
+  solveCameraRobotPose();
+}
+
 bool ControlTabWidget::solveCameraRobotPose()
 {
   if (solver_ && !calibration_solver_->currentText().isEmpty())
@@ -392,8 +406,8 @@ bool ControlTabWidget::solveCameraRobotPose()
       Q_EMIT sensorPoseUpdate(t[0], t[1], t[2], r[0], r[1], r[2]);
 
       // Publish camera pose tf
-      std::string& from_frame = frame_names_[from_frame_tag_];
-      std::string& to_frame = frame_names_["sensor"];
+      const std::string& from_frame = frame_names_[from_frame_tag_];
+      const std::string& to_frame = frame_names_["sensor"];
       if (!from_frame.empty() && !to_frame.empty())
       {
         tf_tools_->clearAllTransforms();
@@ -401,7 +415,22 @@ bool ControlTabWidget::solveCameraRobotPose()
       }
       else
       {
-        ROS_ERROR_STREAM_NAMED(LOGNAME, "Invalid key used for reading the frame names.");
+        // CLI warning message without formatting
+        {
+          std::stringstream warn_msg;
+          warn_msg << "Found camera pose:" << std::endl
+                   << camera_robot_pose_.matrix() << std::endl
+                   << "but " << from_frame_tag_ << " or sensor frame is undefined.";
+          ROS_ERROR_STREAM_NAMED(LOGNAME, warn_msg.str());
+        }
+        // GUI warning message with formatting
+        {
+          std::stringstream warn_msg;
+          warn_msg << "Found camera pose:<pre>" << std::endl
+                   << camera_robot_pose_.matrix() << std::endl
+                   << "</pre>but <b>" << from_frame_tag_ << "</b> or <b>sensor</b> frame is undefined.";
+          QMessageBox::warning(this, "Solver Failed", QString::fromStdString(warn_msg.str()));
+        }
         return false;
       }
     }
@@ -677,6 +706,48 @@ void ControlTabWidget::saveJointStateBtnClicked(bool clicked)
 
   QTextStream out(&file);
   out << emitter.c_str();
+}
+
+void ControlTabWidget::loadSamplesBtnClicked(bool clicked)
+{
+  QString file_name = QFileDialog::getOpenFileName(this,
+    tr("Load Samples"), "", tr("Target File (*.yaml)"),
+    nullptr, QFileDialog::DontUseNativeDialog);
+
+  if (file_name.isEmpty())
+    return;
+
+  effector_wrt_world_.clear();
+  object_wrt_sensor_.clear();
+
+  // transformations are serialised as 4x4 row-major matrices
+  typedef Eigen::Matrix<double, 4, 4, Eigen::RowMajor> Matrix4d_rm;
+
+  YAML::Node yaml_states = YAML::LoadFile(file_name.toStdString());
+  try
+  {
+    for (std::size_t i=0; i<yaml_states.size(); i++) {
+      effector_wrt_world_.emplace_back(Eigen::Map<const Matrix4d_rm>(
+        yaml_states[i]["effector_wrt_world"].as<std::vector<double>>().data()));
+
+      object_wrt_sensor_.emplace_back(Eigen::Map<const Matrix4d_rm>(
+        yaml_states[i]["object_wrt_sensor"].as<std::vector<double>>().data()));
+
+      // add to GUI
+      ControlTabWidget::addPoseSampleToTreeView(
+        tf2::eigenToTransform(object_wrt_sensor_.back()),
+        tf2::eigenToTransform(effector_wrt_world_.back()),
+        effector_wrt_world_.size());
+    }
+
+    auto_progress_->setMax(yaml_states.size());
+    auto_progress_->setValue(yaml_states.size());
+  }
+  catch (const YAML::Exception &e) {
+    QMessageBox::critical(this, "YAML Exception", QString::fromStdString(
+                          "YAML exception: " + std::string(e.what())
+                          + "\nCheck that the sample file has the correct format."));
+  }
 }
 
 void ControlTabWidget::saveSamplesBtnClicked(bool clicked)

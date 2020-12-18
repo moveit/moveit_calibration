@@ -252,7 +252,7 @@ void ControlTabWidget::loadWidget(const rviz::Config& config)
 {
   QString group_name;
   config.mapGetString("group", &group_name);
-  if (!group_name.isEmpty() && planning_scene_monitor_)
+  if (!group_name.isEmpty() && planning_scene_monitor_ && planning_scene_monitor_->getRobotModel())
   {
     const std::vector<std::string> groups = planning_scene_monitor_->getRobotModel()->getJointModelGroupNames();
     std::vector<std::string>::const_iterator it = std::find(groups.begin(), groups.end(), group_name.toStdString());

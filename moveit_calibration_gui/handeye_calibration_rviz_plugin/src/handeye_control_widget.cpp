@@ -411,6 +411,10 @@ bool ControlTabWidget::solveCameraRobotPose()
       if (!from_frame.empty() && !to_frame.empty())
       {
         tf_tools_->clearAllTransforms();
+        ROS_INFO_STREAM_NAMED(LOGNAME, "Publish camera transformation" << std::endl
+                              << camera_robot_pose_.matrix() << std::endl
+                              << "from " << from_frame_tag_ << " frame '" << from_frame << "'"
+                              << "to sensor frame '" << to_frame << "'");
         return tf_tools_->publishTransform(camera_robot_pose_, from_frame, to_frame);
       }
       else

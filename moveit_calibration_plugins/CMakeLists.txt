@@ -19,7 +19,7 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 find_package(Eigen3 REQUIRED)
-find_package(OpenCV REQUIRED aruco)
+find_package(OpenCV REQUIRED imgcodecs aruco)
 
 catkin_package(
   INCLUDE_DIRS

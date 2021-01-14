@@ -1017,7 +1017,7 @@ void ControlTabWidget::planFinished()
 void ControlTabWidget::executeFinished()
 {
   auto_execute_btn_->setEnabled(true);
-  if (planning_res_)
+  if (planning_res_ == ControlTabWidget::SUCCESS)
   {
     auto_progress_->setValue(auto_progress_->getValue() + 1);
     if (!frameNamesEmpty())

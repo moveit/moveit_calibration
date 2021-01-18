@@ -61,9 +61,9 @@ void TFFrameNameComboBox::mousePressEvent(QMouseEvent* event)
         if (it != robot_links.end())
           addItem(QString(name.c_str()));
 
+      // add all frames as potential camera frame
       if (frame_source_ == CAMERA_FRAME)
-        if (index != std::string::npos)
-          addItem(QString(name.c_str()));
+        addItem(QString(name.c_str()));
 
       if (frame_source_ == ENVIRONMENT_FRAME)
         if (it == robot_links.end() && index == std::string::npos)

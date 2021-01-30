@@ -26,8 +26,6 @@ catkin_package(
     handeye_calibration_target/include
     handeye_calibration_solver/include
   LIBRARIES
-    moveit_handeye_calibration_target
-    moveit_handeye_calibration_solver
   CATKIN_DEPENDS
     roscpp
     sensor_msgs

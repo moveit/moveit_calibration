@@ -26,6 +26,8 @@ catkin_package(
     handeye_calibration_target/include
     handeye_calibration_solver/include
   LIBRARIES
+    # No libraries are exported because directly linking to a plugin is "highly discouraged":
+    # http://wiki.ros.org/class_loader#Caution_of_Linking_Directly_Against_Plugin_Libraries
   CATKIN_DEPENDS
     roscpp
     sensor_msgs

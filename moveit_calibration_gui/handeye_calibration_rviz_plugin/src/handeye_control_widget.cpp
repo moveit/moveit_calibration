@@ -371,24 +371,24 @@ bool ControlTabWidget::takeTransformSamples()
     base_to_eef_eig = tf2::transformToEigen(base_to_eef_tf);
     camera_to_object_eig = tf2::transformToEigen(camera_to_object_tf);
 
-    if (!effector_wrt_world_.empty())
+    for (const auto& prior_tf : effector_wrt_world_)
     {
-      Eigen::AngleAxisd eff_rot((base_to_eef_eig.inverse() * effector_wrt_world_.back()).rotation());
-      if (eff_rot.angle() < MIN_ROTATION)
+      Eigen::AngleAxisd rot((base_to_eef_eig.inverse() * prior_tf).rotation());
+      if (rot.angle() < MIN_ROTATION)
       {
         QMessageBox::warning(this, tr("Error"),
-                             tr("Not enough end-effector rotation since last sample. Sample not recorded."));
+                             tr("End-effector orientation is too similar to a prior sample. Sample not recorded."));
         return false;
       }
     }
 
-    if (!object_wrt_sensor_.empty())
+    for (const auto prior_tf : object_wrt_sensor_)
     {
-      Eigen::AngleAxisd cam_rot((camera_to_object_eig.inverse() * object_wrt_sensor_.back()).rotation());
-      if (cam_rot.angle() < MIN_ROTATION)
+      Eigen::AngleAxisd rot((camera_to_object_eig.inverse() * prior_tf).rotation());
+      if (rot.angle() < MIN_ROTATION)
       {
         QMessageBox::warning(this, tr("Error"),
-                             tr("Not enough camera rotation since last sample. Sample not recorded."));
+                             tr("Camera orientation is too similar to a prior sample. Sample not recorded."));
         return false;
       }
     }
@@ -403,8 +403,8 @@ bool ControlTabWidget::takeTransformSamples()
     base_to_eef_tf.transform.rotation = tf2::toMsg(tf2_quat);
 
     // save the pose samples
-    effector_wrt_world_.push_back(tf2::transformToEigen(base_to_eef_tf));
-    object_wrt_sensor_.push_back(tf2::transformToEigen(camera_to_object_tf));
+    effector_wrt_world_.push_back(base_to_eef_eig);
+    object_wrt_sensor_.push_back(camera_to_object_eig);
 
     ControlTabWidget::addPoseSampleToTreeView(camera_to_object_tf, base_to_eef_tf, effector_wrt_world_.size());
   }

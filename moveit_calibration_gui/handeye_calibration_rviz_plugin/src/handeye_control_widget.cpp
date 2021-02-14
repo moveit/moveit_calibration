@@ -39,6 +39,7 @@
 namespace moveit_rviz_plugin
 {
 const std::string LOGNAME = "handeye_control_widget";
+const double MIN_ROTATION = M_PI / 36.;  // Smallest allowed rotation, 5 degrees
 
 ProgressBarWidget::ProgressBarWidget(QWidget* parent, int min, int max, int value) : QWidget(parent)
 {
@@ -369,6 +370,33 @@ bool ControlTabWidget::takeTransformSamples()
 
     // Get the transform of the end-effector w.r.t the robot base
     base_to_eef_tf = tf_buffer_->lookupTransform(frame_names_["base"], frame_names_["eef"], ros::Time(0));
+
+    // Verify that sample contains sufficient rotation
+    Eigen::Isometry3d base_to_eef_eig, camera_to_object_eig;
+    base_to_eef_eig = tf2::transformToEigen(base_to_eef_tf);
+    camera_to_object_eig = tf2::transformToEigen(camera_to_object_tf);
+
+    if (!effector_wrt_world_.empty())
+    {
+      Eigen::AngleAxisd eff_rot((base_to_eef_eig.inverse() * effector_wrt_world_.back()).rotation());
+      if (eff_rot.angle() < MIN_ROTATION)
+      {
+        QMessageBox::warning(this, tr("Error"),
+                             tr("Not enough end-effector rotation since last sample. Sample not recorded."));
+        return false;
+      }
+    }
+
+    if (!object_wrt_sensor_.empty())
+    {
+      Eigen::AngleAxisd cam_rot((camera_to_object_eig.inverse() * object_wrt_sensor_.back()).rotation());
+      if (cam_rot.angle() < MIN_ROTATION)
+      {
+        QMessageBox::warning(this, tr("Error"),
+                             tr("Not enough camera rotation since last sample. Sample not recorded."));
+        return false;
+      }
+    }
 
     // save the pose samples
     effector_wrt_world_.push_back(tf2::transformToEigen(base_to_eef_tf));

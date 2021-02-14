@@ -39,6 +39,7 @@
 namespace moveit_rviz_plugin
 {
 const std::string LOGNAME = "handeye_control_widget";
+const double MIN_ROTATION = M_PI / 36.;  // Smallest allowed rotation, 5 degrees
 
 ProgressBarWidget::ProgressBarWidget(QWidget* parent, int min, int max, int value) : QWidget(parent)
 {
@@ -370,9 +371,36 @@ bool ControlTabWidget::takeTransformSamples()
     // Get the transform of the end-effector w.r.t the robot base
     base_to_eef_tf = tf_buffer_->lookupTransform(frame_names_["base"], frame_names_["eef"], ros::Time(0));
 
+    // Verify that sample contains sufficient rotation
+    Eigen::Isometry3d base_to_eef_eig, camera_to_object_eig;
+    base_to_eef_eig = tf2::transformToEigen(base_to_eef_tf);
+    camera_to_object_eig = tf2::transformToEigen(camera_to_object_tf);
+
+    for (const auto& prior_tf : effector_wrt_world_)
+    {
+      Eigen::AngleAxisd rot((base_to_eef_eig.inverse() * prior_tf).rotation());
+      if (rot.angle() < MIN_ROTATION)
+      {
+        QMessageBox::warning(this, tr("Error"),
+                             tr("End-effector orientation is too similar to a prior sample. Sample not recorded."));
+        return false;
+      }
+    }
+
+    for (const auto prior_tf : object_wrt_sensor_)
+    {
+      Eigen::AngleAxisd rot((camera_to_object_eig.inverse() * prior_tf).rotation());
+      if (rot.angle() < MIN_ROTATION)
+      {
+        QMessageBox::warning(this, tr("Error"),
+                             tr("Camera orientation is too similar to a prior sample. Sample not recorded."));
+        return false;
+      }
+    }
+
     // save the pose samples
-    effector_wrt_world_.push_back(tf2::transformToEigen(base_to_eef_tf));
-    object_wrt_sensor_.push_back(tf2::transformToEigen(camera_to_object_tf));
+    effector_wrt_world_.push_back(base_to_eef_eig);
+    object_wrt_sensor_.push_back(camera_to_object_eig);
 
     ControlTabWidget::addPoseSampleToTreeView(camera_to_object_tf, base_to_eef_tf, effector_wrt_world_.size());
   }

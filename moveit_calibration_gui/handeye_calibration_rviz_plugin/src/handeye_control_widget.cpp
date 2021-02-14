@@ -35,6 +35,7 @@
 /* Author: Yu Yan */
 
 #include <moveit/handeye_calibration_rviz_plugin/handeye_control_widget.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 namespace moveit_rviz_plugin
 {
@@ -369,6 +370,15 @@ bool ControlTabWidget::takeTransformSamples()
 
     // Get the transform of the end-effector w.r.t the robot base
     base_to_eef_tf = tf_buffer_->lookupTransform(frame_names_["base"], frame_names_["eef"], ros::Time(0));
+
+    // Renormalize quaternions, to avoid numerical issues
+    tf2::Quaternion tf2_quat;
+    tf2::fromMsg(camera_to_object_tf.transform.rotation, tf2_quat);
+    tf2_quat.normalize();
+    camera_to_object_tf.transform.rotation = tf2::toMsg(tf2_quat);
+    tf2::fromMsg(base_to_eef_tf.transform.rotation, tf2_quat);
+    tf2_quat.normalize();
+    base_to_eef_tf.transform.rotation = tf2::toMsg(tf2_quat);
 
     // save the pose samples
     effector_wrt_world_.push_back(tf2::transformToEigen(base_to_eef_tf));

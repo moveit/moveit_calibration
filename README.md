@@ -11,6 +11,6 @@ upgrade to OpenCV 3.4, or use a ChArUco board.
 For full discussion of the ongoing effort from Yu Yan @ Intel, see this [Github
 discussion](https://github.com/ros-planning/moveit/issues/1070).
 
-## Travis - Continuous Integration
+## GitHub Actions - Continuous Integration
 
-[![Build Status](https://travis-ci.com/ros-planning/moveit_calibration.svg?branch=master)](https://travis-ci.com/ros-planning/moveit_calibration)
+[![Format](https://github.com/ros-planning/moveit_calibration/actions/workflows/format.yml/badge.svg?branch=master)](https://github.com/ros-planning/moveit_calibration/actions/workflows/format.yml?branch=master) [![BuildAndTest](https://github.com/ros-planning/moveit_calibration/actions/workflows/industrial_ci_action.yml/badge.svg?branch=master)](https://github.com/ros-planning/moveit_calibration/actions/workflows/industrial_ci_action.yml?branch=master)

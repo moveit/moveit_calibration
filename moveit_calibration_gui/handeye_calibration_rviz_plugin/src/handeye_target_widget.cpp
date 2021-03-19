@@ -543,10 +543,10 @@ void TargetTabWidget::cameraInfoComboBoxChanged(const QString& topic)
     }
     catch (ros::Exception& e)
     {
-      ROS_ERROR_STREAM_NAMED(LOGNAME, "Subscribe to camera info topic: " << topic.toStdString() << " failed. "
-                                                                         << e.what());
+      ROS_ERROR_STREAM_NAMED(LOGNAME,
+                             "Subscribe to camera info topic: " << topic.toStdString() << " failed. " << e.what());
     }
   }
 }
 
-}  // namedist moveit_rviz_plugin
+}  // namespace moveit_rviz_plugin

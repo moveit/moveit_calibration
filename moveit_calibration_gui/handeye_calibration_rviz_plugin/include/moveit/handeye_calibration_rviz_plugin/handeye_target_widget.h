@@ -200,6 +200,6 @@ private:
   tf2_ros::TransformBroadcaster tf_pub_;
 };
 
-}  // namedist moveit_rviz_plugin
+}  // namespace moveit_rviz_plugin
 
 #endif

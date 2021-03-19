@@ -37,8 +37,8 @@
 #include <moveit/handeye_calibration_solver/handeye_solver_default.h>
 
 #if PY_MAJOR_VERSION >= 3
-  #define PyInt_AsLong                 PyLong_AsLong
-  #define PyString_FromString          PyUnicode_FromString
+#define PyInt_AsLong PyLong_AsLong
+#define PyString_FromString PyUnicode_FromString
 #endif
 
 namespace moveit_handeye_calibration
@@ -84,11 +84,11 @@ bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_
   }
 
   char program_name[7] = "python";
-  #if PY_MAJOR_VERSION >= 3
-    Py_SetProgramName(Py_DecodeLocale(program_name, NULL));
-  #else
-    Py_SetProgramName(program_name);
-  #endif
+#if PY_MAJOR_VERSION >= 3
+  Py_SetProgramName(Py_DecodeLocale(program_name, NULL));
+#else
+  Py_SetProgramName(program_name);
+#endif
   static bool numpy_loaded{ false };
   if (!numpy_loaded)  // Py_Initialize() can only be called once when numpy is
                       // loaded, otherwise will segfault

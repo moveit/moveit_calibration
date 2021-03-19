@@ -550,4 +550,4 @@ void ContextTabWidget::fovOnOffBtnToggled(bool checked)
   updateAllMarkers();
 }
 
-}  // namgespace moveit_rviz_plugin
+}  // namespace moveit_rviz_plugin

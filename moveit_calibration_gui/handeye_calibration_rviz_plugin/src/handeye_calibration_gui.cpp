@@ -50,7 +50,7 @@ HandEyeCalibrationGui::HandEyeCalibrationGui(QWidget* parent) : rviz::Panel(pare
 
   // Description
   QLabel* description = new QLabel(this);
-  description->setText(QString("Configure the position and orientation of your 3D sensors to work with Moveit!"));
+  description->setText(QString("Configure the position and orientation of your 3D sensors to work with MoveIt"));
   description->setWordWrap(true);
   description->setMinimumWidth(1);
   layout->addWidget(description);

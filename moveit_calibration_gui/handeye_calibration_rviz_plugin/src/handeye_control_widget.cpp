@@ -422,9 +422,10 @@ bool ControlTabWidget::solveCameraRobotPose()
       {
         tf_tools_->clearAllTransforms();
         ROS_INFO_STREAM_NAMED(LOGNAME, "Publish camera transformation" << std::endl
-                              << camera_robot_pose_.matrix() << std::endl
-                              << "from " << from_frame_tag_ << " frame '" << from_frame << "'"
-                              << "to sensor frame '" << to_frame << "'");
+                                                                       << camera_robot_pose_.matrix() << std::endl
+                                                                       << "from " << from_frame_tag_ << " frame '"
+                                                                       << from_frame << "'"
+                                                                       << "to sensor frame '" << to_frame << "'");
         return tf_tools_->publishTransform(camera_robot_pose_, from_frame, to_frame);
       }
       else
@@ -724,9 +725,8 @@ void ControlTabWidget::saveJointStateBtnClicked(bool clicked)
 
 void ControlTabWidget::loadSamplesBtnClicked(bool clicked)
 {
-  QString file_name = QFileDialog::getOpenFileName(this,
-    tr("Load Samples"), "", tr("Target File (*.yaml)"),
-    nullptr, QFileDialog::DontUseNativeDialog);
+  QString file_name = QFileDialog::getOpenFileName(this, tr("Load Samples"), "", tr("Target File (*.yaml)"), nullptr,
+                                                   QFileDialog::DontUseNativeDialog);
 
   if (file_name.isEmpty())
     return;
@@ -740,27 +740,28 @@ void ControlTabWidget::loadSamplesBtnClicked(bool clicked)
   YAML::Node yaml_states = YAML::LoadFile(file_name.toStdString());
   try
   {
-    for (std::size_t i=0; i<yaml_states.size(); i++) {
-      effector_wrt_world_.emplace_back(Eigen::Map<const Matrix4d_rm>(
-        yaml_states[i]["effector_wrt_world"].as<std::vector<double>>().data()));
+    for (std::size_t i = 0; i < yaml_states.size(); i++)
+    {
+      effector_wrt_world_.emplace_back(
+          Eigen::Map<const Matrix4d_rm>(yaml_states[i]["effector_wrt_world"].as<std::vector<double>>().data()));
 
-      object_wrt_sensor_.emplace_back(Eigen::Map<const Matrix4d_rm>(
-        yaml_states[i]["object_wrt_sensor"].as<std::vector<double>>().data()));
+      object_wrt_sensor_.emplace_back(
+          Eigen::Map<const Matrix4d_rm>(yaml_states[i]["object_wrt_sensor"].as<std::vector<double>>().data()));
 
       // add to GUI
-      ControlTabWidget::addPoseSampleToTreeView(
-        tf2::eigenToTransform(object_wrt_sensor_.back()),
-        tf2::eigenToTransform(effector_wrt_world_.back()),
-        effector_wrt_world_.size());
+      ControlTabWidget::addPoseSampleToTreeView(tf2::eigenToTransform(object_wrt_sensor_.back()),
+                                                tf2::eigenToTransform(effector_wrt_world_.back()),
+                                                effector_wrt_world_.size());
     }
 
     auto_progress_->setMax(yaml_states.size());
     auto_progress_->setValue(yaml_states.size());
   }
-  catch (const YAML::Exception &e) {
-    QMessageBox::critical(this, "YAML Exception", QString::fromStdString(
-                          "YAML exception: " + std::string(e.what())
-                          + "\nCheck that the sample file has the correct format."));
+  catch (const YAML::Exception& e)
+  {
+    QMessageBox::critical(this, "YAML Exception",
+                          QString::fromStdString("YAML exception: " + std::string(e.what()) +
+                                                 "\nCheck that the sample file has the correct format."));
   }
 }
 

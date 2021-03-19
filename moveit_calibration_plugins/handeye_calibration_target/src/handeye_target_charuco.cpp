@@ -141,10 +141,11 @@ bool HandEyeCharucoTarget::setTargetDimension(double board_size_meters, double m
   }
 
   std::lock_guard<std::mutex> charuco_lock(charuco_mutex_);
-  ROS_INFO_STREAM_THROTTLE_NAMED(2., LOGNAME, "Set target real dimensions: \n"
-                                                  << "board_size_meters " << std::to_string(board_size_meters) << "\n"
-                                                  << "marker_size_meters " << std::to_string(marker_size_meters) << "\n"
-                                                  << "\n");
+  ROS_INFO_STREAM_THROTTLE_NAMED(2., LOGNAME,
+                                 "Set target real dimensions: \n"
+                                     << "board_size_meters " << std::to_string(board_size_meters) << "\n"
+                                     << "marker_size_meters " << std::to_string(marker_size_meters) << "\n"
+                                     << "\n");
   board_size_meters_ = board_size_meters;
   marker_size_meters_ = marker_size_meters;
   return true;

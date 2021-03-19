@@ -97,13 +97,14 @@ bool HandEyeArucoTarget::setTargetIntrinsicParams(int markers_x, int markers_y, 
   if (markers_x <= 0 || markers_y <= 0 || marker_size <= 0 || separation <= 0 || border_bits <= 0 ||
       marker_dictionaries_.find(dictionary_id) == marker_dictionaries_.end())
   {
-    ROS_ERROR_STREAM_THROTTLE_NAMED(2., LOGNAME, "Invalid target intrinsic params.\n"
-                                                     << "markers_x_ " << std::to_string(markers_x) << "\n"
-                                                     << "markers_y_ " << std::to_string(markers_y) << "\n"
-                                                     << "marker_size " << std::to_string(marker_size) << "\n"
-                                                     << "separation " << std::to_string(separation) << "\n"
-                                                     << "border_bits " << std::to_string(border_bits) << "\n"
-                                                     << "dictionary_id " << dictionary_id << "\n");
+    ROS_ERROR_STREAM_THROTTLE_NAMED(2., LOGNAME,
+                                    "Invalid target intrinsic params.\n"
+                                        << "markers_x_ " << std::to_string(markers_x) << "\n"
+                                        << "markers_y_ " << std::to_string(markers_y) << "\n"
+                                        << "marker_size " << std::to_string(marker_size) << "\n"
+                                        << "separation " << std::to_string(separation) << "\n"
+                                        << "border_bits " << std::to_string(border_bits) << "\n"
+                                        << "dictionary_id " << dictionary_id << "\n");
     return false;
   }
 
@@ -132,10 +133,11 @@ bool HandEyeArucoTarget::setTargetDimension(double marker_measured_size, double 
   std::lock_guard<std::mutex> aruco_lock(aruco_mutex_);
   marker_size_real_ = marker_measured_size;
   marker_separation_real_ = marker_measured_separation;
-  ROS_INFO_STREAM_THROTTLE_NAMED(
-      2., LOGNAME, "Set target real dimensions: \n"
-                       << "marker_measured_size " << std::to_string(marker_measured_size) << "\n"
-                       << "marker_measured_separation " << std::to_string(marker_measured_separation) << "\n");
+  ROS_INFO_STREAM_THROTTLE_NAMED(2., LOGNAME,
+                                 "Set target real dimensions: \n"
+                                     << "marker_measured_size " << std::to_string(marker_measured_size) << "\n"
+                                     << "marker_measured_separation " << std::to_string(marker_measured_separation)
+                                     << "\n");
   return true;
 }
 

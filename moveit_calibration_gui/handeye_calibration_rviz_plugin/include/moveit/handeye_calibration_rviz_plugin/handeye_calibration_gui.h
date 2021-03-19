@@ -80,6 +80,6 @@ private:
   rviz_visual_tools::TFVisualToolsPtr tf_tools_;
 };
 
-}  // namedist moveit_rviz_plugin
+}  // namespace moveit_rviz_plugin
 
 #endif

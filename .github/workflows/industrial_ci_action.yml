@@ -36,13 +36,13 @@ jobs:
             upstream_ws-${{ hashFiles('upstream.rosinstall') }}
       - name: industrial_ci
         uses: 'ros-industrial/industrial_ci@master'
-      - name: upaload test artifacts (on failure)
+      - name: upload test artifacts (on failure)
         uses: actions/upload-artifact@v2
         if: failure()
         with:
           name: test-results
           path: ${{ env.BASEDIR }}/target_ws/**/test_results/**/*.xml
-      - name: upaload codecov report
+      - name: upload codecov report
         uses: codecov/codecov-action@v1
         with:
           files: ${{ env.BASEDIR }}/coverage.info

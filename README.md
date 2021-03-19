@@ -14,4 +14,3 @@ discussion](https://github.com/ros-planning/moveit/issues/1070).
 ## GitHub Actions - Continuous Integration
 
 [![Format](https://github.com/ros-planning/moveit_calibration/actions/workflows/format.yml/badge.svg?branch=master)](https://github.com/ros-planning/moveit_calibration/actions/workflows/format.yml?branch=master) [![BuildAndTest](https://github.com/ros-planning/moveit_calibration/actions/workflows/industrial_ci_action.yml/badge.svg?branch=master)](https://github.com/ros-planning/moveit_calibration/actions/workflows/industrial_ci_action.yml?branch=master) [![codecov](https://codecov.io/gh/ros-planning/moveit_calibration/branch/master/graph/badge.svg?token=W7uHKcY0ly)](https://codecov.io/gh/ros-planning/moveit_calibration)
-

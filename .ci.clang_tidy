@@ -79,11 +79,13 @@ echo "*********** START *************"
 
 BASE_REF=$1
 echo -e $(colorize BLUE "BASE_REF = $BASE_REF")
+git remote -v
 
 # Ensure the base branch ($BASE_REF) is available
 if [ "$(git rev-parse --abbrev-ref HEAD)" != "$BASE_REF" ] ; then
-    git fetch -q origin "$BASE_REF"
-    git branch -qf "$BASE_REF" FETCH_HEAD
+  echo "$(git rev-parse --abbrev-ref HEAD)"
+  git fetch -q origin "$BASE_REF"
+  git branch -qf "$BASE_REF" FETCH_HEAD
 fi
 
 # Run run_clang_tidy_fix() and redirect file descriptor 3 to /tmp/clang-tidy.tainted to collect tainted pkgs

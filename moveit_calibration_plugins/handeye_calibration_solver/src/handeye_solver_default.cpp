@@ -44,6 +44,7 @@
 namespace moveit_handeye_calibration
 {
 const std::string LOGNAME = "handeye_solver_default";
+const std::string EXTRA_WORDS = "handeye_solver_default";
 
 void HandEyeSolverDefault::initialize()
 {

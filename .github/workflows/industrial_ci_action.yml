@@ -11,9 +11,10 @@ jobs:
       DOCKER_IMAGE: 'moveit/moveit:melodic-source'
       UPSTREAM_WORKSPACE: 'upstream.rosinstall'
       BEFORE_INSTALL_UPSTREAM_DEPENDENCIES_EMBED: 'set +u && source /root/ws_moveit/install/setup.bash && set -u'
+      BEFORE_RUN_TARGET_TEST: './.ci.clang_tidy'
       AFTER_RUN_TARGET_TEST: './.ci.prepare_codecov'
-      TARGET_CMAKE_ARGS: "-DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS='--coverage' -DCMAKE_CXX_FLAGS='--coverage'"
-      ADDITIONAL_DEBS: 'lcov'
+      TARGET_CMAKE_ARGS: "-DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS='--coverage' -DCMAKE_CXX_FLAGS='--coverage' -DCMAKE_EXPORT_COMPILE_COMMANDS=1"
+      ADDITIONAL_DEBS: 'lcov git clang-tidy-10 grep ros-melodic-catkin'
       CCACHE_DIR: "${{ github.workspace }}/.ccache"
       BASEDIR: ${{ github.workspace }}/.work
       

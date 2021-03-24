@@ -1,0 +1,101 @@
+#!/bin/bash
+
+# usage: echo -e $(colorize RED Some ${fancy} text.)
+function colorize() {
+   local color reset
+   while true ; do
+      case "${1:-}" in
+         RED|GREEN|YELLOW|BLUE)
+            color="ANSI_$1"; eval "color=\$$color"; reset="${ANSI_RESET}" ;;
+         THIN)
+            color="${color:-}${ANSI_THIN}" ;;
+         BOLD)
+            color="${color:-}${ANSI_BOLD}"; reset="${reset:-${ANSI_THIN}}" ;;
+         *) break ;;
+      esac
+      shift
+   done
+   echo -e "${color:-}$@${reset:-}"
+}
+
+# collect files that are modified since commit
+function collect_modified_files() {
+  local -n __modified_files=$1     # -n to modify argument by reference
+  local filter=$2
+  local src_dir=${3:-$PWD}
+  local base=${4:-$GITHUB_BASE_REF}
+
+  # Find top-level git folder of src_dir
+  local strip_prefix=$(cd "$src_dir"; git rev-parse --show-toplevel)
+  # Strip git folder from src_dir to keep relative path from git root to source files as stip_prefix
+  strip_prefix="${src_dir#$strip_prefix/}"
+  while IFS='' read -r line ; do
+    # Add modified or added files to array - only using the relative path from src_dir, i.e. removing strip_prefix
+    __modified_files+=("${line#$strip_prefix/}")
+  done < <(git diff --name-only --diff-filter=MA "$base"..HEAD "$src_dir" | grep "$filter")
+}
+
+run_clang_tidy_fix() {
+  local SOURCE_PKGS COMPILED_PKGS counter pkg file src_dir
+  SOURCE_PKGS=($(catkin_topological_order $BASEDIR/target_ws --only-names 2> /dev/null))
+
+  # filter repository packages for those which have a compile_commands.json file in their build folder
+  declare -A PKGS  # associative array
+  for pkg in ${SOURCE_PKGS[@]} ; do
+    file="$BASEDIR/target_ws/build/$pkg/compile_commands.json"
+    test -r "$file" && PKGS[$pkg]=$(dirname "$file")
+  done
+
+  for pkg in ${SOURCE_PKGS[@]} ; do  # process files in topological order
+    test -z "${PKGS[$pkg]:-}" && continue  # skip pkgs without compile_commands.json
+    echo -e $(colorize GREEN "start clang.tidy: $pkg")
+
+    # Find all .cpp files in pkg's src_dir that were added or modified in this pull request
+    modified_files=()
+    if [ "${GITHUB_BASE_REF:-false}" != false ]; then
+      src_dir=$(grep "^CMAKE_HOME_DIRECTORY:INTERNAL=" "${PKGS[$pkg]}/CMakeCache.txt")
+      collect_modified_files modified_files "\.cpp$" $(realpath "${src_dir#*=}") $GITHUB_BASE_REF
+      if [ ${#modified_files[@]} -eq 0 ]; then
+        echo "No modified .cpp files"
+        continue
+      fi
+    fi
+
+    clang-tidy-10 -fix -header-filter='$BASEDIR/target_ws/src/$TARGET_REPO_NAME/.*' -p "${PKGS[$pkg]}" ${modified_files[@]:-} 2> /dev/null
+    # if there are workspace changes, print broken pkg to file descriptor 3
+    travis_have_fixes && 1>&3 echo $pkg || true  # should always succeed ;-)
+    travis_fold end clang.tidy
+  done
+}
+
+pushd $BASEDIR/target_ws/src/$TARGET_REPO_NAME
+
+sudo apt-get install -qq git clang-tidy-10 grep ros-${ROS_DISTRO}-catkin
+
+echo "*********** START *************"
+
+echo -e $(colorize BLUE "GITHUB_HEAD_REF = $GITHUB_HEAD_REF")
+echo -e $(colorize BLUE "GITHUB_BASE_REF = $GITHUB_BASE_REF")
+
+# Ensure the base branch ($GITHUB_BASE_REF) is available
+if [ "$(git rev-parse --abbrev-ref HEAD)" != "$GITHUB_BASE_REF" ] ; then
+    git fetch origin "$GITHUB_BASE_REF"
+    git branch -f "$GITHUB_BASE_REF" FETCH_HEAD
+fi
+
+# Run run_clang_tidy_fix() and redirect file descriptor 3 to /tmp/clang-tidy.tainted to collect tainted pkgs
+run_clang_tidy_fix 3>/tmp/clang-tidy.tainted
+result=$?
+test $result -ne 0 && exit $result
+
+# Read content of /tmp/clang-tidy.tainted into variable TAINTED_PKGS
+TAINTED_PKGS=$(< /tmp/clang-tidy.tainted)
+
+if [ -z "$TAINTED_PKGS" ] ; then
+  echo -e $(colorize GREEN "Passed clang-tidy check")
+else
+  echo -e "$(colorize RED \"clang-tidy check failed for the following packages:\")\\n$(colorize YELLOW $(colorize THIN $TAINTED_PKGS))"
+  exit 2
+fi
+
+popd

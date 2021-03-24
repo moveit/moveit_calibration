@@ -64,6 +64,8 @@ run_clang_tidy_fix() {
       fi
     fi
 
+    echo $PKGS
+
     echo $modified_files
 
     clang-tidy-10 -fix -header-filter="$BASEDIR/target_ws/src/$TARGET_REPO_NAME/.*" -p "${PKGS[$pkg]}" ${modified_files[@]:-} 2> /dev/null

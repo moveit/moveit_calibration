@@ -23,7 +23,7 @@ function collect_modified_files() {
   local -n __modified_files=$1     # -n to modify argument by reference
   local filter=$2
   local src_dir=${3:-$PWD}
-  local base=${4:-$GITHUB_BASE_REF}
+  local base=${4:-$BASE_REF}
 
   # Find top-level git folder of src_dir
   local strip_prefix=$(cd "$src_dir"; git rev-parse --show-toplevel)
@@ -36,6 +36,8 @@ function collect_modified_files() {
 }
 
 run_clang_tidy_fix() {
+  HEAD_REF=$1
+  BASE_REF=$2
   local SOURCE_PKGS COMPILED_PKGS counter pkg file src_dir
   SOURCE_PKGS=($(catkin_topological_order $BASEDIR/target_ws --only-names 2> /dev/null))
 
@@ -52,9 +54,9 @@ run_clang_tidy_fix() {
 
     # Find all .cpp files in pkg's src_dir that were added or modified in this pull request
     modified_files=()
-    if [ "${GITHUB_BASE_REF:-false}" != false ]; then
+    if [ "${BASE_REF:-false}" != false ]; then
       src_dir=$(grep "^CMAKE_HOME_DIRECTORY:INTERNAL=" "${PKGS[$pkg]}/CMakeCache.txt")
-      collect_modified_files modified_files "\.cpp$" $(realpath "${src_dir#*=}") $GITHUB_BASE_REF
+      collect_modified_files modified_files "\.cpp$" $(realpath "${src_dir#*=}") $BASE_REF
       if [ ${#modified_files[@]} -eq 0 ]; then
         echo "No modified .cpp files"
         continue
@@ -74,17 +76,19 @@ sudo apt-get install -qq git clang-tidy-10 grep ros-${ROS_DISTRO}-catkin
 
 echo "*********** START *************"
 
-echo -e $(colorize BLUE "GITHUB_HEAD_REF = $GITHUB_HEAD_REF")
-echo -e $(colorize BLUE "GITHUB_BASE_REF = $GITHUB_BASE_REF")
+HEAD_REF=$1
+BASE_REF=$2
+echo -e $(colorize BLUE "HEAD_REF = $HEAD_REF")
+echo -e $(colorize BLUE "BASE_REF = $BASE_REF")
 
-# Ensure the base branch ($GITHUB_BASE_REF) is available
-if [ "$(git rev-parse --abbrev-ref HEAD)" != "$GITHUB_BASE_REF" ] ; then
-    git fetch origin "$GITHUB_BASE_REF"
-    git branch -f "$GITHUB_BASE_REF" FETCH_HEAD
+# Ensure the base branch ($BASE_REF) is available
+if [ "$(git rev-parse --abbrev-ref HEAD)" != "$BASE_REF" ] ; then
+    git fetch origin "$BASE_REF"
+    git branch -f "$BASE_REF" FETCH_HEAD
 fi
 
 # Run run_clang_tidy_fix() and redirect file descriptor 3 to /tmp/clang-tidy.tainted to collect tainted pkgs
-run_clang_tidy_fix 3>/tmp/clang-tidy.tainted
+run_clang_tidy_fix $HEAD_REF $BASE_REF 3>/tmp/clang-tidy.tainted
 result=$?
 test $result -ne 0 && exit $result
 

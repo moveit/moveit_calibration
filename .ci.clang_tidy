@@ -80,8 +80,8 @@ echo -e $(colorize BLUE "BASE_REF = $BASE_REF")
 
 # Ensure the base branch ($BASE_REF) is available
 if [ "$(git rev-parse --abbrev-ref HEAD)" != "$BASE_REF" ] ; then
-    git fetch origin "$BASE_REF"
-    git branch -f "$BASE_REF" FETCH_HEAD
+    git fetch -q origin "$BASE_REF"
+    git branch -qf "$BASE_REF" FETCH_HEAD
 fi
 
 # Run run_clang_tidy_fix() and redirect file descriptor 3 to /tmp/clang-tidy.tainted to collect tainted pkgs

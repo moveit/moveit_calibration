@@ -38,7 +38,9 @@ function collect_modified_files() {
 run_clang_tidy_fix() {
   BASE_REF=$1
   local SOURCE_PKGS COMPILED_PKGS counter pkg file src_dir
-  SOURCE_PKGS=($(catkin_topological_order $BASEDIR/target_ws --only-names 2> /dev/null))
+  SOURCE_PKGS=($(catkin_topological_order $BASEDIR/target_ws/src/$TARGET_REPO_NAME --only-names 2> /dev/null))
+
+  echo $SOURCE_PKGS
 
   # filter repository packages for those which have a compile_commands.json file in their build folder
   declare -A PKGS  # associative array

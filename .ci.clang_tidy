@@ -77,6 +77,8 @@ sudo apt-get install -qq git clang-tidy-10 grep ros-${ROS_DISTRO}-catkin
 
 echo "*********** START *************"
 
+set -x
+
 BASE_REF=$1
 echo -e $(colorize BLUE "BASE_REF = $BASE_REF")
 git remote -v
@@ -95,6 +97,8 @@ test $result -ne 0 && exit $result
 
 # Read content of /tmp/clang-tidy.tainted into variable TAINTED_PKGS
 TAINTED_PKGS=$(< /tmp/clang-tidy.tainted)
+
+set +x
 
 if [ -z "$TAINTED_PKGS" ] ; then
   echo -e $(colorize GREEN "Passed clang-tidy check")

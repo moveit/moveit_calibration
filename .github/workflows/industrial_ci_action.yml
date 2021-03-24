@@ -26,7 +26,7 @@ jobs:
       DOCKER_IMAGE: 'moveit/moveit:melodic-source'
       UPSTREAM_WORKSPACE: 'upstream.rosinstall'
       AFTER_RUN_TARGET_TEST: './.ci.prepare_codecov'
-      TARGET_CMAKE_ARGS: "-DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS='--coverage' -DCMAKE_CXX_FLAGS='--coverage' -DCMAKE_EXPORT_COMPILE_COMMANDS=1"
+      TARGET_CMAKE_ARGS: "-DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS='--coverage' -DCMAKE_CXX_FLAGS='--coverage'"
       ADDITIONAL_DEBS: 'lcov'
       CCACHE_DIR: "${{ github.workspace }}/.ccache"
       BASEDIR: ${{ github.workspace }}/.work

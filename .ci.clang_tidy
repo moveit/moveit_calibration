@@ -82,12 +82,13 @@ echo "*********** START *************"
 set -x
 
 BASE_REF=$1
+HEAD_REF=${2:-$(git rev-parse --abbrev-ref HEAD)}
 echo -e $(colorize BLUE "BASE_REF = $BASE_REF")
 git remote -v
 
 # Ensure the base branch ($BASE_REF) is available
-if [ "$(git rev-parse --abbrev-ref HEAD)" != "$BASE_REF" ] ; then
-  echo "$(git rev-parse --abbrev-ref HEAD)"
+if [ "$HEAD_REF" != "$BASE_REF" ] ; then
+  echo "$HEAD_REF"
   git fetch -q origin "$BASE_REF"
   git branch -qf "$BASE_REF" FETCH_HEAD
 fi

@@ -18,6 +18,17 @@ function colorize() {
    echo -e "${color:-}$@${reset:-}"
 }
 
+# Check repository for changes, return success(0) if there are changes
+have_fixes() {
+  if ! git diff --quiet . ; then  # check for changes in current dir
+    echo -e $(colorize RED "\\nThe following issues were detected:")
+    git --no-pager diff .
+    git checkout . # undo changes in current dir
+    return 0
+  fi
+  return 1
+}
+
 # collect files that are modified since commit
 function collect_modified_files() {
   local -n __modified_files=$1     # -n to modify argument by reference
@@ -68,10 +79,9 @@ run_clang_tidy_fix() {
 
     echo "$modified_files"
 
-    clang-tidy-10 -fix -header-filter="$BASEDIR/target_ws/src/$TARGET_REPO_NAME/.*" -p "${PKGS[$pkg]}" ${modified_files[@]:-} 2> /dev/null
+    clang-tidy-10 -fix -header-filter="${BASEDIR}/target_ws/src/${TARGET_REPO_NAME}/.*" -p "${PKGS[$pkg]}" ${modified_files[@]:-} 2> /dev/null
     # if there are workspace changes, print broken pkg to file descriptor 3
-    travis_have_fixes && 1>&3 echo $pkg || true  # should always succeed ;-)
-    travis_fold end clang.tidy
+    have_fixes && 1>&3 echo $pkg || true  # should always succeed ;-)
   done
 }
 

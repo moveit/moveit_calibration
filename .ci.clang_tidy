@@ -40,7 +40,7 @@ run_clang_tidy_fix() {
   local SOURCE_PKGS COMPILED_PKGS counter pkg file src_dir
   SOURCE_PKGS=($(catkin_topological_order $BASEDIR/target_ws/src/$TARGET_REPO_NAME --only-names 2> /dev/null))
 
-  echo $SOURCE_PKGS
+  echo "$SOURCE_PKGS"
 
   # filter repository packages for those which have a compile_commands.json file in their build folder
   declare -A PKGS  # associative array
@@ -64,9 +64,9 @@ run_clang_tidy_fix() {
       fi
     fi
 
-    echo $PKGS
+    echo "$PKGS"
 
-    echo $modified_files
+    echo "$modified_files"
 
     clang-tidy-10 -fix -header-filter="$BASEDIR/target_ws/src/$TARGET_REPO_NAME/.*" -p "${PKGS[$pkg]}" ${modified_files[@]:-} 2> /dev/null
     # if there are workspace changes, print broken pkg to file descriptor 3

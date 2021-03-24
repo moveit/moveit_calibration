@@ -80,6 +80,7 @@ bool HandEyeCharucoTarget::initialize()
   std::string dictionary_id;
   double board_size_meters;
   double marker_size_meters;
+  double not_used;
 
   target_params_ready_ =
       getParameter("squares, X", squares_x) && getParameter("squares, Y", squares_y) &&

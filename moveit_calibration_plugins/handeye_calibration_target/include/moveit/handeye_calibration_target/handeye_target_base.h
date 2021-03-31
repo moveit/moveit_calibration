@@ -225,7 +225,7 @@ public:
       return false;
     }
 
-    if (msg->D.size() != CAMERA_DISTORTION_VECTOR_DIMENSION)
+    if (msg->D.size() != CAMERA_DISTORTION_VECTOR_DIMENSION && msg->D.size() != 8)
     {
       ROS_ERROR_NAMED(LOGNAME, "Invalid distortion parameters dimension, current is %ld, required is %zu.",
                       msg->D.size(), CAMERA_DISTORTION_VECTOR_DIMENSION);

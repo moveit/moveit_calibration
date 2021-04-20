@@ -349,8 +349,7 @@ bool TargetTabWidget::createTargetInstance()
       switch (param.parameter_type_)
       {
         case moveit_handeye_calibration::HandEyeTargetBase::Parameter::ParameterType::Int:
-          target_->setParameter(param.name_,
-                                static_cast<QLineEdit*>(target_param_inputs_[param.name_])->text().toInt());
+          target_->setParameter(param.name_, static_cast<QLineEdit*>(target_param_inputs_[param.name_])->text().toInt());
           break;
         case moveit_handeye_calibration::HandEyeTargetBase::Parameter::ParameterType::Float:
           target_->setParameter(param.name_,

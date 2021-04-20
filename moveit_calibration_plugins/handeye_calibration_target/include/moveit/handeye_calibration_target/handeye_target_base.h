@@ -113,7 +113,8 @@ public:
   const std::size_t CAMERA_MATRIX_VECTOR_DIMENSION = 9;  // 3x3 camera intrinsic matrix
   const std::size_t CAMERA_MATRIX_WIDTH = 3;
   const std::size_t CAMERA_MATRIX_HEIGHT = 3;
-  const std::map<std::string, std::size_t> CAMERA_DISTORTION_MODELS_VECTOR_DIMENSIONS = { { "plumb_bob", 5 },
+  const std::map<std::string, std::size_t> CAMERA_DISTORTION_MODELS_VECTOR_DIMENSIONS = { { "none", 0 },
+                                                                                          { "plumb_bob", 5 },
                                                                                           { "rational_polynomial",
                                                                                             8 } };
 

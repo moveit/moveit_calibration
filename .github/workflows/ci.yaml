@@ -13,6 +13,8 @@ jobs:
           - IMAGE: melodic
             CCOV: true
             CATKIN_LINT: true
+          - IMAGE: noetic
+            CATKIN_LINT: true
     env:
       DOCKER_IMAGE: 'moveit/moveit:${{ matrix.env.IMAGE }}-source'
       UNDERLAY: /root/ws_moveit/install

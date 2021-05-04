@@ -1,4 +1,4 @@
-find_package(OpenCV REQUIRED) 
+find_package(OpenCV REQUIRED)
 
 set(HEADERS
   include/moveit/handeye_calibration_rviz_plugin/handeye_calibration_gui.h

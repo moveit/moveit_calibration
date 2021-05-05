@@ -13,7 +13,7 @@ lcov --extract coverage.info "$BASEDIR/target_ws/src/$TARGET_REPO_NAME/*" --outp
 echo -e "${BLUE}Filter out test files${NOCOLOR}"
 lcov --remove coverage.info '*/test/*' --output-file coverage.info
 
-echo -e "${BLUE}Output coverage data for debugging${NOCOLOR}" 
+echo -e "${BLUE}Output coverage data for debugging${NOCOLOR}"
 lcov --list coverage.info
 
 popd

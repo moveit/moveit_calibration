@@ -21,7 +21,7 @@ find_package(catkin REQUIRED COMPONENTS
 find_package(Eigen3 REQUIRED)
 find_package(OpenCV REQUIRED imgcodecs aruco)
 
-if("${OpenCV_VERSION_MAJOR}" STREQUAL "3" AND "${OpenCV_VERSION_MINOR}" STREQUAL "2")
+if(OpenCV_VERSION VERSION_EQUAL 3.2)
   message(WARNING "Your version of OpenCV (3.2) is known to have buggy ArUco pose detection! Use a ChArUco target or upgrade OpenCV")
 endif()
 

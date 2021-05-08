@@ -90,6 +90,7 @@ TargetTabWidget::TargetTabWidget(QWidget* parent)
   , it_(nh_)
   , target_plugins_loader_(nullptr)
   , target_(nullptr)
+  , target_is_ready_(ATOMIC_FLAG_INIT)
   , target_param_layout_(new QFormLayout())
 {
   // Target setting tab area -----------------------------------------------
@@ -304,18 +305,25 @@ bool TargetTabWidget::loadInputWidgetsForTargetType(const std::string& plugin_na
     {
       switch (param.parameter_type_)
       {
-        case moveit_handeye_calibration::HandEyeTargetBase::Parameter::ParameterType::Int:
-          target_param_inputs_.insert(std::make_pair(param.name_, new QLineEdit()));
+        case moveit_handeye_calibration::HandEyeTargetBase::Parameter::ParameterType::Int: {
+          QLineEdit* line_edit = new QLineEdit();
+          connect(line_edit, SIGNAL(textChanged(QString)), this, SLOT(targetParameterChanged(QString)));
+          target_param_inputs_.insert(std::make_pair(param.name_, line_edit));
           target_param_layout_->addRow(param.name_.c_str(), target_param_inputs_[param.name_]);
           static_cast<QLineEdit*>(target_param_inputs_[param.name_])->setText(std::to_string(param.value_.i).c_str());
           break;
-        case moveit_handeye_calibration::HandEyeTargetBase::Parameter::ParameterType::Float:
-          target_param_inputs_.insert(std::make_pair(param.name_, new QLineEdit()));
+        }
+        case moveit_handeye_calibration::HandEyeTargetBase::Parameter::ParameterType::Float: {
+          QLineEdit* line_edit = new QLineEdit();
+          connect(line_edit, SIGNAL(textChanged(QString)), this, SLOT(targetParameterChanged(QString)));
+          target_param_inputs_.insert(std::make_pair(param.name_, line_edit));
           target_param_layout_->addRow(param.name_.c_str(), target_param_inputs_[param.name_]);
           static_cast<QLineEdit*>(target_param_inputs_[param.name_])->setText(std::to_string(param.value_.f).c_str());
           break;
-        case moveit_handeye_calibration::HandEyeTargetBase::Parameter::ParameterType::Enum:
+        }
+        case moveit_handeye_calibration::HandEyeTargetBase::Parameter::ParameterType::Enum: {
           QComboBox* combo_box = new QComboBox();
+          connect(combo_box, SIGNAL(currentTextChanged(QString)), this, SLOT(targetParameterChanged(QString)));
           for (const std::string& value : param.enum_values_)
           {
             combo_box->addItem(tr(value.c_str()));
@@ -324,6 +332,7 @@ bool TargetTabWidget::loadInputWidgetsForTargetType(const std::string& plugin_na
           target_param_layout_->addRow(param.name_.c_str(), target_param_inputs_[param.name_]);
           static_cast<QComboBox*>(target_param_inputs_[param.name_])->setCurrentIndex(param.value_.e);
           break;
+        }
       }
     }
   }
@@ -338,7 +347,7 @@ bool TargetTabWidget::loadInputWidgetsForTargetType(const std::string& plugin_na
 
 bool TargetTabWidget::createTargetInstance()
 {
-  if (!target_)
+  if (!target_ || target_is_ready_.test_and_set())
     return false;
 
   try
@@ -462,6 +471,7 @@ void TargetTabWidget::targetTypeComboboxChanged(const QString& text)
   {
     loadInputWidgetsForTargetType(text.toStdString());
   }
+  target_is_ready_.clear();
 }
 
 void TargetTabWidget::createTargetImageBtnClicked(bool clicked)
@@ -547,6 +557,11 @@ void TargetTabWidget::cameraInfoComboBoxChanged(const QString& topic)
                              "Subscribe to camera info topic: " << topic.toStdString() << " failed. " << e.what());
     }
   }
+}
+
+void TargetTabWidget::targetParameterChanged(const QString&)
+{
+  target_is_ready_.clear();
 }
 
 }  // namespace moveit_rviz_plugin

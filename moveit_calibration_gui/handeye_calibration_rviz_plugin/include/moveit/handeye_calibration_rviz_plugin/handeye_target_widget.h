@@ -37,6 +37,8 @@
 #ifndef MOVEIT_HANDEYE_CALIBRATION_RVIZ_PLUGIN_HANDEYE_TARGET_WIDGET_
 #define MOVEIT_HANDEYE_CALIBRATION_RVIZ_PLUGIN_HANDEYE_TARGET_WIDGET_
 
+#include <atomic>
+
 // qt
 #include <QSet>
 #include <QLabel>
@@ -149,6 +151,9 @@ private Q_SLOTS:
   // Called when the item of camera_info_topic_field_ combobox is selected
   void cameraInfoComboBoxChanged(const QString& topic);
 
+  // Called when any change is made to the target parameters
+  void targetParameterChanged(const QString&);
+
 Q_SIGNALS:
 
   void cameraInfoChanged(sensor_msgs::CameraInfo msg);
@@ -192,6 +197,7 @@ private:
   ros::NodeHandle nh_;
   std::unique_ptr<pluginlib::ClassLoader<moveit_handeye_calibration::HandEyeTargetBase> > target_plugins_loader_;
   pluginlib::UniquePtr<moveit_handeye_calibration::HandEyeTargetBase> target_;
+  std::atomic_flag target_is_ready_;
   image_transport::ImageTransport it_;
   image_transport::Subscriber image_sub_;
   image_transport::Publisher image_pub_;

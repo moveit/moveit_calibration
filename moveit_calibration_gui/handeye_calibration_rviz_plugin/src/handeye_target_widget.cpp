@@ -347,8 +347,11 @@ bool TargetTabWidget::loadInputWidgetsForTargetType(const std::string& plugin_na
 
 bool TargetTabWidget::createTargetInstance()
 {
-  if (!target_ || target_is_ready_.test_and_set())
+  if (!target_)
     return false;
+
+  if (target_is_ready_.test_and_set())
+    return true;
 
   try
   {
@@ -377,6 +380,7 @@ bool TargetTabWidget::createTargetInstance()
   {
     QMessageBox::warning(this, tr("Exception while loading a handeye target plugin"), tr(ex.what()));
     target_ = nullptr;
+    target_is_ready_.clear();
     return false;
   }
 

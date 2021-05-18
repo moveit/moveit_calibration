@@ -197,7 +197,7 @@ private:
   ros::NodeHandle nh_;
   std::unique_ptr<pluginlib::ClassLoader<moveit_handeye_calibration::HandEyeTargetBase> > target_plugins_loader_;
   pluginlib::UniquePtr<moveit_handeye_calibration::HandEyeTargetBase> target_;
-  std::atomic_flag target_is_ready_;
+  std::atomic<bool> target_is_ready_;
   image_transport::ImageTransport it_;
   image_transport::Subscriber image_sub_;
   image_transport::Publisher image_pub_;

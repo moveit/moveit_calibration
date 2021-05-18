@@ -92,7 +92,7 @@ TargetTabWidget::TargetTabWidget(QWidget* parent)
   , it_(nh_)
   , target_plugins_loader_(nullptr)
   , target_(nullptr)
-  , target_is_ready_(ATOMIC_FLAG_INIT)
+  , target_is_ready_(false)
   , target_param_layout_(new QFormLayout())
 {
   // Target setting tab area -----------------------------------------------
@@ -345,7 +345,7 @@ bool TargetTabWidget::createTargetInstance()
   if (!target_)
     return false;
 
-  if (target_is_ready_.test_and_set())
+  if (target_is_ready_.exchange(true))
     return true;
 
   try
@@ -355,7 +355,7 @@ bool TargetTabWidget::createTargetInstance()
     {
       if (!target_->setParameter(param))
       {
-        target_is_ready_.clear();
+        target_is_ready_.store(false);
         return false;
       }
     }
@@ -365,7 +365,7 @@ bool TargetTabWidget::createTargetInstance()
   {
     QMessageBox::warning(this, tr("Exception while loading a handeye target plugin"), tr(ex.what()));
     target_ = nullptr;
-    target_is_ready_.clear();
+    target_is_ready_.store(false);
     return false;
   }
 
@@ -460,7 +460,7 @@ void TargetTabWidget::targetTypeComboboxChanged(const QString& text)
   {
     loadInputWidgetsForTargetType(text.toStdString());
   }
-  target_is_ready_.clear();
+  target_is_ready_.store(false);
 }
 
 void TargetTabWidget::createTargetImageBtnClicked(bool clicked)
@@ -550,7 +550,7 @@ void TargetTabWidget::cameraInfoComboBoxChanged(const QString& topic)
 
 void TargetTabWidget::targetParameterChanged(const QString&)
 {
-  target_is_ready_.clear();
+  target_is_ready_.store(false);
 }
 
 }  // namespace moveit_rviz_plugin

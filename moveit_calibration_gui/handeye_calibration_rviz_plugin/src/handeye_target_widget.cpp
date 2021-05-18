@@ -40,6 +40,8 @@ namespace moveit_rviz_plugin
 {
 const std::string LOGNAME = "handeye_target_widget";
 
+using MoveItCalParam = moveit_handeye_calibration::HandEyeTargetBase::Parameter;
+
 void RosTopicComboBox::addMsgsFilterType(QString msgs_type)
 {
   message_types_.insert(msgs_type);
@@ -175,19 +177,19 @@ void TargetTabWidget::loadWidget(const rviz::Config& config)
   int param_int;
   float param_float;
   QString param_enum;
-  for (const moveit_handeye_calibration::HandEyeTargetBase::Parameter& param : target_plugin_params_)
+  for (const MoveItCalParam& param : target_plugin_params_)
   {
     switch (param.parameter_type_)
     {
-      case moveit_handeye_calibration::HandEyeTargetBase::Parameter::ParameterType::Int:
+      case MoveItCalParam::ParameterType::Int:
         if (config.mapGetInt(param.name_.c_str(), &param_int))
           static_cast<QLineEdit*>(target_param_inputs_[param.name_])->setText(std::to_string(param_int).c_str());
         break;
-      case moveit_handeye_calibration::HandEyeTargetBase::Parameter::ParameterType::Float:
+      case MoveItCalParam::ParameterType::Float:
         if (config.mapGetFloat(param.name_.c_str(), &param_float))
           static_cast<QLineEdit*>(target_param_inputs_[param.name_])->setText(std::to_string(param_float).c_str());
         break;
-      case moveit_handeye_calibration::HandEyeTargetBase::Parameter::ParameterType::Enum:
+      case MoveItCalParam::ParameterType::Enum:
         if (config.mapGetString(param.name_.c_str(), &param_enum))
         {
           int index = static_cast<QComboBox*>(target_param_inputs_[param.name_])->findText(param_enum);
@@ -233,16 +235,16 @@ void TargetTabWidget::saveWidget(rviz::Config& config)
   config.mapSetValue("target_type", target_type_->currentText());
 
   QString param_value;
-  for (const moveit_handeye_calibration::HandEyeTargetBase::Parameter& param : target_plugin_params_)
+  for (const MoveItCalParam& param : target_plugin_params_)
   {
     switch (param.parameter_type_)
     {
-      case moveit_handeye_calibration::HandEyeTargetBase::Parameter::ParameterType::Int:
-      case moveit_handeye_calibration::HandEyeTargetBase::Parameter::ParameterType::Float:
+      case MoveItCalParam::ParameterType::Int:
+      case MoveItCalParam::ParameterType::Float:
         param_value = static_cast<QLineEdit*>(target_param_inputs_[param.name_])->text();
         config.mapSetValue(param.name_.c_str(), param_value);
         break;
-      case moveit_handeye_calibration::HandEyeTargetBase::Parameter::ParameterType::Enum:
+      case MoveItCalParam::ParameterType::Enum:
         param_value = static_cast<QComboBox*>(target_param_inputs_[param.name_])->currentText();
         config.mapSetValue(param.name_.c_str(), param_value);
         break;
@@ -305,23 +307,16 @@ bool TargetTabWidget::loadInputWidgetsForTargetType(const std::string& plugin_na
     {
       switch (param.parameter_type_)
       {
-        case moveit_handeye_calibration::HandEyeTargetBase::Parameter::ParameterType::Int: {
+        case MoveItCalParam::ParameterType::Int:
+        case MoveItCalParam::ParameterType::Float: {
           QLineEdit* line_edit = new QLineEdit();
           connect(line_edit, SIGNAL(textChanged(QString)), this, SLOT(targetParameterChanged(QString)));
           target_param_inputs_.insert(std::make_pair(param.name_, line_edit));
           target_param_layout_->addRow(param.name_.c_str(), target_param_inputs_[param.name_]);
-          static_cast<QLineEdit*>(target_param_inputs_[param.name_])->setText(std::to_string(param.value_.i).c_str());
+          static_cast<QLineEdit*>(target_param_inputs_[param.name_])->setText(param.toString().c_str());
           break;
         }
-        case moveit_handeye_calibration::HandEyeTargetBase::Parameter::ParameterType::Float: {
-          QLineEdit* line_edit = new QLineEdit();
-          connect(line_edit, SIGNAL(textChanged(QString)), this, SLOT(targetParameterChanged(QString)));
-          target_param_inputs_.insert(std::make_pair(param.name_, line_edit));
-          target_param_layout_->addRow(param.name_.c_str(), target_param_inputs_[param.name_]);
-          static_cast<QLineEdit*>(target_param_inputs_[param.name_])->setText(std::to_string(param.value_.f).c_str());
-          break;
-        }
-        case moveit_handeye_calibration::HandEyeTargetBase::Parameter::ParameterType::Enum: {
+        case MoveItCalParam::ParameterType::Enum: {
           QComboBox* combo_box = new QComboBox();
           connect(combo_box, SIGNAL(currentTextChanged(QString)), this, SLOT(targetParameterChanged(QString)));
           for (const std::string& value : param.enum_values_)
@@ -358,20 +353,10 @@ bool TargetTabWidget::createTargetInstance()
     // TODO: load parameters from GUI
     for (const auto& param : target_plugin_params_)
     {
-      switch (param.parameter_type_)
+      if (!target_->setParameter(param))
       {
-        case moveit_handeye_calibration::HandEyeTargetBase::Parameter::ParameterType::Int:
-          target_->setParameter(param.name_,
-                                static_cast<QLineEdit*>(target_param_inputs_[param.name_])->text().toInt());
-          break;
-        case moveit_handeye_calibration::HandEyeTargetBase::Parameter::ParameterType::Float:
-          target_->setParameter(param.name_,
-                                static_cast<QLineEdit*>(target_param_inputs_[param.name_])->text().toFloat());
-          break;
-        case moveit_handeye_calibration::HandEyeTargetBase::Parameter::ParameterType::Enum:
-          target_->setParameter(
-              param.name_, static_cast<QComboBox*>(target_param_inputs_[param.name_])->currentText().toStdString());
-          break;
+        target_is_ready_.clear();
+        return false;
       }
     }
     target_->initialize();

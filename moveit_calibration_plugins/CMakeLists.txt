@@ -16,6 +16,8 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_geometry_msgs
   pluginlib
   sensor_msgs
+  handeye
+  baldor
 )
 
 find_package(Eigen3 REQUIRED)

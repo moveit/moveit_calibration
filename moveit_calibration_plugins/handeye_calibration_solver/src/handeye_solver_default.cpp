@@ -61,25 +61,25 @@ const Eigen::Isometry3d& HandEyeSolverDefault::getCameraRobotPose() const
   return camera_robot_pose_;
 }
 
-bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_wrt_world,
+bool HandEyeSolverDefault::solve(std::string& error_message, const std::vector<Eigen::Isometry3d>& effector_wrt_world,
                                  const std::vector<Eigen::Isometry3d>& object_wrt_sensor, SensorMountType setup,
                                  const std::string& solver_name)
 {
   // Check the size of the two sets of pose sample equal
   if (effector_wrt_world.size() != object_wrt_sensor.size())
   {
-    ROS_ERROR_STREAM_NAMED(LOGNAME, "The sizes of the two input pose sample "
-                                    "vectors are not equal: "
-                                    "effector_wrt_world.size() = "
-                                        << effector_wrt_world.size()
-                                        << " and object_wrt_sensor.size() == " << object_wrt_sensor.size());
+    error_message = "The sizes of the two input pose sample vectors are not equal: effector_wrt_world.size() = " +
+                    std::to_string(effector_wrt_world.size()) +
+                    " and object_wrt_sensor.size() == " + std::to_string(object_wrt_sensor.size());
+    ROS_ERROR_STREAM_NAMED(LOGNAME, error_message);
     return false;
   }
 
   auto it = std::find(solver_names_.begin(), solver_names_.end(), solver_name);
   if (it == solver_names_.end())
   {
-    ROS_ERROR_STREAM_NAMED(LOGNAME, "Unknown handeye solver name: " << solver_name);
+    error_message = "Unknown handeye solver name: " + solver_name;
+    ROS_ERROR_STREAM_NAMED(LOGNAME, error_message);
     return false;
   }
 
@@ -102,7 +102,8 @@ bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_
   // Load numpy c api
   if (_import_array() < 0)
   {
-    ROS_ERROR_STREAM_NAMED(LOGNAME, "Error importing numpy: ");
+    error_message = "Error importing numpy";
+    ROS_ERROR_STREAM_NAMED(LOGNAME, error_message);
     return false;
   }
 
@@ -115,8 +116,8 @@ bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_
   Py_DECREF(python_name);
   if (!python_module)
   {
-    ROS_ERROR_STREAM_NAMED(LOGNAME, "Failed to load python module: "
-                                        << "handeye.calibrator");
+    error_message = "Failed to load python module: handeye.calibrator";
+    ROS_ERROR_STREAM_NAMED(LOGNAME, error_message);
     PyErr_Print();
     return false;
   }
@@ -126,7 +127,8 @@ bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_
   Py_DECREF(python_module);
   if (!python_class || !PyCallable_Check(python_class))
   {
-    ROS_ERROR_STREAM_NAMED(LOGNAME, "Can't find \"HandEyeCalibrator\" python class");
+    error_message = "Can't find \"HandEyeCalibrator\" python class";
+    ROS_ERROR_STREAM_NAMED(LOGNAME, error_message);
     PyErr_Print();
     return false;
   }
@@ -139,7 +141,8 @@ bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_
     python_value = PyString_FromString("Moving");
   if (!python_value)
   {
-    ROS_ERROR_STREAM_NAMED(LOGNAME, "Can't creat sensor mount type python value");
+    error_message = "Can't creat sensor mount type python value";
+    ROS_ERROR_STREAM_NAMED(LOGNAME, error_message);
     Py_DECREF(python_class);
     PyErr_Print();
     return false;
@@ -150,7 +153,8 @@ bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_
   PyTuple_SetItem(python_args, 0, python_value);
   if (!python_args)
   {
-    ROS_ERROR_STREAM_NAMED(LOGNAME, "Can't build python arguments");
+    error_message = "Can't build python arguments";
+    ROS_ERROR_STREAM_NAMED(LOGNAME, error_message);
     Py_DECREF(python_class);
     PyErr_Print();
     return false;
@@ -160,7 +164,8 @@ bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_
   Py_DECREF(python_class);
   if (!python_instance)
   {
-    ROS_ERROR_STREAM_NAMED(LOGNAME, "Can't create \"HandEyeCalibrator\" python instance");
+    error_message = "Can't create \"HandEyeCalibrator\" python instance";
+    ROS_ERROR_STREAM_NAMED(LOGNAME, error_message);
     PyErr_Print();
     return false;
   }
@@ -169,7 +174,8 @@ bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_
   python_func_add_sample = PyObject_GetAttrString(python_instance, "add_sample");
   if (!python_func_add_sample || !PyCallable_Check(python_func_add_sample))
   {
-    ROS_ERROR_STREAM_NAMED(LOGNAME, "Can't find 'add_sample' method");
+    error_message = "Can't find 'add_sample' method";
+    ROS_ERROR_STREAM_NAMED(LOGNAME, error_message);
     Py_DECREF(python_instance);
     PyErr_Print();
     return false;
@@ -190,7 +196,8 @@ bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_
     // Convert effector_wrt_world[i] from Eigen::isometry3d to C array
     if (!toCArray(effector_wrt_world[i], c_arr_eef_wrt_world[i]))
     {
-      ROS_ERROR_STREAM_NAMED(LOGNAME, "Error converting Eigen::isometry3d to C array");
+      error_message = "Error converting Eigen::isometry3d to C array";
+      ROS_ERROR_STREAM_NAMED(LOGNAME, error_message);
       Py_DECREF(python_func_add_sample);
       Py_DECREF(python_instance);
       PyErr_Print();
@@ -202,7 +209,8 @@ bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_
         PyArray_SimpleNewFromData(number_of_dims, dims, NPY_DOUBLE, (void*)(c_arr_eef_wrt_world[i]));
     if (!python_array_eef_wrt_base[i])
     {
-      ROS_ERROR_STREAM_NAMED(LOGNAME, "Error creating PyArray object");
+      error_message = "Error creating PyArray object";
+      ROS_ERROR_STREAM_NAMED(LOGNAME, error_message);
       Py_DECREF(python_func_add_sample);
       Py_DECREF(python_instance);
       PyErr_Print();
@@ -214,7 +222,9 @@ bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_
       npy_intp* py_array_dims = PyArray_DIMS(numpy_arg_eef_wrt_base[i]);
       if (py_array_dims[0] != 4 || py_array_dims[1] != 4)
       {
-        ROS_ERROR_STREAM_NAMED(LOGNAME, "Error PyArrayObject dims: " << py_array_dims[0] << "x" << py_array_dims[1]);
+        error_message =
+            "Error PyArrayObject dims: " + std::to_string(py_array_dims[0]) + "x" + std::to_string(py_array_dims[1]);
+        ROS_ERROR_STREAM_NAMED(LOGNAME, error_message);
         Py_DECREF(numpy_arg_eef_wrt_base[i]);
         Py_DECREF(python_func_add_sample);
         Py_DECREF(python_instance);
@@ -225,7 +235,8 @@ bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_
     // Convert object_wrt_sensor[i] from Eigen::isometry3d to C array
     if (!toCArray(object_wrt_sensor[i], c_arr_obj_wrt_sensor[i]))
     {
-      ROS_ERROR_STREAM_NAMED(LOGNAME, "Error converting Eigen::isometry3d to C array");
+      error_message = "Error converting Eigen::isometry3d to C array";
+      ROS_ERROR_STREAM_NAMED(LOGNAME, error_message);
       Py_DECREF(python_func_add_sample);
       Py_DECREF(python_instance);
       PyErr_Print();
@@ -237,7 +248,8 @@ bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_
         PyArray_SimpleNewFromData(number_of_dims, dims, NPY_DOUBLE, (void*)(c_arr_obj_wrt_sensor[i]));
     if (!python_array_obj_wrt_sensor[i])
     {
-      ROS_ERROR_STREAM_NAMED(LOGNAME, "Error creating PyArray object");
+      error_message = "Error creating PyArray object";
+      ROS_ERROR_STREAM_NAMED(LOGNAME, error_message);
       Py_DECREF(python_func_add_sample);
       Py_DECREF(python_instance);
       PyErr_Print();
@@ -249,7 +261,9 @@ bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_
       npy_intp* py_array_dims = PyArray_DIMS(numpy_arg_obj_wrt_sensor[i]);
       if (py_array_dims[0] != 4 || py_array_dims[1] != 4)
       {
-        ROS_ERROR_STREAM_NAMED(LOGNAME, "Error PyArrayObject dims: " << py_array_dims[0] << "x" << py_array_dims[1]);
+        error_message =
+            "Error PyArrayObject dims: " + std::to_string(py_array_dims[0]) + "x" + std::to_string(py_array_dims[1]);
+        ROS_ERROR_STREAM_NAMED(LOGNAME, error_message);
         Py_DECREF(numpy_arg_obj_wrt_sensor[i]);
         Py_DECREF(python_func_add_sample);
         Py_DECREF(python_instance);
@@ -261,7 +275,8 @@ bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_
     python_args_sample[i] = Py_BuildValue("OO", numpy_arg_eef_wrt_base[i], numpy_arg_obj_wrt_sensor[i]);
     if (!python_args_sample[i])
     {
-      ROS_ERROR_STREAM_NAMED(LOGNAME, "Can't create argument tuple for 'add_sample' method");
+      error_message = "Can't create argument tuple for 'add_sample' method";
+      ROS_ERROR_STREAM_NAMED(LOGNAME, error_message);
       Py_DECREF(python_func_add_sample);
       Py_DECREF(python_instance);
       PyErr_Print();
@@ -270,7 +285,8 @@ bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_
     python_value = PyEval_CallObject(python_func_add_sample, python_args_sample[i]);
     if (!python_value)
     {
-      ROS_ERROR_STREAM_NAMED(LOGNAME, "Error calling 'add_sample' method");
+      error_message = "Error calling 'add_sample' method";
+      ROS_ERROR_STREAM_NAMED(LOGNAME, error_message);
       Py_DECREF(python_func_add_sample);
       Py_DECREF(python_instance);
       PyErr_Print();
@@ -308,8 +324,8 @@ bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_
   Py_DECREF(python_name);
   if (!python_module)
   {
-    ROS_ERROR_STREAM_NAMED(LOGNAME, "Failed to load python module: "
-                                        << "handeye.solver");
+    error_message = "Failed to load python module: handeye.solver";
+    ROS_ERROR_STREAM_NAMED(LOGNAME, error_message);
     Py_DECREF(python_instance);
     PyErr_Print();
     return false;
@@ -320,7 +336,8 @@ bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_
   Py_DECREF(python_module);
   if (!python_class || !PyCallable_Check(python_class))
   {
-    ROS_ERROR_STREAM_NAMED(LOGNAME, "Can't find \"" << solver_name << "\" python class");
+    error_message = "Can't find \"" + solver_name + "\" python class";
+    ROS_ERROR_STREAM_NAMED(LOGNAME, error_message);
     Py_DECREF(python_instance);
     PyErr_Print();
     return false;
@@ -330,7 +347,8 @@ bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_
   python_func_solve = PyObject_GetAttrString(python_instance, "solve");
   if (!python_func_solve || !PyCallable_Check(python_func_solve))
   {
-    ROS_ERROR_STREAM_NAMED(LOGNAME, "Can't find 'solve' method");
+    error_message = "Can't find 'solve' method";
+    ROS_ERROR_STREAM_NAMED(LOGNAME, error_message);
     Py_DECREF(python_class);
     Py_DECREF(python_instance);
     PyErr_Print();
@@ -342,7 +360,8 @@ bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_
   Py_DECREF(python_class);
   if (!python_args)
   {
-    ROS_ERROR_STREAM_NAMED(LOGNAME, "Can't create argument tuple for 'solve' method");
+    error_message = "Can't create argument tuple for 'solve' method";
+    ROS_ERROR_STREAM_NAMED(LOGNAME, error_message);
     Py_DECREF(python_instance);
     PyErr_Print();
     return false;
@@ -357,14 +376,16 @@ bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_
   Py_DECREF(python_instance);
   if (!python_value)
   {
-    ROS_ERROR_STREAM_NAMED(LOGNAME, "Error calling 'solve' method");
+    error_message = "Error calling 'solve' method";
+    ROS_ERROR_STREAM_NAMED(LOGNAME, error_message);
     PyErr_Print();
     return false;
   }
   PyArrayObject* np_ret = (PyArrayObject*)python_value;
   if (!PyArray_Check(python_value) || PyArray_NDIM(np_ret) != 2 || PyArray_NBYTES(np_ret) != sizeof(double) * 16)
   {
-    ROS_ERROR_STREAM_NAMED(LOGNAME, "Did not return a valid array");
+    error_message = "Did not return a valid array";
+    ROS_ERROR_STREAM_NAMED(LOGNAME, error_message);
     Py_DECREF(python_value);
     PyErr_Print();
     return false;

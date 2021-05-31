@@ -136,12 +136,12 @@ TEST_F(MoveItHandEyeSolverTester, SolveAXEQXB)
   {
     // Fake test for EYE_IN_HAND to check if segfault happens when loaded
     // multiple times
-    std::string error_message("");
+    std::string error_message;
     bool res =
-        solver_->solve(error_message, eef_wrt_world, obj_wrt_sensor, moveit_handeye_calibration::EYE_IN_HAND, name);
+        solver_->solve(eef_wrt_world, obj_wrt_sensor, moveit_handeye_calibration::EYE_IN_HAND, name, &error_message);
     ASSERT_TRUE(res);
     // Test EYE_TO_HAND from real data
-    res = solver_->solve(error_message, eef_wrt_world, obj_wrt_sensor, moveit_handeye_calibration::EYE_TO_HAND, name);
+    res = solver_->solve(eef_wrt_world, obj_wrt_sensor, moveit_handeye_calibration::EYE_TO_HAND, name, &error_message);
     ASSERT_TRUE(res);
     Eigen::Vector3d t(0.659, -0.249, 0.830);
     Eigen::Vector3d r(0.230, -2.540, 1.950);

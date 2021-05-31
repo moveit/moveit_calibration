@@ -66,9 +66,9 @@ public:
 
   virtual const std::vector<std::string>& getSolverNames() const override;
 
-  virtual bool solve(std::string& error_message, const std::vector<Eigen::Isometry3d>& effector_wrt_world,
+  virtual bool solve(const std::vector<Eigen::Isometry3d>& effector_wrt_world,
                      const std::vector<Eigen::Isometry3d>& object_wrt_sensor, SensorMountType setup = EYE_TO_HAND,
-                     const std::string& solver_name = "TsaiLenz1989") override;
+                     const std::string& solver_name = "TsaiLenz1989", std::string* error_message = nullptr) override;
 
   virtual const Eigen::Isometry3d& getCameraRobotPose() const override;
 

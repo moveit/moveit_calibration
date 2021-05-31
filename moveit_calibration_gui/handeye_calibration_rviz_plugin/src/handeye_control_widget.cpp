@@ -405,8 +405,8 @@ bool ControlTabWidget::solveCameraRobotPose()
   if (solver_ && !calibration_solver_->currentText().isEmpty())
   {
     std::string error_message;
-    bool res = solver_->solve(error_message, effector_wrt_world_, object_wrt_sensor_, sensor_mount_type_,
-                              parseSolverName(calibration_solver_->currentText().toStdString(), '/'));
+    bool res = solver_->solve(effector_wrt_world_, object_wrt_sensor_, sensor_mount_type_,
+                              parseSolverName(calibration_solver_->currentText().toStdString(), '/'), &error_message);
     if (res)
     {
       camera_robot_pose_ = solver_->getCameraRobotPose();

@@ -74,7 +74,7 @@ public:
    */
   virtual bool solve(const std::vector<Eigen::Isometry3d>& effector_wrt_world,
                      const std::vector<Eigen::Isometry3d>& object_wrt_sensor, SensorMountType setup = EYE_TO_HAND,
-                     const std::string& solver_name = "", std::string& error_message = "") = 0;
+                     const std::string& solver_name = "", std::string* error_message = nullptr) = 0;
 
   /**
    * @brief Get the result of the calibration, i.e. the camera pose with respect

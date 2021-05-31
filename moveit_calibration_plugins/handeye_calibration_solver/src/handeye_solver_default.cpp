@@ -61,9 +61,9 @@ const Eigen::Isometry3d& HandEyeSolverDefault::getCameraRobotPose() const
   return camera_robot_pose_;
 }
 
-bool HandEyeSolverDefault::solve(std::string& error_message, const std::vector<Eigen::Isometry3d>& effector_wrt_world,
+bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_wrt_world,
                                  const std::vector<Eigen::Isometry3d>& object_wrt_sensor, SensorMountType setup,
-                                 const std::string& solver_name)
+                                 const std::string& solver_name, std::string& error_message)
 {
   // Check the size of the two sets of pose sample equal
   if (effector_wrt_world.size() != object_wrt_sensor.size())

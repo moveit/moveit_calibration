@@ -63,18 +63,18 @@ public:
 
   /**
    * @brief Calculate camera-robot transform from the input pose samples.
-   * @param[out] error_message Description of error, if solver fails
    * @param effector_wrt_world End-effector pose (4X4 transform) with respect to
    * the world (or robot base).
    * @param object_wrt_sensor Object (calibration board) pose (4X4 transform)
    * with respect to the camera.
    * @param setup Camera mount type, {EYE_TO_HAND, EYE_IN_HAND}.
    * @param solver_name The algorithm used in the calculation.
+   * @param[out] error_message Description of error, if solver fails
    * @return If the calculation succeeds, return true. Otherwise, return false.
    */
-  virtual bool solve(std::string& error_message, const std::vector<Eigen::Isometry3d>& effector_wrt_world,
+  virtual bool solve(const std::vector<Eigen::Isometry3d>& effector_wrt_world,
                      const std::vector<Eigen::Isometry3d>& object_wrt_sensor, SensorMountType setup = EYE_TO_HAND,
-                     const std::string& solver_name = "") = 0;
+                     const std::string& solver_name = "", std::string& error_message = "") = 0;
 
   /**
    * @brief Get the result of the calibration, i.e. the camera pose with respect

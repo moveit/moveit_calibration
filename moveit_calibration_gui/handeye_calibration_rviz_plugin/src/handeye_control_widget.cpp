@@ -141,35 +141,39 @@ ControlTabWidget::ControlTabWidget(QWidget* parent)
 
   QGroupBox* setting_group = new QGroupBox("Settings");
   layout_right->addWidget(setting_group);
-  QFormLayout* setting_layout = new QFormLayout();
+  QVBoxLayout* setting_layout = new QVBoxLayout();
   setting_group->setLayout(setting_layout);
+  QFormLayout* setting_layout_top = new QFormLayout();
+  QGridLayout* setting_layout_bottom = new QGridLayout();
+  setting_layout->insertLayout(0, setting_layout_top);
+  setting_layout->insertLayout(1, setting_layout_bottom);
 
   calibration_solver_ = new QComboBox();
-  setting_layout->addRow("AX=XB Solver", calibration_solver_);
+  setting_layout_top->addRow("AX=XB Solver", calibration_solver_);
 
   group_name_ = new QComboBox();
   connect(group_name_, SIGNAL(activated(const QString&)), this, SLOT(planningGroupNameChanged(const QString&)));
-  setting_layout->addRow("Planning Group", group_name_);
+  setting_layout_top->addRow("Planning Group", group_name_);
 
   load_joint_state_btn_ = new QPushButton("Load joint states");
   connect(load_joint_state_btn_, SIGNAL(clicked(bool)), this, SLOT(loadJointStateBtnClicked(bool)));
-  setting_layout->addRow(load_joint_state_btn_);
+  setting_layout_bottom->addWidget(load_joint_state_btn_, 0, 0);
 
   save_joint_state_btn_ = new QPushButton("Save joint states");
   connect(save_joint_state_btn_, SIGNAL(clicked(bool)), this, SLOT(saveJointStateBtnClicked(bool)));
-  setting_layout->addRow(save_joint_state_btn_);
+  setting_layout_bottom->addWidget(save_joint_state_btn_, 0, 1);
 
   load_samples_btn_ = new QPushButton("Load samples");
   connect(load_samples_btn_, SIGNAL(clicked(bool)), this, SLOT(loadSamplesBtnClicked(bool)));
-  setting_layout->addRow(load_samples_btn_);
+  setting_layout_bottom->addWidget(load_samples_btn_, 1, 0);
 
   save_samples_btn_ = new QPushButton("Save samples");
   connect(save_samples_btn_, SIGNAL(clicked(bool)), this, SLOT(saveSamplesBtnClicked(bool)));
-  setting_layout->addRow(save_samples_btn_);
+  setting_layout_bottom->addWidget(save_samples_btn_, 1, 1);
 
   save_camera_pose_btn_ = new QPushButton("Save camera pose");
   connect(save_camera_pose_btn_, SIGNAL(clicked(bool)), this, SLOT(saveCameraPoseBtnClicked(bool)));
-  setting_layout->addRow(save_camera_pose_btn_);
+  setting_layout_bottom->addWidget(save_camera_pose_btn_, 2, 0, 1, 2);
 
   // Manual calibration area
   QGroupBox* manual_cal_group = new QGroupBox("Manual Calibration");

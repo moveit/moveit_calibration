@@ -69,11 +69,12 @@ public:
    * with respect to the camera.
    * @param setup Camera mount type, {EYE_TO_HAND, EYE_IN_HAND}.
    * @param solver_name The algorithm used in the calculation.
+   * @param[out] error_message Description of error, if solver fails
    * @return If the calculation succeeds, return true. Otherwise, return false.
    */
   virtual bool solve(const std::vector<Eigen::Isometry3d>& effector_wrt_world,
                      const std::vector<Eigen::Isometry3d>& object_wrt_sensor, SensorMountType setup = EYE_TO_HAND,
-                     const std::string& solver_name = "") = 0;
+                     const std::string& solver_name = "", std::string* error_message = nullptr) = 0;
 
   /**
    * @brief Get the result of the calibration, i.e. the camera pose with respect

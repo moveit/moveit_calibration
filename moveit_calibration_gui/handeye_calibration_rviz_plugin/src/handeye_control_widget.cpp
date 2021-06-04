@@ -408,8 +408,9 @@ bool ControlTabWidget::solveCameraRobotPose()
 {
   if (solver_ && !calibration_solver_->currentText().isEmpty())
   {
+    std::string error_message;
     bool res = solver_->solve(effector_wrt_world_, object_wrt_sensor_, sensor_mount_type_,
-                              parseSolverName(calibration_solver_->currentText().toStdString(), '/'));
+                              parseSolverName(calibration_solver_->currentText().toStdString(), '/'), &error_message);
     if (res)
     {
       camera_robot_pose_ = solver_->getCameraRobotPose();
@@ -455,7 +456,7 @@ bool ControlTabWidget::solveCameraRobotPose()
     }
     else
     {
-      QMessageBox::warning(this, tr("Solver Failed"), tr("Solver failed to return a calibration."));
+      QMessageBox::warning(this, tr("Solver Failed"), tr((std::string("Error: ") + error_message).c_str()));
       return false;
     }
   }

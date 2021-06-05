@@ -184,7 +184,7 @@ private:
 
   std::string optical_frame_;
 
-  sensor_msgs::CameraInfoPtr camera_info_;
+  sensor_msgs::CameraInfoConstPtr camera_info_;
 
   // **************************************************************
   // Ros components

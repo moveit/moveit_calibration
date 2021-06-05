@@ -210,7 +210,7 @@ public:
    * @param msg Input camera info message.
    * @return True if the input camera info format is correct, false otherwise.
    */
-  virtual bool setCameraIntrinsicParams(const sensor_msgs::CameraInfoPtr& msg)
+  virtual bool setCameraIntrinsicParams(const sensor_msgs::CameraInfoConstPtr& msg)
   {
     if (!msg)
     {

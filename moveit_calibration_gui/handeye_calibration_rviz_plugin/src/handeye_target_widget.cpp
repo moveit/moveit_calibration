@@ -151,9 +151,6 @@ TargetTabWidget::TargetTabWidget(QWidget* parent)
   // Initialize image publisher
   image_pub_ = it_.advertise("/handeye_calibration/target_detection", 1);
 
-  // Initialize camera info dada
-  camera_info_.reset(new sensor_msgs::CameraInfo());
-
   // Register custom types
   qRegisterMetaType<sensor_msgs::CameraInfo>();
   qRegisterMetaType<std::string>();
@@ -438,14 +435,7 @@ void TargetTabWidget::cameraInfoCallback(const sensor_msgs::CameraInfoConstPtr& 
       (msg->K != camera_info_->K || msg->P != camera_info_->P))
   {
     ROS_DEBUG_NAMED(LOGNAME, "Received camera info.");
-    camera_info_->header = msg->header;
-    camera_info_->height = msg->height;
-    camera_info_->width = msg->width;
-    camera_info_->distortion_model = msg->distortion_model;
-    camera_info_->D = msg->D;
-    camera_info_->K = msg->K;
-    camera_info_->R = msg->R;
-    camera_info_->P = msg->P;
+    camera_info_ = msg;
     target_->setCameraIntrinsicParams(camera_info_);
     Q_EMIT cameraInfoChanged(*camera_info_);
   }

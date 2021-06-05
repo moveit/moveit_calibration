@@ -18,7 +18,7 @@ jobs:
           - IMAGE: noetic
             CATKIN_LINT: true
     env:
-      DOCKER_IMAGE: 'moveit/moveit:${{ matrix.env.IMAGE }}-source'
+      DOCKER_IMAGE: 'moveit/moveit:${{ matrix.env.IMAGE }}-release'
       UNDERLAY: /root/ws_moveit/install
       AFTER_RUN_TARGET_TEST: ${{ matrix.env.CCOV && './.ci.prepare_codecov' || '' }}
       TARGET_CMAKE_ARGS: >

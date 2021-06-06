@@ -14,7 +14,7 @@ jobs:
           - IMAGE: melodic
             CCOV: true
             CATKIN_LINT: true
-            UPSTREAM_WORKSPACE: 'upstream.rosinstall'
+            UPSTREAM_WORKSPACE: 'melodic_upstream.rosinstall'
           - IMAGE: noetic
             CATKIN_LINT: true
     env:

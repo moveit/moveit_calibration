@@ -14,7 +14,7 @@ jobs:
           - IMAGE: melodic
             CCOV: true
             CATKIN_LINT: true
-            UPSTREAM_WORKSPACE: 'melodic_upstream.rosinstall'
+            UPSTREAM_WORKSPACE: github:PickNikRobotics/rviz_visual_tools#master
           - IMAGE: noetic
             CATKIN_LINT: true
     env:

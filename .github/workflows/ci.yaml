@@ -14,12 +14,11 @@ jobs:
           - IMAGE: melodic
             CCOV: true
             CATKIN_LINT: true
-            UPSTREAM_WORKSPACE: 'upstream.rosinstall'
+            UPSTREAM_WORKSPACE: github:PickNikRobotics/rviz_visual_tools#master
           - IMAGE: noetic
             CATKIN_LINT: true
     env:
-      DOCKER_IMAGE: 'moveit/moveit:${{ matrix.env.IMAGE }}-source'
-      UNDERLAY: /root/ws_moveit/install
+      DOCKER_IMAGE: 'moveit/moveit:${{ matrix.env.IMAGE }}-release'
       AFTER_RUN_TARGET_TEST: ${{ matrix.env.CCOV && './.ci.prepare_codecov' || '' }}
       TARGET_CMAKE_ARGS: >
         -DCMAKE_BUILD_TYPE=${{ matrix.env.CCOV && 'RelWithDebInfo' || 'Release'}}

@@ -23,14 +23,13 @@
   <depend>tf2_eigen</depend>
   <depend>tf2_geometry_msgs</depend>
   <depend>libjsoncpp-dev</depend>
+  <depend>libopencv-dev</depend>
 
   <build_depend>eigen</build_depend>
-  <build_depend>libopencv-dev</build_depend>
 
   <exec_depend>handeye</exec_depend>
   <exec_depend>criutils</exec_depend>
   <exec_depend>baldor</exec_depend>
-  <exec_depend>libopencv-dev</exec_depend>
 
   <test_depend>rosunit</test_depend>
 

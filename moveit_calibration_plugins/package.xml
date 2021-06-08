@@ -23,6 +23,7 @@
   <depend>tf2_eigen</depend>
   <depend>tf2_geometry_msgs</depend>
   <depend>libjsoncpp-dev</depend>
+  <depend>libopencv-dev</depend>
 
   <build_depend>eigen</build_depend>
 

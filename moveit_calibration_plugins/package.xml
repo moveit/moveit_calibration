@@ -30,6 +30,7 @@
   <exec_depend>handeye</exec_depend>
   <exec_depend>criutils</exec_depend>
   <exec_depend>baldor</exec_depend>
+  <exec_depend>libopencv-dev</exec_depend>
 
   <test_depend>rosunit</test_depend>
 

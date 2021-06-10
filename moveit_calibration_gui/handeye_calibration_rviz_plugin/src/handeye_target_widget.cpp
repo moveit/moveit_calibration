@@ -432,7 +432,7 @@ void TargetTabWidget::imageCallback(const sensor_msgs::ImageConstPtr& msg)
 void TargetTabWidget::cameraInfoCallback(const sensor_msgs::CameraInfoConstPtr& msg)
 {
   if (target_ && msg->height > 0 && msg->width > 0 && !msg->K.empty() && !msg->D.empty() &&
-      (msg->K != camera_info_->K || msg->P != camera_info_->P))
+      (!camera_info_ || msg->K != camera_info_->K || msg->P != camera_info_->P))
   {
     ROS_DEBUG_NAMED(LOGNAME, "Received camera info.");
     camera_info_ = msg;

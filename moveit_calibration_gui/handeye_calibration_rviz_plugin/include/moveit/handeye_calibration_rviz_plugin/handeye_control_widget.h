@@ -198,6 +198,7 @@ private:
   // **************************************************************
 
   QTreeView* sample_tree_view_;
+  QLabel* reprojection_error_label_;
   QStandardItemModel* tree_view_model_;
 
   QComboBox* calibration_solver_;

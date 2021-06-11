@@ -146,7 +146,7 @@ bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_
     python_value = PyString_FromString("Moving");
   if (!python_value)
   {
-    *error_message = "Can't creat sensor mount type python value";
+    *error_message = "Can't create sensor mount type python value";
     ROS_ERROR_STREAM_NAMED(LOGNAME, *error_message);
     Py_DECREF(python_class);
     PyErr_Print();

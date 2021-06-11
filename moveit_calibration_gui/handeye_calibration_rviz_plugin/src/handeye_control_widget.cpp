@@ -134,6 +134,8 @@ ControlTabWidget::ControlTabWidget(QWidget* parent)
   sample_tree_view_->setHeaderHidden(true);
   sample_tree_view_->setIndentation(10);
   sample_layout->addWidget(sample_tree_view_);
+  reprojection_error_label_ = new QLabel("Reprojection error: N/A");
+  sample_layout->addWidget(reprojection_error_label_);
 
   // Settings area
   QVBoxLayout* layout_right = new QVBoxLayout();
@@ -419,6 +421,14 @@ bool ControlTabWidget::solveCameraRobotPose()
       Eigen::Vector3d t = camera_robot_pose_.translation();
       Eigen::Vector3d r = camera_robot_pose_.rotation().eulerAngles(0, 1, 2);
       Q_EMIT sensorPoseUpdate(t[0], t[1], t[2], r[0], r[1], r[2]);
+
+      // Calculate reprojection error
+      const auto& reproj_err = solver_->getReprojectionError(effector_wrt_world_, object_wrt_sensor_,
+                                                             camera_robot_pose_, sensor_mount_type_);
+      std::ostringstream reproj_err_text;
+      reproj_err_text << "Reprojection error:\n" << reproj_err.first << " m, " << reproj_err.second << " rad";
+      ROS_WARN_NAMED(LOGNAME, "%s", reproj_err_text.str().c_str());
+      reprojection_error_label_->setText(QString(reproj_err_text.str().c_str()));
 
       // Publish camera pose tf
       const std::string& from_frame = frame_names_[from_frame_tag_];

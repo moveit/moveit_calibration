@@ -58,17 +58,18 @@ public:
   explicit HandEyeCalibrationDisplay(QWidget* parent = 0);
   ~HandEyeCalibrationDisplay() override;
 
-  virtual void load(const rviz::Config& config) override;
-  virtual void save(rviz::Config config) const override;
+  void load(const rviz::Config& config) override;
+  void save(rviz::Config config) const override;
 
   void update(float wall_dt, float ros_dt) override;
   void reset() override;
 
+protected:
+  void onInitialize() override;
+
 private:
+  rviz::PanelDockWidget* frame_dock_;
   HandEyeCalibrationFrame* frame_;
-  // ******************************************************************************************
-  // Ros Components
-  // ******************************************************************************************
 };
 
 }  // namespace moveit_rviz_plugin

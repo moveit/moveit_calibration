@@ -37,14 +37,30 @@
 #include <moveit/handeye_calibration_rviz_plugin/handeye_calibration_display.h>
 #include <moveit/handeye_calibration_rviz_plugin/handeye_calibration_frame.h>
 
+#include <rviz/window_manager_interface.h>
+
 #include <Eigen/Geometry>
 #include <cmath>
 
+#include <iostream>
+
 namespace moveit_rviz_plugin
 {
-HandEyeCalibrationDisplay::HandEyeCalibrationDisplay(QWidget* parent) : rviz::Display()
+HandEyeCalibrationDisplay::HandEyeCalibrationDisplay(QWidget* parent) : Display()
 {
-  frame_ = new HandEyeCalibrationFrame();
+}
+
+void HandEyeCalibrationDisplay::onInitialize()
+{
+  Display::onInitialize();
+
+  rviz::WindowManagerInterface* window_context = context_->getWindowManager();
+  frame_ = new HandEyeCalibrationFrame(context_, window_context ? window_context->getParentWindow() : nullptr);
+
+  if (window_context)
+  {
+    frame_dock_ = window_context->addPane("HandEye Calibration", frame_);
+  }
 }
 
 HandEyeCalibrationDisplay::~HandEyeCalibrationDisplay() = default;

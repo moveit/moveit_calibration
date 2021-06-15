@@ -42,7 +42,8 @@
 
 namespace moveit_rviz_plugin
 {
-HandEyeCalibrationFrame::HandEyeCalibrationFrame(QWidget* parent) : QWidget(parent)
+HandEyeCalibrationFrame::HandEyeCalibrationFrame(rviz::DisplayContext* context, QWidget* parent)
+  : QWidget(parent), context_(context)
 {
   setMinimumSize(695, 460);
   // Basic widget container

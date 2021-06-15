@@ -49,7 +49,8 @@
 
 #ifndef Q_MOC_RUN
 #include <ros/ros.h>
-#include <rviz/panel.h>
+#include <rviz/display_factory.h>
+#include <rviz/display_context.h>
 #endif
 
 namespace moveit_rviz_plugin
@@ -62,13 +63,15 @@ class HandEyeCalibrationFrame : public QWidget
   Q_OBJECT
 
 public:
-  explicit HandEyeCalibrationFrame(QWidget* parent = 0);
+  explicit HandEyeCalibrationFrame(rviz::DisplayContext* context, QWidget* parent = 0);
   ~HandEyeCalibrationFrame() override;
 
   virtual void loadWidget(const rviz::Config& config);
   virtual void saveWidget(rviz::Config config) const;
 
 private:
+  rviz::DisplayContext* context_;
+
   // ******************************************************************************************
   // Qt Components
   // ******************************************************************************************

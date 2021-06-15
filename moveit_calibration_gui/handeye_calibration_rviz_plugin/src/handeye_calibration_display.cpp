@@ -48,6 +48,24 @@ namespace moveit_rviz_plugin
 {
 HandEyeCalibrationDisplay::HandEyeCalibrationDisplay(QWidget* parent) : Display()
 {
+  move_group_ns_property_ = new rviz::StringProperty("Move Group Namespace", "",
+                                                     "The name of the ROS namespace in "
+                                                     "which the move_group node is running",
+                                                     this, SLOT(changedMoveGroupNS()), this);
+  planning_scene_topic_property_ =
+      new rviz::RosTopicProperty("Planning Scene Topic", "move_group/monitored_planning_scene",
+                                 ros::message_traits::datatype<moveit_msgs::PlanningScene>(),
+                                 "The topic on which the moveit_msgs::PlanningScene messages are received", this,
+                                 SLOT(changedPlanningSceneTopic()), this);
+
+  fov_marker_enabled_property_ = new rviz::BoolProperty(
+      "Camera FOV Marker", true, "Enable marker showing camera field of view", this, SLOT(changedFOVEnabled()), this);
+  fov_marker_alpha_property_ =
+      new rviz::FloatProperty("Marker Alpha", 0.3f, "Specifies the alpha (transparency) for the rendered marker",
+                              fov_marker_enabled_property_, SLOT(changedFOVAlpha()), this);
+  fov_marker_size_property_ =
+      new rviz::FloatProperty("Marker Size", 1.f, "Specifies the size (depth in meters) for the rendered marker",
+                              fov_marker_enabled_property_, SLOT(changedFOVSize()), this);
 }
 
 void HandEyeCalibrationDisplay::onInitialize()
@@ -61,28 +79,79 @@ void HandEyeCalibrationDisplay::onInitialize()
   {
     frame_dock_ = window_context->addPane("HandEye Calibration", frame_);
   }
+  setStatus(rviz::StatusProperty::Ok, "Hello", "world");
 }
 
 HandEyeCalibrationDisplay::~HandEyeCalibrationDisplay() = default;
 
 void HandEyeCalibrationDisplay::save(rviz::Config config) const
 {
-  frame_->saveWidget(config);
+  Display::save(config);
+  if (frame_)
+  {
+    frame_->saveWidget(config);
+  }
 }
 
 // Load all configuration data for this panel from the given Config object.
 void HandEyeCalibrationDisplay::load(const rviz::Config& config)
 {
-  frame_->loadWidget(config);
-
-  ROS_INFO_STREAM("handeye calibration gui loaded.");
+  Display::load(config);
+  if (frame_)
+  {
+    frame_->loadWidget(config);
+  }
 }
 
 void HandEyeCalibrationDisplay::update(float wall_dt, float ros_dt)
 {
+  Display::update(wall_dt, ros_dt);
 }
 
 void HandEyeCalibrationDisplay::reset()
 {
+  Display::reset();
 }
+
+void HandEyeCalibrationDisplay::changedMoveGroupNS()
+{
+  // TODO
+}
+
+void HandEyeCalibrationDisplay::changedPlanningSceneTopic()
+{
+  // TODO
+  /*
+  if (planning_scene_monitor_ && planning_scene_topic_property_)
+  {
+    planning_scene_monitor_->startSceneMonitor(planning_scene_topic_property_->getStdString());
+    std::string service_name = planning_scene_monitor::PlanningSceneMonitor::DEFAULT_PLANNING_SCENE_SERVICE;
+    if (!getMoveGroupNS().empty())
+      service_name = ros::names::append(getMoveGroupNS(), service_name);
+    auto bg_func = [=]() {
+      if (planning_scene_monitor_->requestPlanningSceneState(service_name))
+        addMainLoopJob(boost::bind(&PlanningSceneDisplay::onNewPlanningSceneState, this));
+      else
+        setStatus(rviz::StatusProperty::Warn, "PlanningScene", "Requesting initial scene failed");
+    };
+    addBackgroundJob(bg_func, "requestPlanningSceneState");
+  }
+  */
+}
+
+void HandEyeCalibrationDisplay::changedFOVEnabled()
+{
+  // TODO
+}
+
+void HandEyeCalibrationDisplay::changedFOVAlpha()
+{
+  // TODO
+}
+
+void HandEyeCalibrationDisplay::changedFOVSize()
+{
+  // TODO
+}
+
 }  // namespace moveit_rviz_plugin

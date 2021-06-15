@@ -47,6 +47,10 @@
 #ifndef Q_MOC_RUN
 #include <ros/ros.h>
 #include <rviz/display.h>
+#include <rviz/properties/property.h>
+#include <rviz/properties/float_property.h>
+#include <rviz/properties/ros_topic_property.h>
+#include <rviz/properties/string_property.h>
 #endif
 
 namespace moveit_rviz_plugin
@@ -64,8 +68,24 @@ public:
   void update(float wall_dt, float ros_dt) override;
   void reset() override;
 
+private Q_SLOTS:
+
+  // ******************************************************************************************
+  // Slot Event Functions
+  // ******************************************************************************************
+  void changedMoveGroupNS();
+  void changedPlanningSceneTopic();
+  void changedFOVEnabled();
+  void changedFOVAlpha();
+  void changedFOVSize();
+
 protected:
   void onInitialize() override;
+  rviz::StringProperty* move_group_ns_property_;
+  rviz::RosTopicProperty* planning_scene_topic_property_;
+  rviz::BoolProperty* fov_marker_enabled_property_;
+  rviz::FloatProperty* fov_marker_alpha_property_;
+  rviz::FloatProperty* fov_marker_size_property_;
 
 private:
   rviz::PanelDockWidget* frame_dock_;

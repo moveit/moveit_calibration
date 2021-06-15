@@ -197,6 +197,7 @@ ContextTabWidget::ContextTabWidget(QWidget* parent) : QWidget(parent), tf_listen
   for (std::pair<const std::string, TFFrameNameComboBox*>& frame : frames_)
     connect(frame.second, SIGNAL(activated(int)), this, SLOT(updateFrameName(int)));
 
+  // TODO: move this to display properties
   // FOV area
   QGroupBox* fov_group = new QGroupBox("FOV", this);
   layout_left->addWidget(fov_group);

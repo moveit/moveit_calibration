@@ -35,6 +35,6 @@
 /* Author: Yu Yan */
 
 #include <class_loader/class_loader.hpp>
-#include <moveit/handeye_calibration_rviz_plugin/handeye_calibration_gui.h>
+#include <moveit/handeye_calibration_rviz_plugin/handeye_calibration_display.h>
 
-CLASS_LOADER_REGISTER_CLASS(moveit_rviz_plugin::HandEyeCalibrationGui, rviz::Panel)
+CLASS_LOADER_REGISTER_CLASS(moveit_rviz_plugin::HandEyeCalibrationDisplay, rviz::Display)

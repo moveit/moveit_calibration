@@ -88,19 +88,16 @@ HandEyeCalibrationFrame::HandEyeCalibrationFrame(QWidget* parent) : QWidget(pare
 
 HandEyeCalibrationFrame::~HandEyeCalibrationFrame() = default;
 
-void HandEyeCalibrationFrame::save(rviz::Config config) const
+void HandEyeCalibrationFrame::saveWidget(rviz::Config config) const
 {
   tab_target_->saveWidget(config);
   tab_context_->saveWidget(config);
   tab_control_->saveWidget(config);
-  rviz::Panel::save(config);
 }
 
 // Load all configuration data for this panel from the given Config object.
-void HandEyeCalibrationFrame::load(const rviz::Config& config)
+void HandEyeCalibrationFrame::loadWidget(const rviz::Config& config)
 {
-  rviz::Panel::load(config);
-
   tab_target_->loadWidget(config);
   tab_context_->loadWidget(config);
   tab_control_->loadWidget(config);

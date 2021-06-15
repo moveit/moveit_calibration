@@ -34,8 +34,7 @@
 
 /* Author: Yu Yan */
 
-#ifndef MOVEIT_HANDEYE_CALIBRATION_RVIZ_PLUGIN_HANDEYE_CALIBRATION_GUI_
-#define MOVEIT_HANDEYE_CALIBRATION_RVIZ_PLUGIN_HANDEYE_CALIBRATION_GUI_
+#pragma once
 
 // qt
 
@@ -43,6 +42,7 @@
 #include <rviz_visual_tools/tf_visual_tools.h>
 
 // local
+#include <moveit/handeye_calibration_rviz_plugin/handeye_calibration_display.h>
 #include <moveit/handeye_calibration_rviz_plugin/handeye_target_widget.h>
 #include <moveit/handeye_calibration_rviz_plugin/handeye_context_widget.h>
 #include <moveit/handeye_calibration_rviz_plugin/handeye_control_widget.h>
@@ -54,6 +54,8 @@
 
 namespace moveit_rviz_plugin
 {
+class HandEyeCalibrationDisplay;
+
 class HandEyeCalibrationFrame : public QWidget
 {
   friend class HandEyeCalibrationDisplay;
@@ -63,8 +65,8 @@ public:
   explicit HandEyeCalibrationFrame(QWidget* parent = 0);
   ~HandEyeCalibrationFrame() override;
 
-  virtual void load(const rviz::Config& config) override;
-  virtual void save(rviz::Config config) const override;
+  virtual void loadWidget(const rviz::Config& config);
+  virtual void saveWidget(rviz::Config config) const;
 
 private:
   // ******************************************************************************************
@@ -74,8 +76,8 @@ private:
   TargetTabWidget* tab_target_;
   ContextTabWidget* tab_context_;
   ControlTabWidget* tab_control_;
+
+  rviz_visual_tools::TFVisualToolsPtr tf_tools_;
 };
 
 }  // namespace moveit_rviz_plugin
-
-#endif

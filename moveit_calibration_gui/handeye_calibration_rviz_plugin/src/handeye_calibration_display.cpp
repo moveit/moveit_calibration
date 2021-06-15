@@ -44,7 +44,7 @@ namespace moveit_rviz_plugin
 {
 HandEyeCalibrationDisplay::HandEyeCalibrationDisplay(QWidget* parent) : rviz::Display()
 {
-  frame_ = new HandEyeCalibrationFrame::HandEyeCalibrationFrame();
+  frame_ = new HandEyeCalibrationFrame();
 }
 
 HandEyeCalibrationDisplay::~HandEyeCalibrationDisplay() = default;
@@ -57,9 +57,16 @@ void HandEyeCalibrationDisplay::save(rviz::Config config) const
 // Load all configuration data for this panel from the given Config object.
 void HandEyeCalibrationDisplay::load(const rviz::Config& config)
 {
-  frame_->load(config);
+  frame_->loadWidget(config);
 
   ROS_INFO_STREAM("handeye calibration gui loaded.");
 }
 
+void HandEyeCalibrationDisplay::update(float wall_dt, float ros_dt)
+{
+}
+
+void HandEyeCalibrationDisplay::reset()
+{
+}
 }  // namespace moveit_rviz_plugin

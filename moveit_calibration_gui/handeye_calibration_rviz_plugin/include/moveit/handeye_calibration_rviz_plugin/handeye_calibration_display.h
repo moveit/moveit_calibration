@@ -34,8 +34,7 @@
 
 /* Author: Yu Yan */
 
-#ifndef MOVEIT_HANDEYE_CALIBRATION_RVIZ_PLUGIN_HANDEYE_CALIBRATION_GUI_
-#define MOVEIT_HANDEYE_CALIBRATION_RVIZ_PLUGIN_HANDEYE_CALIBRATION_GUI_
+#pragma once
 
 // qt
 
@@ -44,13 +43,10 @@
 
 // local
 #include <moveit/handeye_calibration_rviz_plugin/handeye_calibration_frame.h>
-#include <moveit/handeye_calibration_rviz_plugin/handeye_target_widget.h>
-#include <moveit/handeye_calibration_rviz_plugin/handeye_context_widget.h>
-#include <moveit/handeye_calibration_rviz_plugin/handeye_control_widget.h>
 
 #ifndef Q_MOC_RUN
 #include <ros/ros.h>
-#include <rviz/panel.h>
+#include <rviz/display.h>
 #endif
 
 namespace moveit_rviz_plugin
@@ -73,10 +69,6 @@ private:
   // ******************************************************************************************
   // Ros Components
   // ******************************************************************************************
-
-  rviz_visual_tools::TFVisualToolsPtr tf_tools_;
 };
 
 }  // namespace moveit_rviz_plugin
-
-#endif

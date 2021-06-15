@@ -54,15 +54,17 @@
 
 namespace moveit_rviz_plugin
 {
-class HandEyeCalibrationGui : public rviz::Panel
+class HandEyeCalibrationFrame : public QWidget
 {
+  friend class HandEyeCalibrationDisplay;
   Q_OBJECT
-public:
-  explicit HandEyeCalibrationGui(QWidget* parent = 0);
-  ~HandEyeCalibrationGui() override;
 
-  virtual void load(const rviz::Config& config);
-  virtual void save(rviz::Config config) const;
+public:
+  explicit HandEyeCalibrationFrame(QWidget* parent = 0);
+  ~HandEyeCalibrationFrame() override;
+
+  virtual void load(const rviz::Config& config) override;
+  virtual void save(rviz::Config config) const override;
 
 private:
   // ******************************************************************************************
@@ -72,12 +74,6 @@ private:
   TargetTabWidget* tab_target_;
   ContextTabWidget* tab_context_;
   ControlTabWidget* tab_control_;
-
-  // ******************************************************************************************
-  // Ros Components
-  // ******************************************************************************************
-
-  rviz_visual_tools::TFVisualToolsPtr tf_tools_;
 };
 
 }  // namespace moveit_rviz_plugin

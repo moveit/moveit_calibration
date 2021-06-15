@@ -34,14 +34,15 @@
 
 /* Author: Yu Yan */
 
-#include <moveit/handeye_calibration_rviz_plugin/handeye_calibration_gui.h>
+#include <moveit/handeye_calibration_rviz_plugin/handeye_calibration_display.h>
+#include <moveit/handeye_calibration_rviz_plugin/handeye_calibration_frame.h>
 
 #include <Eigen/Geometry>
 #include <cmath>
 
 namespace moveit_rviz_plugin
 {
-HandEyeCalibrationGui::HandEyeCalibrationGui(QWidget* parent) : rviz::Panel(parent)
+HandEyeCalibrationFrame::HandEyeCalibrationFrame(QWidget* parent) : QWidget(parent)
 {
   setMinimumSize(695, 460);
   // Basic widget container
@@ -85,9 +86,9 @@ HandEyeCalibrationGui::HandEyeCalibrationGui(QWidget* parent) : rviz::Panel(pare
   ROS_INFO_STREAM("handeye calibration gui created.");
 }
 
-HandEyeCalibrationGui::~HandEyeCalibrationGui() = default;
+HandEyeCalibrationFrame::~HandEyeCalibrationFrame() = default;
 
-void HandEyeCalibrationGui::save(rviz::Config config) const
+void HandEyeCalibrationFrame::save(rviz::Config config) const
 {
   tab_target_->saveWidget(config);
   tab_context_->saveWidget(config);
@@ -96,7 +97,7 @@ void HandEyeCalibrationGui::save(rviz::Config config) const
 }
 
 // Load all configuration data for this panel from the given Config object.
-void HandEyeCalibrationGui::load(const rviz::Config& config)
+void HandEyeCalibrationFrame::load(const rviz::Config& config)
 {
   rviz::Panel::load(config);
 

@@ -84,8 +84,9 @@ void RosTopicComboBox::mousePressEvent(QMouseEvent* event)
   showPopup();
 }
 
-TargetTabWidget::TargetTabWidget(QWidget* parent)
+TargetTabWidget::TargetTabWidget(HandEyeCalibrationDisplay* pdisplay, QWidget* parent)
   : QWidget(parent)
+  , calibration_display_(pdisplay)
   , nh_("~")
   , it_(nh_)
   , target_plugins_loader_(nullptr)

@@ -75,7 +75,7 @@ void HandEyeCalibrationDisplay::onInitialize()
   Display::onInitialize();
 
   rviz::WindowManagerInterface* window_context = context_->getWindowManager();
-  frame_ = new HandEyeCalibrationFrame(context_, window_context ? window_context->getParentWindow() : nullptr);
+  frame_ = new HandEyeCalibrationFrame(this, context_, window_context ? window_context->getParentWindow() : nullptr);
 
   if (window_context)
   {

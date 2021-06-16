@@ -56,6 +56,9 @@
 namespace moveit_rviz_plugin
 {
 class HandEyeCalibrationDisplay;
+class TargetTabWidget;
+class ContextTabWidget;
+class ControlTabWidget;
 
 class HandEyeCalibrationFrame : public QWidget
 {
@@ -63,7 +66,8 @@ class HandEyeCalibrationFrame : public QWidget
   Q_OBJECT
 
 public:
-  explicit HandEyeCalibrationFrame(rviz::DisplayContext* context, QWidget* parent = 0);
+  explicit HandEyeCalibrationFrame(HandEyeCalibrationDisplay* pdisplay, rviz::DisplayContext* context,
+                                   QWidget* parent = 0);
   ~HandEyeCalibrationFrame() override;
 
   virtual void loadWidget(const rviz::Config& config);
@@ -71,6 +75,7 @@ public:
 
 private:
   rviz::DisplayContext* context_;
+  HandEyeCalibrationDisplay* calibration_display_;
 
   // ******************************************************************************************
   // Qt Components

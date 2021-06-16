@@ -34,8 +34,7 @@
 
 /* Author: Yu Yan */
 
-#ifndef MOVEIT_HANDEYE_CALIBRATION_RVIZ_PLUGIN_HANDEYE_CALIBRATE_WIDGET_
-#define MOVEIT_HANDEYE_CALIBRATION_RVIZ_PLUGIN_HANDEYE_CALIBRATE_WIDGET_
+#pragma once
 
 // qt
 #include <QFile>
@@ -64,7 +63,7 @@
 #include <moveit/planning_scene_monitor/planning_scene_monitor.h>
 #include <moveit/handeye_calibration_solver/handeye_solver_base.h>
 #include <moveit/background_processing/background_processing.h>
-#include <moveit/motion_planning_rviz_plugin/motion_planning_display.h>
+#include <moveit/handeye_calibration_rviz_plugin/handeye_calibration_display.h>
 
 #ifndef Q_MOC_RUN
 #include <ros/ros.h>
@@ -77,6 +76,8 @@ namespace mhc = moveit_handeye_calibration;
 
 namespace moveit_rviz_plugin
 {
+class HandEyeCalibrationDisplay;
+
 class ProgressBarWidget : public QWidget
 {
   Q_OBJECT
@@ -113,7 +114,7 @@ class ControlTabWidget : public QWidget
   };
 
 public:
-  explicit ControlTabWidget(QWidget* parent = Q_NULLPTR);
+  explicit ControlTabWidget(HandEyeCalibrationDisplay* pdisplay, QWidget* parent = Q_NULLPTR);
   ~ControlTabWidget()
   {
     tf_tools_.reset();
@@ -193,6 +194,8 @@ private Q_SLOTS:
   void executeFinished();
 
 private:
+  HandEyeCalibrationDisplay* calibration_display_;
+
   // **************************************************************
   // Qt components
   // **************************************************************
@@ -261,4 +264,3 @@ private:
 };
 
 }  // namespace moveit_rviz_plugin
-#endif

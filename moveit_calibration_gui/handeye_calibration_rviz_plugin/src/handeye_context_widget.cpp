@@ -154,7 +154,8 @@ void SliderWidget::changeSlider()
   Q_EMIT valueChanged(value);
 }
 
-ContextTabWidget::ContextTabWidget(QWidget* parent) : QWidget(parent), tf_listener_(tf_buffer_)
+ContextTabWidget::ContextTabWidget(HandEyeCalibrationDisplay* pdisplay, QWidget* parent)
+  : QWidget(parent), calibration_display_(pdisplay), tf_listener_(tf_buffer_)
 {
   // Context setting tab ----------------------------------------------------
   QHBoxLayout* layout = new QHBoxLayout();

@@ -95,8 +95,9 @@ int ProgressBarWidget::getValue()
   return bar_->value();
 }
 
-ControlTabWidget::ControlTabWidget(QWidget* parent)
+ControlTabWidget::ControlTabWidget(HandEyeCalibrationDisplay* pdisplay, QWidget* parent)
   : QWidget(parent)
+  , calibration_display_(pdisplay)
   , tf_buffer_(new tf2_ros::Buffer())
   , tf_listener_(*tf_buffer_)
   , sensor_mount_type_(mhc::EYE_TO_HAND)

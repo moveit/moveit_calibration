@@ -42,8 +42,9 @@
 
 namespace moveit_rviz_plugin
 {
-HandEyeCalibrationFrame::HandEyeCalibrationFrame(rviz::DisplayContext* context, QWidget* parent)
-  : QWidget(parent), context_(context)
+HandEyeCalibrationFrame::HandEyeCalibrationFrame(HandEyeCalibrationDisplay* pdisplay, rviz::DisplayContext* context,
+                                                 QWidget* parent)
+  : QWidget(parent), calibration_display_(pdisplay), context_(context)
 {
   setMinimumSize(695, 460);
   // Basic widget container
@@ -59,18 +60,18 @@ HandEyeCalibrationFrame::HandEyeCalibrationFrame(rviz::DisplayContext* context, 
 
   // Tab menu ------------------------------------------------------------
   QTabWidget* tabs = new QTabWidget(this);
-  tab_target_ = new TargetTabWidget();
+  tab_target_ = new TargetTabWidget(calibration_display_);
 
   tf_tools_.reset(new rviz_visual_tools::TFVisualTools(250));
 
-  tab_context_ = new ContextTabWidget();
+  tab_context_ = new ContextTabWidget(calibration_display_);
   tab_context_->setTFTool(tf_tools_);
   connect(tab_target_, SIGNAL(cameraInfoChanged(sensor_msgs::CameraInfo)), tab_context_,
           SLOT(setCameraInfo(sensor_msgs::CameraInfo)));
   connect(tab_target_, SIGNAL(opticalFrameChanged(const std::string&)), tab_context_,
           SLOT(setOpticalFrame(const std::string&)));
 
-  tab_control_ = new ControlTabWidget();
+  tab_control_ = new ControlTabWidget(calibration_display_);
   tab_control_->setTFTool(tf_tools_);
   tab_control_->UpdateSensorMountType(0);
   connect(tab_context_, SIGNAL(sensorMountTypeChanged(int)), tab_control_, SLOT(UpdateSensorMountType(int)));

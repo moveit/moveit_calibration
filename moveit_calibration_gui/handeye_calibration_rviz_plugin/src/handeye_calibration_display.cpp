@@ -81,7 +81,6 @@ void HandEyeCalibrationDisplay::onInitialize()
   {
     frame_dock_ = window_context->addPane("HandEye Calibration", frame_);
   }
-  setStatus(rviz::StatusProperty::Ok, "Hello", "world");
 }
 
 HandEyeCalibrationDisplay::~HandEyeCalibrationDisplay() = default;

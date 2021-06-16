@@ -258,6 +258,9 @@ ContextTabWidget::ContextTabWidget(HandEyeCalibrationDisplay* pdisplay, QWidget*
   visual_tools_->setAlpha(1.0);
   visual_tools_->setLifetime(0.0);
   visual_tools_->trigger();
+
+  calibration_display_->setStatus(rviz::StatusProperty::Warn, "Calibration context",
+                                  "Not all calibration frames have been selected.");
 }
 
 void ContextTabWidget::loadWidget(const rviz::Config& config)
@@ -536,8 +539,22 @@ void ContextTabWidget::updateFrameName(int index)
   updateFOVPose();
 
   std::map<std::string, std::string> names;
+  bool any_empty = false;
   for (std::pair<const std::string, TFFrameNameComboBox*>& frame : frames_)
+  {
     names.insert(std::make_pair(frame.first, frame.second->currentText().toStdString()));
+    any_empty = any_empty || frame.second->currentText().toStdString().empty();
+  }
+  if (any_empty)
+  {
+    calibration_display_->setStatus(rviz::StatusProperty::Warn, "Calibration context",
+                                    "Not all calibration frames have been selected.");
+  }
+  else
+  {
+    calibration_display_->setStatus(rviz::StatusProperty::Ok, "Calibration context",
+                                    "Calibration frames have been selected.");
+  }
 
   Q_EMIT frameNameChanged(names);
 }

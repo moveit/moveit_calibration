@@ -238,6 +238,9 @@ ControlTabWidget::ControlTabWidget(HandEyeCalibrationDisplay* pdisplay, QWidget*
 
   execution_watcher_ = new QFutureWatcher<void>(this);
   connect(execution_watcher_, &QFutureWatcher<void>::finished, this, &ControlTabWidget::executeFinished);
+
+  // Set initial status
+  calibration_display_->setStatus(rviz::StatusProperty::Ok, "Calibration", "Collect 5 samples to start calibration.");
 }
 
 void ControlTabWidget::loadWidget(const rviz::Config& config)
@@ -287,6 +290,8 @@ bool ControlTabWidget::loadSolverPlugin(std::vector<std::string>& plugins)
     }
     catch (pluginlib::PluginlibException& ex)
     {
+      calibration_display_->setStatus(rviz::StatusProperty::Error, "Calibration",
+                                      "Couldn't create solver plugin loader.");
       QMessageBox::warning(this, tr("Exception while creating handeye solver plugin loader "), tr(ex.what()));
       return false;
     }
@@ -306,6 +311,7 @@ bool ControlTabWidget::createSolverInstance(const std::string& plugin_name)
   }
   catch (pluginlib::PluginlibException& ex)
   {
+    calibration_display_->setStatus(rviz::StatusProperty::Error, "Calibration", "Couldn't load solver plugin.");
     ROS_ERROR_STREAM_NAMED(LOGNAME, "Exception while loading handeye solver plugin: " << plugin_name << ex.what());
     solver_ = nullptr;
   }
@@ -412,6 +418,7 @@ bool ControlTabWidget::solveCameraRobotPose()
       if (!from_frame.empty() && !to_frame.empty())
       {
         tf_tools_->clearAllTransforms();
+        calibration_display_->setStatus(rviz::StatusProperty::Ok, "Calibration", "Calibration successful.");
         ROS_INFO_STREAM_NAMED(LOGNAME, "Publish camera transformation" << std::endl
                                                                        << camera_robot_pose_.matrix() << std::endl
                                                                        << "from " << from_frame_tag_ << " frame '"
@@ -437,17 +444,21 @@ bool ControlTabWidget::solveCameraRobotPose()
                    << "</pre>but <b>" << from_frame_tag_ << "</b> or <b>sensor</b> frame is undefined.";
           QMessageBox::warning(this, "Solver Failed", QString::fromStdString(warn_msg.str()));
         }
+        calibration_display_->setStatus(rviz::StatusProperty::Warn, "Calibration",
+                                        "Calibration successful but frames are undefined.");
         return false;
       }
     }
     else
     {
+      calibration_display_->setStatus(rviz::StatusProperty::Error, "Calibration", "Solver failed.");
       QMessageBox::warning(this, tr("Solver Failed"), tr((std::string("Error: ") + error_message).c_str()));
       return false;
     }
   }
   else
   {
+    calibration_display_->setStatus(rviz::StatusProperty::Error, "Calibration", "No solver available.");
     QMessageBox::warning(this, tr("No Solver Available"), tr("No available handeye calibration solver instance."));
     return false;
   }

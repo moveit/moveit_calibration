@@ -68,6 +68,12 @@ public:
   void update(float wall_dt, float ros_dt) override;
   void reset() override;
 
+  rviz::StringProperty* move_group_ns_property_;
+  rviz::RosTopicProperty* planning_scene_topic_property_;
+  rviz::BoolProperty* fov_marker_enabled_property_;
+  rviz::FloatProperty* fov_marker_alpha_property_;
+  rviz::FloatProperty* fov_marker_size_property_;
+
 private Q_SLOTS:
 
   // ******************************************************************************************
@@ -81,11 +87,6 @@ private Q_SLOTS:
 
 protected:
   void onInitialize() override;
-  rviz::StringProperty* move_group_ns_property_;
-  rviz::RosTopicProperty* planning_scene_topic_property_;
-  rviz::BoolProperty* fov_marker_enabled_property_;
-  rviz::FloatProperty* fov_marker_alpha_property_;
-  rviz::FloatProperty* fov_marker_size_property_;
 
 private:
   rviz::PanelDockWidget* frame_dock_;

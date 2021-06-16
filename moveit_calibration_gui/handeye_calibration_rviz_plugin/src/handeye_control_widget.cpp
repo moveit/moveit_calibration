@@ -230,32 +230,7 @@ ControlTabWidget::ControlTabWidget(HandEyeCalibrationDisplay* pdisplay, QWidget*
   if (loadSolverPlugin(plugins))
     fillSolverTypes(plugins);
 
-  // Fill in available planning group names
-  planning_scene_monitor_.reset(
-      new planning_scene_monitor::PlanningSceneMonitor("robot_description", tf_buffer_, "planning_scene_monitor"));
-  if (planning_scene_monitor_)
-  {
-    planning_scene_monitor_->startSceneMonitor("move_group/monitored_planning_scene");
-    std::string service_name = planning_scene_monitor::PlanningSceneMonitor::DEFAULT_PLANNING_SCENE_SERVICE;
-    if (planning_scene_monitor_->requestPlanningSceneState(service_name))
-    {
-      const robot_model::RobotModelConstPtr& kmodel = planning_scene_monitor_->getRobotModel();
-      for (const std::string& group_name : kmodel->getJointModelGroupNames())
-        group_name_->addItem(group_name.c_str());
-      if (!group_name_->currentText().isEmpty())
-        try
-        {
-          moveit::planning_interface::MoveGroupInterface::Options opt(group_name_->currentText().toStdString());
-          opt.node_handle_ = nh_;
-          move_group_.reset(
-              new moveit::planning_interface::MoveGroupInterface(opt, tf_buffer_, ros::WallDuration(30, 0)));
-        }
-        catch (std::exception& ex)
-        {
-          ROS_ERROR_NAMED(LOGNAME, "%s", ex.what());
-        }
-    }
-  }
+  fillPlanningGroupNameComboBox();
 
   // Set plan and execution watcher
   plan_watcher_ = new QFutureWatcher<void>(this);
@@ -661,27 +636,55 @@ void ControlTabWidget::planningGroupNameChanged(const QString& text)
 {
   if (!text.isEmpty())
   {
-    if (move_group_ && move_group_->getName() == text.toStdString())
-      return;
-
-    try
-    {
-      moveit::planning_interface::MoveGroupInterface::Options opt(group_name_->currentText().toStdString());
-      opt.node_handle_ = nh_;
-      move_group_.reset(new moveit::planning_interface::MoveGroupInterface(opt, tf_buffer_, ros::WallDuration(30, 0)));
-
-      // Clear the joint values aligning with other group
-      joint_states_.clear();
-      auto_progress_->setMax(0);
-    }
-    catch (const std::exception& e)
-    {
-      ROS_ERROR_NAMED(LOGNAME, "%s", e.what());
-    }
+    setGroupName(text.toStdString());
   }
   else
   {
     QMessageBox::warning(this, tr("Invalid Group Name"), "Group name is empty");
+  }
+}
+
+void ControlTabWidget::setGroupName(const std::string& group_name)
+{
+  if (move_group_ && move_group_->getName() == group_name)
+    return;
+
+  try
+  {
+    moveit::planning_interface::MoveGroupInterface::Options opt(group_name);
+    opt.node_handle_ = ros::NodeHandle(calibration_display_->move_group_ns_property_->getStdString());
+    move_group_.reset(new moveit::planning_interface::MoveGroupInterface(opt, tf_buffer_, ros::WallDuration(5, 0)));
+
+    // Clear the joint values from any previous group
+    joint_states_.clear();
+    auto_progress_->setMax(0);
+  }
+  catch (std::exception& ex)
+  {
+    ROS_ERROR_NAMED(LOGNAME, "%s", ex.what());
+  }
+}
+
+void ControlTabWidget::fillPlanningGroupNameComboBox()
+{
+  group_name_->clear();
+  // Fill in available planning group names
+  planning_scene_monitor_.reset(
+      new planning_scene_monitor::PlanningSceneMonitor("robot_description", tf_buffer_, "planning_scene_monitor"));
+  if (planning_scene_monitor_)
+  {
+    planning_scene_monitor_->startSceneMonitor(calibration_display_->planning_scene_topic_property_->getStdString());
+    std::string service_name = planning_scene_monitor::PlanningSceneMonitor::DEFAULT_PLANNING_SCENE_SERVICE;
+    if (planning_scene_monitor_->requestPlanningSceneState(service_name))
+    {
+      const robot_model::RobotModelConstPtr& kmodel = planning_scene_monitor_->getRobotModel();
+      for (const std::string& group_name : kmodel->getJointModelGroupNames())
+      {
+        group_name_->addItem(group_name.c_str());
+      }
+      if (!group_name_->currentText().isEmpty())
+        setGroupName(group_name_->currentText().toStdString());
+    }
   }
 }
 

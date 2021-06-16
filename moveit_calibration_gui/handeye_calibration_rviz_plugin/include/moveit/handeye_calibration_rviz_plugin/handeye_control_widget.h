@@ -179,6 +179,12 @@ private Q_SLOTS:
 
   void planningGroupNameChanged(const QString& text);
 
+  void setGroupName(const std::string& group_name);
+
+  void planningGroupNamespaceChanged();
+
+  void fillPlanningGroupNameComboBox();
+
   void saveJointStateBtnClicked(bool clicked);
 
   void loadJointStateBtnClicked(bool clicked);

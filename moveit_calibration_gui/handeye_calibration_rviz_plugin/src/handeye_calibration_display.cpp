@@ -58,7 +58,6 @@ HandEyeCalibrationDisplay::HandEyeCalibrationDisplay(QWidget* parent) : Display(
                                  "The topic on which the moveit_msgs::PlanningScene messages are received", this,
                                  SLOT(changedPlanningSceneTopic()), this);
 
-  /* TODO: move parameters here instead of in context tab
   fov_marker_enabled_property_ = new rviz::BoolProperty(
       "Camera FOV Marker", true, "Enable marker showing camera field of view", this, SLOT(changedFOVEnabled()), this);
   fov_marker_alpha_property_ =
@@ -67,7 +66,6 @@ HandEyeCalibrationDisplay::HandEyeCalibrationDisplay(QWidget* parent) : Display(
   fov_marker_size_property_ =
       new rviz::FloatProperty("Marker Size", 1.f, "Specifies the size (depth in meters) for the rendered marker",
                               fov_marker_enabled_property_, SLOT(changedFOVSize()), this);
-                              */
 }
 
 void HandEyeCalibrationDisplay::onInitialize()

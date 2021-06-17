@@ -196,9 +196,6 @@ private Q_SLOTS:
   // Called when the slider of initial camera pose guess changed
   void updateCameraMarkerPose(double value);
 
-  // Called when the fov_on_off_ button toggled
-  void fovOnOffBtnToggled(bool checked);
-
 Q_SIGNALS:
 
   void sensorMountTypeChanged(int index);
@@ -217,10 +214,6 @@ private:
 
   // Frame selection area
   std::map<std::string, TFFrameNameComboBox*> frames_;
-
-  // FOV setting area
-  QRadioButton* fov_on_off_;
-  SliderWidget* fov_alpha_;
 
   // Initial camera pose
   std::map<std::string, SliderWidget*> guess_pose_;

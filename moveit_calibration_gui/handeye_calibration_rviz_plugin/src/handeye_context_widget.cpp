@@ -165,7 +165,7 @@ ContextTabWidget::ContextTabWidget(HandEyeCalibrationDisplay* pdisplay, QWidget*
   QVBoxLayout* layout_right = new QVBoxLayout();
   layout->addLayout(layout_right);
 
-  // Sensor mount type area and fov area
+  // Sensor mount type area
   QGroupBox* group_left_top = new QGroupBox("General Setting", this);
   layout_left->addWidget(group_left_top);
   QFormLayout* layout_left_top = new QFormLayout();
@@ -197,23 +197,6 @@ ContextTabWidget::ContextTabWidget(HandEyeCalibrationDisplay* pdisplay, QWidget*
 
   for (std::pair<const std::string, TFFrameNameComboBox*>& frame : frames_)
     connect(frame.second, SIGNAL(activated(int)), this, SLOT(updateFrameName(int)));
-
-  // TODO: move this to display properties
-  // FOV area
-  QGroupBox* fov_group = new QGroupBox("FOV", this);
-  layout_left->addWidget(fov_group);
-  QFormLayout* fov_layout = new QFormLayout();
-  fov_group->setLayout(fov_layout);
-
-  fov_alpha_ = new SliderWidget(this, "Transparency", 0, 1);
-  fov_alpha_->setValue(0.5);
-  fov_layout->addRow(fov_alpha_);
-  connect(fov_alpha_, SIGNAL(valueChanged(double)), this, SLOT(updateCameraMarkerPose(double)));
-
-  fov_on_off_ = new QRadioButton();
-  fov_on_off_->setChecked(true);
-  fov_layout->addRow("ON/OFF", fov_on_off_);
-  connect(fov_on_off_, SIGNAL(toggled(bool)), this, SLOT(fovOnOffBtnToggled(bool)));
 
   // Camera Pose initial guess area
   QGroupBox* pose_group = new QGroupBox("Camera Pose Inital Guess", this);
@@ -282,14 +265,6 @@ void ContextTabWidget::loadWidget(const rviz::Config& config)
     }
   }
 
-  float alpha;
-  if (config.mapGetFloat("fov_transparent", &alpha))
-    fov_alpha_->setValue(alpha);
-
-  bool fov_enabled;
-  if (config.mapGetBool("fov_on_off", &fov_enabled))
-    fov_on_off_->setChecked(fov_enabled);
-
   for (std::pair<const std::string, SliderWidget*>& dim : guess_pose_)
   {
     float value;
@@ -311,9 +286,6 @@ void ContextTabWidget::saveWidget(rviz::Config& config)
 
   for (std::pair<const std::string, TFFrameNameComboBox*>& frame : frames_)
     config.mapSetValue(frame.first.c_str(), frame.second->currentText());
-
-  config.mapSetValue("fov_transparent", fov_alpha_->getValue());
-  config.mapSetValue("fov_on_off", fov_on_off_->isChecked());
 
   for (std::pair<const std::string, SliderWidget*>& dim : guess_pose_)
     config.mapSetValue(dim.first.c_str(), dim.second->getValue());
@@ -374,10 +346,10 @@ void ContextTabWidget::updateAllMarkers()
 
         // Publish new FOV marker
         shape_msgs::Mesh mesh = getCameraFOVMesh(*camera_info_, 1.5);
-        if (fov_on_off_->isChecked())
+        if (calibration_display_->fov_marker_enabled_property_->getBool())
         {
           visual_tools_->setBaseFrame(to_frame.toStdString());
-          visual_tools_->setAlpha(fov_alpha_->getValue());
+          visual_tools_->setAlpha(calibration_display_->fov_marker_alpha_property_->getFloat());
           visual_tools_->publishMesh(fov_pose_, mesh, rvt::YELLOW, 1.0, "fov", 1);
         }
       }
@@ -560,11 +532,6 @@ void ContextTabWidget::updateFrameName(int index)
 }
 
 void ContextTabWidget::updateCameraMarkerPose(double value)
-{
-  updateAllMarkers();
-}
-
-void ContextTabWidget::fovOnOffBtnToggled(bool checked)
 {
   updateAllMarkers();
 }

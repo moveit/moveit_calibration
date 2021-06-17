@@ -64,7 +64,7 @@ HandEyeCalibrationDisplay::HandEyeCalibrationDisplay(QWidget* parent) : Display(
       new rviz::FloatProperty("Marker Alpha", 0.3f, "Specifies the alpha (transparency) for the rendered marker",
                               fov_marker_enabled_property_, SLOT(changedFOVAlpha()), this);
   fov_marker_size_property_ =
-      new rviz::FloatProperty("Marker Size", 1.f, "Specifies the size (depth in meters) for the rendered marker",
+      new rviz::FloatProperty("Marker Size", 1.5f, "Specifies the size (depth in meters) for the rendered marker",
                               fov_marker_enabled_property_, SLOT(changedFOVSize()), this);
 }
 
@@ -114,43 +114,42 @@ void HandEyeCalibrationDisplay::reset()
 
 void HandEyeCalibrationDisplay::changedMoveGroupNS()
 {
-  // TODO
+  if (frame_ && frame_->tab_control_)
+  {
+    frame_->tab_control_->fillPlanningGroupNameComboBox();
+  }
 }
 
 void HandEyeCalibrationDisplay::changedPlanningSceneTopic()
 {
-  // TODO
-  /*
-  if (planning_scene_monitor_ && planning_scene_topic_property_)
+  if (frame_ && frame_->tab_control_)
   {
-    planning_scene_monitor_->startSceneMonitor(planning_scene_topic_property_->getStdString());
-    std::string service_name = planning_scene_monitor::PlanningSceneMonitor::DEFAULT_PLANNING_SCENE_SERVICE;
-    if (!getMoveGroupNS().empty())
-      service_name = ros::names::append(getMoveGroupNS(), service_name);
-    auto bg_func = [=]() {
-      if (planning_scene_monitor_->requestPlanningSceneState(service_name))
-        addMainLoopJob(boost::bind(&PlanningSceneDisplay::onNewPlanningSceneState, this));
-      else
-        setStatus(rviz::StatusProperty::Warn, "PlanningScene", "Requesting initial scene failed");
-    };
-    addBackgroundJob(bg_func, "requestPlanningSceneState");
+    frame_->tab_control_->fillPlanningGroupNameComboBox();
   }
-  */
 }
 
 void HandEyeCalibrationDisplay::changedFOVEnabled()
 {
-  // TODO
+  if (frame_ && frame_->tab_context_)
+  {
+    frame_->tab_context_->updateAllMarkers();
+  }
 }
 
 void HandEyeCalibrationDisplay::changedFOVAlpha()
 {
-  // TODO
+  if (frame_ && frame_->tab_context_)
+  {
+    frame_->tab_context_->updateAllMarkers();
+  }
 }
 
 void HandEyeCalibrationDisplay::changedFOVSize()
 {
-  // TODO
+  if (frame_ && frame_->tab_context_)
+  {
+    frame_->tab_context_->updateAllMarkers();
+  }
 }
 
 }  // namespace moveit_rviz_plugin

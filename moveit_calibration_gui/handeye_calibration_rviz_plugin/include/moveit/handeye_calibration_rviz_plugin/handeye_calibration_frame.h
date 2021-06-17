@@ -73,10 +73,7 @@ public:
   virtual void loadWidget(const rviz::Config& config);
   virtual void saveWidget(rviz::Config config) const;
 
-private:
-  rviz::DisplayContext* context_;
-  HandEyeCalibrationDisplay* calibration_display_;
-
+protected:
   // ******************************************************************************************
   // Qt Components
   // ******************************************************************************************
@@ -84,6 +81,10 @@ private:
   TargetTabWidget* tab_target_;
   ContextTabWidget* tab_context_;
   ControlTabWidget* tab_control_;
+
+private:
+  rviz::DisplayContext* context_;
+  HandEyeCalibrationDisplay* calibration_display_;
 
   rviz_visual_tools::TFVisualToolsPtr tf_tools_;
 };

@@ -230,6 +230,7 @@ ControlTabWidget::ControlTabWidget(HandEyeCalibrationDisplay* pdisplay, QWidget*
   if (loadSolverPlugin(plugins))
     fillSolverTypes(plugins);
 
+  // Connect PSM and get group names
   fillPlanningGroupNameComboBox();
 
   // Set plan and execution watcher

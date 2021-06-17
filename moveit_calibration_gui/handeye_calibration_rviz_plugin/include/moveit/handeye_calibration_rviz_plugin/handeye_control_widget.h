@@ -153,6 +153,8 @@ public:
 
   void computeExecution();
 
+  void fillPlanningGroupNameComboBox();
+
 Q_SIGNALS:
 
   void sensorPoseUpdate(double x, double y, double z, double rx, double ry, double rz);
@@ -182,8 +184,6 @@ private Q_SLOTS:
   void setGroupName(const std::string& group_name);
 
   void planningGroupNamespaceChanged();
-
-  void fillPlanningGroupNameComboBox();
 
   void saveJointStateBtnClicked(bool clicked);
 

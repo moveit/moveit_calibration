@@ -345,9 +345,10 @@ void ContextTabWidget::updateAllMarkers()
         tf_tools_->publishTransform(camera_pose_, from_frame.toStdString(), to_frame.toStdString());
 
         // Publish new FOV marker
-        shape_msgs::Mesh mesh = getCameraFOVMesh(*camera_info_, 1.5);
         if (calibration_display_->fov_marker_enabled_property_->getBool())
         {
+          shape_msgs::Mesh mesh =
+              getCameraFOVMesh(*camera_info_, calibration_display_->fov_marker_size_property_->getFloat());
           visual_tools_->setBaseFrame(to_frame.toStdString());
           visual_tools_->setAlpha(calibration_display_->fov_marker_alpha_property_->getFloat());
           visual_tools_->publishMesh(fov_pose_, mesh, rvt::YELLOW, 1.0, "fov", 1);

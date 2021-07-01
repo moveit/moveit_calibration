@@ -68,6 +68,12 @@ HandEyeCalibrationDisplay::HandEyeCalibrationDisplay(QWidget* parent) : Display(
                               fov_marker_enabled_property_, SLOT(changedFOVSize()), this);
 }
 
+HandEyeCalibrationDisplay::~HandEyeCalibrationDisplay()
+{
+  if (frame_dock_)
+    delete frame_dock_;
+}
+
 void HandEyeCalibrationDisplay::onInitialize()
 {
   Display::onInitialize();
@@ -80,8 +86,6 @@ void HandEyeCalibrationDisplay::onInitialize()
     frame_dock_ = window_context->addPane("HandEye Calibration", frame_);
   }
 }
-
-HandEyeCalibrationDisplay::~HandEyeCalibrationDisplay() = default;
 
 void HandEyeCalibrationDisplay::save(rviz::Config config) const
 {

@@ -47,6 +47,7 @@
 #ifndef Q_MOC_RUN
 #include <ros/ros.h>
 #include <rviz/display.h>
+#include <rviz/panel_dock_widget.h>
 #include <rviz/properties/property.h>
 #include <rviz/properties/float_property.h>
 #include <rviz/properties/ros_topic_property.h>

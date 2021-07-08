@@ -687,6 +687,8 @@ void ControlTabWidget::fillPlanningGroupNameComboBox()
   {
     planning_scene_monitor_->startSceneMonitor(calibration_display_->planning_scene_topic_property_->getStdString());
     std::string service_name = planning_scene_monitor::PlanningSceneMonitor::DEFAULT_PLANNING_SCENE_SERVICE;
+    if (!calibration_display_->move_group_ns_property_->getStdString().empty())
+      service_name = ros::names::append(calibration_display_->move_group_ns_property_->getStdString(), service_name);
     if (planning_scene_monitor_->requestPlanningSceneState(service_name))
     {
       const robot_model::RobotModelConstPtr& kmodel = planning_scene_monitor_->getRobotModel();

@@ -36,7 +36,6 @@
 
 #pragma once
 
-// qt
 
 // ros
 #include <rviz_visual_tools/tf_visual_tools.h>

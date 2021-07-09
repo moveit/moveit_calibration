@@ -423,7 +423,7 @@ void TargetTabWidget::imageCallback(const sensor_msgs::ImageConstPtr& msg)
 
       geometry_msgs::TransformStamped tf2_msg = target_->getTransformStamped(optical_frame_);
       tf_pub_.sendTransform(tf2_msg);
-      if (!target_->areIntrinsicsSane())
+      if (!target_->areIntrinsicsReasonable())
       {
         calibration_display_->setStatus(
             rviz::StatusProperty::Warn, "Target detection",

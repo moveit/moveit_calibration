@@ -51,21 +51,21 @@ HandEyeCalibrationDisplay::HandEyeCalibrationDisplay(QWidget* parent) : Display(
   move_group_ns_property_ = new rviz::StringProperty("Move Group Namespace", "",
                                                      "The name of the ROS namespace in "
                                                      "which the move_group node is running",
-                                                     this, SLOT(changedMoveGroupNS()), this);
+                                                     this, SLOT(fillPlanningGroupNameComboBox()), this);
   planning_scene_topic_property_ =
       new rviz::RosTopicProperty("Planning Scene Topic", "move_group/monitored_planning_scene",
                                  ros::message_traits::datatype<moveit_msgs::PlanningScene>(),
                                  "The topic on which the moveit_msgs::PlanningScene messages are received", this,
-                                 SLOT(changedPlanningSceneTopic()), this);
+                                 SLOT(fillPlanningGroupNameComboBox()), this);
 
   fov_marker_enabled_property_ = new rviz::BoolProperty(
-      "Camera FOV Marker", true, "Enable marker showing camera field of view", this, SLOT(changedFOVEnabled()), this);
+      "Camera FOV Marker", true, "Enable marker showing camera field of view", this, SLOT(updateMarkers()), this);
   fov_marker_alpha_property_ =
       new rviz::FloatProperty("Marker Alpha", 0.3f, "Specifies the alpha (transparency) for the rendered marker",
-                              fov_marker_enabled_property_, SLOT(changedFOVAlpha()), this);
+                              fov_marker_enabled_property_, SLOT(updateMarkers()), this);
   fov_marker_size_property_ =
       new rviz::FloatProperty("Marker Size", 1.5f, "Specifies the size (depth in meters) for the rendered marker",
-                              fov_marker_enabled_property_, SLOT(changedFOVSize()), this);
+                              fov_marker_enabled_property_, SLOT(updateMarkers()), this);
 }
 
 HandEyeCalibrationDisplay::~HandEyeCalibrationDisplay()
@@ -106,17 +106,7 @@ void HandEyeCalibrationDisplay::load(const rviz::Config& config)
   }
 }
 
-void HandEyeCalibrationDisplay::update(float wall_dt, float ros_dt)
-{
-  Display::update(wall_dt, ros_dt);
-}
-
-void HandEyeCalibrationDisplay::reset()
-{
-  Display::reset();
-}
-
-void HandEyeCalibrationDisplay::changedMoveGroupNS()
+void HandEyeCalibrationDisplay::fillPlanningGroupNameComboBox()
 {
   if (frame_ && frame_->tab_control_)
   {
@@ -124,31 +114,7 @@ void HandEyeCalibrationDisplay::changedMoveGroupNS()
   }
 }
 
-void HandEyeCalibrationDisplay::changedPlanningSceneTopic()
-{
-  if (frame_ && frame_->tab_control_)
-  {
-    frame_->tab_control_->fillPlanningGroupNameComboBox();
-  }
-}
-
-void HandEyeCalibrationDisplay::changedFOVEnabled()
-{
-  if (frame_ && frame_->tab_context_)
-  {
-    frame_->tab_context_->updateAllMarkers();
-  }
-}
-
-void HandEyeCalibrationDisplay::changedFOVAlpha()
-{
-  if (frame_ && frame_->tab_context_)
-  {
-    frame_->tab_context_->updateAllMarkers();
-  }
-}
-
-void HandEyeCalibrationDisplay::changedFOVSize()
+void HandEyeCalibrationDisplay::updateMarkers()
 {
   if (frame_ && frame_->tab_context_)
   {

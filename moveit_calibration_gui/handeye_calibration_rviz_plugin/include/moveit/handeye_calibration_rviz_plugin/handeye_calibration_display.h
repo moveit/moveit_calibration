@@ -36,7 +36,6 @@
 
 #pragma once
 
-
 // ros
 #include <rviz_visual_tools/tf_visual_tools.h>
 
@@ -65,9 +64,6 @@ public:
   void load(const rviz::Config& config) override;
   void save(rviz::Config config) const override;
 
-  void update(float wall_dt, float ros_dt) override;
-  void reset() override;
-
   rviz::StringProperty* move_group_ns_property_;
   rviz::RosTopicProperty* planning_scene_topic_property_;
   rviz::BoolProperty* fov_marker_enabled_property_;
@@ -79,11 +75,8 @@ private Q_SLOTS:
   // ******************************************************************************************
   // Slot Event Functions
   // ******************************************************************************************
-  void changedMoveGroupNS();
-  void changedPlanningSceneTopic();
-  void changedFOVEnabled();
-  void changedFOVAlpha();
-  void changedFOVSize();
+  void fillPlanningGroupNameComboBox();
+  void updateMarkers();
 
 protected:
   void onInitialize() override;

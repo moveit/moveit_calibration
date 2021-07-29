@@ -34,7 +34,59 @@
 
 /* Author: Yu Yan */
 
-#include <class_loader/class_loader.hpp>
-#include <moveit/handeye_calibration_rviz_plugin/handeye_calibration_display.h>
+#pragma once
 
-CLASS_LOADER_REGISTER_CLASS(moveit_rviz_plugin::HandEyeCalibrationDisplay, rviz::Display)
+// qt
+
+// ros
+#include <rviz_visual_tools/tf_visual_tools.h>
+
+// local
+#include <moveit/handeye_calibration_rviz_plugin/handeye_calibration_display.h>
+#include <moveit/handeye_calibration_rviz_plugin/handeye_target_widget.h>
+#include <moveit/handeye_calibration_rviz_plugin/handeye_context_widget.h>
+#include <moveit/handeye_calibration_rviz_plugin/handeye_control_widget.h>
+
+#ifndef Q_MOC_RUN
+#include <ros/ros.h>
+#include <rviz/display_factory.h>
+#include <rviz/display_context.h>
+#endif
+
+namespace moveit_rviz_plugin
+{
+class HandEyeCalibrationDisplay;
+class TargetTabWidget;
+class ContextTabWidget;
+class ControlTabWidget;
+
+class HandEyeCalibrationFrame : public QWidget
+{
+  friend class HandEyeCalibrationDisplay;
+  Q_OBJECT
+
+public:
+  explicit HandEyeCalibrationFrame(HandEyeCalibrationDisplay* pdisplay, rviz::DisplayContext* context,
+                                   QWidget* parent = 0);
+  ~HandEyeCalibrationFrame() override;
+
+  virtual void loadWidget(const rviz::Config& config);
+  virtual void saveWidget(rviz::Config config) const;
+
+protected:
+  // ******************************************************************************************
+  // Qt Components
+  // ******************************************************************************************
+
+  TargetTabWidget* tab_target_;
+  ContextTabWidget* tab_context_;
+  ControlTabWidget* tab_control_;
+
+private:
+  rviz::DisplayContext* context_;
+  HandEyeCalibrationDisplay* calibration_display_;
+
+  rviz_visual_tools::TFVisualToolsPtr tf_tools_;
+};
+
+}  // namespace moveit_rviz_plugin

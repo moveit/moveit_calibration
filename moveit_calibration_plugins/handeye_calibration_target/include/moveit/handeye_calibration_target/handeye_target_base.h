@@ -254,6 +254,15 @@ public:
   }
 
   /**
+   * @brief Check that camera intrinsic parameters are reasonable.
+   * @return True if intrinsics are reasonable (camera matrix is not all zeros and is not the identity).
+   */
+  virtual bool areIntrinsicsReasonable()
+  {
+    return cv::norm(camera_matrix_) != 0. && cv::norm(camera_matrix_, cv::Mat::eye(3, 3, CV_64F)) != 0.;
+  }
+
+  /**
    * @brief Get parameters relevant to this target.
    * @return List of parameter objects
    */

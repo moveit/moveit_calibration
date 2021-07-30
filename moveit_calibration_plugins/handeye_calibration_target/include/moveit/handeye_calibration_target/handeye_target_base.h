@@ -38,6 +38,9 @@
 
 #include <algorithm>
 #include <mutex>
+// Eigen/Dense should be included before opencv stuff
+// https://stackoverflow.com/questions/9876209/using-eigen-library-with-opencv-2-3-1
+#include <Eigen/Dense>
 #include <opencv2/core/eigen.hpp>
 #include <opencv2/opencv.hpp>
 

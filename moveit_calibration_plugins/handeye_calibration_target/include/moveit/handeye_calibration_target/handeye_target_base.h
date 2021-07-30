@@ -153,9 +153,9 @@ public:
    * @param frame_id The name of the frame this transform is with respect to.
    * @return A `TransformStamped` message.
    */
-  virtual geometry_msgs::TransformStamped getTransformStamped(const std::string& frame_id) const
+  virtual geometry_msgs::msg::TransformStamped getTransformStamped(const std::string& frame_id) const
   {
-    geometry_msgs::TransformStamped transform_stamped;
+    geometry_msgs::msg::TransformStamped transform_stamped;
     transform_stamped.header.stamp = ros::Time::now();
     transform_stamped.header.frame_id = frame_id;
     transform_stamped.child_frame_id = "handeye_target";
@@ -166,8 +166,8 @@ public:
     return transform_stamped;
   }
 
-  // Convert cv::Vec3d rotation vector to geometry_msgs::Quaternion
-  geometry_msgs::Quaternion convertToQuaternionROSMsg(const cv::Vec3d& input_rvect) const
+  // Convert cv::Vec3d rotation vector to geometry_msgs::msg::Quaternion
+  geometry_msgs::msg::Quaternion convertToQuaternionROSMsg(const cv::Vec3d& input_rvect) const
   {
     cv::Mat cv_rotation_matrix;
     cv::Rodrigues(input_rvect, cv_rotation_matrix);
@@ -177,12 +177,12 @@ public:
     return tf2::toMsg(Eigen::Quaterniond(eigen_rotation_matrix));
   }
 
-  // Convert cv::Vec3d translation vector to geometry_msgs::Vector3
-  geometry_msgs::Vector3 convertToVectorROSMsg(const cv::Vec3d& input_tvect) const
+  // Convert cv::Vec3d translation vector to geometry_msgs::msg::Vector3
+  geometry_msgs::msg::Vector3 convertToVectorROSMsg(const cv::Vec3d& input_tvect) const
   {
     Eigen::Vector3d eigen_tvect;
     cv::cv2eigen(input_tvect, eigen_tvect);
-    geometry_msgs::Vector3 msg_tvect;
+    geometry_msgs::msg::Vector3 msg_tvect;
     tf2::toMsg(eigen_tvect, msg_tvect);
     return msg_tvect;
   }
@@ -214,7 +214,7 @@ public:
    * @param msg Input camera info message.
    * @return True if the input camera info format is correct, false otherwise.
    */
-  virtual bool setCameraIntrinsicParams(const sensor_msgs::CameraInfoConstPtr& msg)
+  virtual bool setCameraIntrinsicParams(const sensor_msgs::msg::CameraInfoConstPtr& msg)
   {
     if (!msg)
     {

@@ -160,7 +160,7 @@ public:
   virtual geometry_msgs::msg::TransformStamped getTransformStamped(const std::string& frame_id) const
   {
     geometry_msgs::msg::TransformStamped transform_stamped;
-    transform_stamped.header.stamp = ros::Time::now();
+    transform_stamped.header.stamp = rclcpp::Clock(RCL_ROS_TIME).now(); //Not sure if this is the right approach
     transform_stamped.header.frame_id = frame_id;
     transform_stamped.child_frame_id = "handeye_target";
 

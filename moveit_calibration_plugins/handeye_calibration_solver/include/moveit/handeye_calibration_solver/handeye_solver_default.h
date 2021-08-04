@@ -37,7 +37,8 @@
 #pragma once
 
 #include <moveit/handeye_calibration_solver/handeye_solver_base.h>
-#include <ros/ros.h>
+// #include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
 // Disable clang warnings
 #if defined(__clang__)

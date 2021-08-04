@@ -46,7 +46,7 @@ if(OpenCV_VERSION VERSION_EQUAL 3.2)
 endif()
 
 add_subdirectory(handeye_calibration_target)
-#add_subdirectory(handeye_calibration_solver)
+add_subdirectory(handeye_calibration_solver)
 
 install(
   FILES

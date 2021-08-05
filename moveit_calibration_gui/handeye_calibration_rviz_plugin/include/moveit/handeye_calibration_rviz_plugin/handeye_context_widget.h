@@ -48,21 +48,21 @@
 #include <QRadioButton>
 
 // ros
-#include <shape_msgs/Mesh.h>
-#include <rviz/frame_manager.h>
+#include <shape_msgs/msg/mesh.hpp>>
+// #include <rviz/frame_manager.h>
 #include <tf2_eigen/tf2_eigen.h>
-#include <sensor_msgs/CameraInfo.h>
+#include <sensor_msgs/msg/camera_info.hpp>>
 #include <tf2_ros/transform_listener.h>
-#include <rviz_visual_tools/tf_visual_tools.h>
-#include <rviz_visual_tools/rviz_visual_tools.h>
+#include <rviz_visual_tools/tf_visual_tools.hpp>
+#include <rviz_visual_tools/rviz_visual_tools.hpp>
 #include <image_geometry/pinhole_camera_model.h>
 #include <moveit_visual_tools/moveit_visual_tools.h>
 #include <moveit/handeye_calibration_solver/handeye_solver_base.h>
 #include <moveit/handeye_calibration_rviz_plugin/handeye_calibration_display.h>
 
 #ifndef Q_MOC_RUN
-#include <ros/ros.h>
-#include <rviz/panel.h>
+#include <rclcpp/rclcpp.hpp>
+#include <rviz_common/render_panel.hpp>
 #endif
 
 namespace rvt = rviz_visual_tools;
@@ -222,7 +222,7 @@ private:
   // Variables
   // **************************************************************
 
-  sensor_msgs::CameraInfoPtr camera_info_;
+  sensor_msgs::msg::CameraInfo::SharedPtr camera_info_;
 
   // Transform from camera to robot base or end-effector
   Eigen::Isometry3d camera_pose_;

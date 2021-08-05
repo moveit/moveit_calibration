@@ -57,24 +57,24 @@
 #include <opencv2/opencv.hpp>
 
 // ros
-#include <sensor_msgs/Image.h>
-#include <sensor_msgs/CameraInfo.h>
-#include <sensor_msgs/JointState.h>
+#include <sensor_msgs/msg/image.hpp>
+#include <sensor_msgs/msg/camera_info.hpp>
+#include <sensor_msgs/msg/joint_state.hpp>
 
 #include <cv_bridge/cv_bridge.h>
 #include <image_transport/image_transport.h>
 
 #include <pluginlib/class_loader.hpp>
-#include <rviz_visual_tools/tf_visual_tools.h>
+#include <rviz_visual_tools/tf_visual_tools.hpp>
 #include <moveit/handeye_calibration_target/handeye_target_base.h>
 #include <moveit/handeye_calibration_rviz_plugin/handeye_calibration_display.h>
 
 #ifndef Q_MOC_RUN
-#include <ros/ros.h>
-#include <rviz/panel.h>
+#include <rclcpp/rclcpp.hpp>
+#include <rviz_common/render_panel.hpp>
 #endif
 
-Q_DECLARE_METATYPE(sensor_msgs::CameraInfo);
+Q_DECLARE_METATYPE(sensor_msgs::msg::CameraInfo);
 Q_DECLARE_METATYPE(std::string);
 
 namespace moveit_rviz_plugin
@@ -118,7 +118,7 @@ public:
     camera_info_.reset();
   }
 
-  void loadWidget(const rviz::Config& config);
+  void loadWidget(const rviz_common::Config& config);
   void saveWidget(rviz::Config& config);
 
   bool loadAvailableTargetPlugins();
@@ -188,7 +188,7 @@ private:
 
   std::string optical_frame_;
 
-  sensor_msgs::CameraInfoConstPtr camera_info_;
+  sensor_msgs::msg::CameraInfo::ConstSharedPtr camera_info_;
 
   // **************************************************************
   // Ros components

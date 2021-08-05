@@ -1,13 +1,12 @@
 find_package(OpenCV REQUIRED)
-find_package(GLUT REQUIRED)
 
-# set(HEADERS
-#   include/moveit/handeye_calibration_rviz_plugin/handeye_calibration_display.h
-#   include/moveit/handeye_calibration_rviz_plugin/handeye_calibration_frame.h
-#   include/moveit/handeye_calibration_rviz_plugin/handeye_target_widget.h
-#   include/moveit/handeye_calibration_rviz_plugin/handeye_context_widget.h
-#   include/moveit/handeye_calibration_rviz_plugin/handeye_control_widget.h
-# )
+set(HEADERS
+  include/moveit/handeye_calibration_rviz_plugin/handeye_calibration_display.h
+  include/moveit/handeye_calibration_rviz_plugin/handeye_calibration_frame.h
+  include/moveit/handeye_calibration_rviz_plugin/handeye_target_widget.h
+  include/moveit/handeye_calibration_rviz_plugin/handeye_context_widget.h
+  include/moveit/handeye_calibration_rviz_plugin/handeye_control_widget.h
+)
 
 #catkin_lint: ignore_once missing_directory
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
@@ -22,15 +21,16 @@ set(SOURCE_FILES
 )
 
 set(MOVEIT_LIB_NAME moveit_handeye_calibration_rviz_plugin)
-add_library(${MOVEIT_LIB_NAME}_core ${SOURCE_FILES})
+
+add_library(${MOVEIT_LIB_NAME}_core ${SOURCE_FILES} ${HEADERS})
 set_target_properties(${MOVEIT_LIB_NAME}_core PROPERTIES VERSION "${${PROJECT_NAME}_VERSION}")
 target_link_libraries(${MOVEIT_LIB_NAME}_core
-  ${OpenCV_LIBS} ${rviz_DEFAULT_PLUGIN_LIBRARIES} ${OGRE_LIBRARIES} ${QT_LIBRARIES} ${Boost_LIBRARIES})
+  ${OpenCV_LIBS} ${rviz_DEFAULT_PLUGIN_LIBRARIES} ${OGRE_LIBRARIES} ${QT_LIBRARIES} ${Boost_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_LIBRARY})
 ament_target_dependencies(${MOVEIT_LIB_NAME}_core ${THIS_PACKAGE_INCLUDE_DEPENDS})
 
 add_library(${MOVEIT_LIB_NAME} src/plugin_init.cpp)
 set_target_properties(${MOVEIT_LIB_NAME} PROPERTIES VERSION "${${PROJECT_NAME}_VERSION}")
-target_link_libraries(${MOVEIT_LIB_NAME} ${MOVEIT_LIB_NAME}_core ${Boost_LIBRARIES})
+target_link_libraries(${MOVEIT_LIB_NAME} ${MOVEIT_LIB_NAME}_core ${Boost_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_LIBRARY})
 ament_target_dependencies(${MOVEIT_LIB_NAME}_core ${THIS_PACKAGE_INCLUDE_DEPENDS})
 
 install(DIRECTORY include/ DESTINATION include)

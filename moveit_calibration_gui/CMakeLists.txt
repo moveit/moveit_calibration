@@ -5,7 +5,7 @@ if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 17)
 endif()
 
-set(CMAKE_CXX_EXTENSIONS OFF)
+# set(CMAKE_CXX_EXTENSIONS OFF)
 
 if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
@@ -31,6 +31,8 @@ find_package(rviz_rendering REQUIRED)
 find_package(rviz_visual_tools REQUIRED)
 
 find_package(Eigen3 REQUIRED)
+find_package(OpenGL REQUIRED)
+find_package(GLUT REQUIRED)
 
 # Qt Stuff
 find_package(Qt5Core REQUIRED)
@@ -83,6 +85,8 @@ include_directories(
   SYSTEM
     ${OpenCV_INCLUDE_DIRS}
     ${EIGEN3_INCLUDE_DIRS}
+    ${OPENGL_INCLUDE_DIRS}
+    ${GLUT_INCLUDE_DIRS}
     ${QT_INCLUDE_DIR})
 
 # catkin_package(

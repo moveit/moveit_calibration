@@ -39,7 +39,7 @@
 // qt
 
 // ros
-#include <rviz_visual_tools/tf_visual_tools.h>
+#include <rviz_visual_tools/tf_visual_tools.hpp>
 
 // local
 #include <moveit/handeye_calibration_rviz_plugin/handeye_calibration_display.h>

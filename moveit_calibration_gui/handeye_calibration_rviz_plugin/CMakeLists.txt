@@ -1,12 +1,13 @@
 find_package(OpenCV REQUIRED)
+find_package(GLUT REQUIRED)
 
-set(HEADERS
-  include/moveit/handeye_calibration_rviz_plugin/handeye_calibration_display.h
-  include/moveit/handeye_calibration_rviz_plugin/handeye_calibration_frame.h
-  include/moveit/handeye_calibration_rviz_plugin/handeye_target_widget.h
-  include/moveit/handeye_calibration_rviz_plugin/handeye_context_widget.h
-  include/moveit/handeye_calibration_rviz_plugin/handeye_control_widget.h
-)
+# set(HEADERS
+#   include/moveit/handeye_calibration_rviz_plugin/handeye_calibration_display.h
+#   include/moveit/handeye_calibration_rviz_plugin/handeye_calibration_frame.h
+#   include/moveit/handeye_calibration_rviz_plugin/handeye_target_widget.h
+#   include/moveit/handeye_calibration_rviz_plugin/handeye_context_widget.h
+#   include/moveit/handeye_calibration_rviz_plugin/handeye_control_widget.h
+# )
 
 #catkin_lint: ignore_once missing_directory
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
@@ -21,17 +22,26 @@ set(SOURCE_FILES
 )
 
 set(MOVEIT_LIB_NAME moveit_handeye_calibration_rviz_plugin)
-add_library(${MOVEIT_LIB_NAME}_core ${SOURCE_FILES} ${HEADERS})
+add_library(${MOVEIT_LIB_NAME}_core ${SOURCE_FILES})
 set_target_properties(${MOVEIT_LIB_NAME}_core PROPERTIES VERSION "${${PROJECT_NAME}_VERSION}")
 target_link_libraries(${MOVEIT_LIB_NAME}_core
-  ${catkin_LIBRARIES} ${OpenCV_LIBS} ${rviz_DEFAULT_PLUGIN_LIBRARIES} ${OGRE_LIBRARIES} ${QT_LIBRARIES} ${Boost_LIBRARIES})
+  ${OpenCV_LIBS} ${rviz_DEFAULT_PLUGIN_LIBRARIES} ${OGRE_LIBRARIES} ${QT_LIBRARIES} ${Boost_LIBRARIES})
+ament_target_dependencies(${MOVEIT_LIB_NAME}_core ${THIS_PACKAGE_INCLUDE_DEPENDS})
 
 add_library(${MOVEIT_LIB_NAME} src/plugin_init.cpp)
 set_target_properties(${MOVEIT_LIB_NAME} PROPERTIES VERSION "${${PROJECT_NAME}_VERSION}")
-target_link_libraries(${MOVEIT_LIB_NAME} ${MOVEIT_LIB_NAME}_core ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(${MOVEIT_LIB_NAME} ${MOVEIT_LIB_NAME}_core ${Boost_LIBRARIES})
+ament_target_dependencies(${MOVEIT_LIB_NAME}_core ${THIS_PACKAGE_INCLUDE_DEPENDS})
 
-install(DIRECTORY include/ DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION})
+install(DIRECTORY include/ DESTINATION include)
 
-install(TARGETS ${MOVEIT_LIB_NAME} ${MOVEIT_LIB_NAME}_core
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
+install(
+  TARGETS
+    ${MOVEIT_LIB_NAME}_core
+    ${MOVEIT_LIB_NAME}
+  EXPORT export_${PROJECT_NAME}
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+  RUNTIME DESTINATION bin
+  INCLUDES DESTINATION include
+)

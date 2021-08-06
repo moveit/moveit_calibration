@@ -38,11 +38,16 @@
 #include <moveit/handeye_calibration_rviz_plugin/handeye_calibration_frame.h>
 
 #include <Eigen/Geometry>
+#include <rclcpp/rclcpp.hpp>>
 #include <cmath>
 
 namespace moveit_rviz_plugin
 {
-HandEyeCalibrationFrame::HandEyeCalibrationFrame(HandEyeCalibrationDisplay* pdisplay, rviz::DisplayContext* context,
+
+const std::string LOGNAME = "handeye_calibration_frame";
+static const rclcpp::Logger LOGGER = rclcpp::get_logger(LOGNAME);
+
+HandEyeCalibrationFrame::HandEyeCalibrationFrame(HandEyeCalibrationDisplay* pdisplay, rviz_common::DisplayContext* context,
                                                  QWidget* parent)
   : QWidget(parent), calibration_display_(pdisplay), context_(context)
 {
@@ -85,12 +90,12 @@ HandEyeCalibrationFrame::HandEyeCalibrationFrame(HandEyeCalibrationDisplay* pdis
   tabs->addTab(tab_control_, "Calibrate");
   layout->addWidget(tabs);
 
-  ROS_INFO_STREAM("handeye calibration gui created.");
+  RCLCPP_INFO_STREAM(LOGGER, "handeye calibration gui created.");
 }
 
 HandEyeCalibrationFrame::~HandEyeCalibrationFrame() = default;
 
-void HandEyeCalibrationFrame::saveWidget(rviz::Config config) const
+void HandEyeCalibrationFrame::saveWidget(rviz_common::Config config) const
 {
   tab_target_->saveWidget(config);
   tab_context_->saveWidget(config);
@@ -98,13 +103,13 @@ void HandEyeCalibrationFrame::saveWidget(rviz::Config config) const
 }
 
 // Load all configuration data for this panel from the given Config object.
-void HandEyeCalibrationFrame::loadWidget(const rviz::Config& config)
+void HandEyeCalibrationFrame::loadWidget(const rviz_common::Config& config)
 {
   tab_target_->loadWidget(config);
   tab_context_->loadWidget(config);
   tab_control_->loadWidget(config);
 
-  ROS_INFO_STREAM("handeye calibration gui loaded.");
+  RCLCPP_INFO_STREAM(LOGGER, "handeye calibration gui loaded.");
 }
 
 }  // namespace moveit_rviz_plugin

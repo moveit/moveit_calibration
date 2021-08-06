@@ -37,7 +37,7 @@
 #include <moveit/handeye_calibration_rviz_plugin/handeye_calibration_display.h>
 #include <moveit/handeye_calibration_rviz_plugin/handeye_calibration_frame.h>
 
-#include <rviz/window_manager_interface.h>
+#include <rviz_common/window_manager_interface.hpp>
 
 #include <Eigen/Geometry>
 #include <cmath>
@@ -48,23 +48,23 @@ namespace moveit_rviz_plugin
 {
 HandEyeCalibrationDisplay::HandEyeCalibrationDisplay(QWidget* parent) : Display()
 {
-  move_group_ns_property_ = new rviz::StringProperty("Move Group Namespace", "",
+  move_group_ns_property_ = new rviz_common::properties::StringProperty("Move Group Namespace", "",
                                                      "The name of the ROS namespace in "
                                                      "which the move_group node is running",
                                                      this, SLOT(fillPlanningGroupNameComboBox()), this);
   planning_scene_topic_property_ =
-      new rviz::RosTopicProperty("Planning Scene Topic", "move_group/monitored_planning_scene",
-                                 ros::message_traits::datatype<moveit_msgs::PlanningScene>(),
-                                 "The topic on which the moveit_msgs::PlanningScene messages are received", this,
+      new rviz_common::properties::RosTopicProperty("Planning Scene Topic", "move_group/monitored_planning_scene",
+                                 ros::message_traits::datatype<moveit_msgs::msg::PlanningScene>(),
+                                 "The topic on which the moveit_msgs::msg::PlanningScene messages are received", this,
                                  SLOT(fillPlanningGroupNameComboBox()), this);
 
-  fov_marker_enabled_property_ = new rviz::BoolProperty(
+  fov_marker_enabled_property_ = new rviz_common::properties::BoolProperty(
       "Camera FOV Marker", true, "Enable marker showing camera field of view", this, SLOT(updateMarkers()), this);
   fov_marker_alpha_property_ =
-      new rviz::FloatProperty("Marker Alpha", 0.3f, "Specifies the alpha (transparency) for the rendered marker",
+      new rviz_common::properties::FloatProperty("Marker Alpha", 0.3f, "Specifies the alpha (transparency) for the rendered marker",
                               fov_marker_enabled_property_, SLOT(updateMarkers()), this);
   fov_marker_size_property_ =
-      new rviz::FloatProperty("Marker Size", 1.5f, "Specifies the size (depth in meters) for the rendered marker",
+      new rviz_common::properties::FloatProperty("Marker Size", 1.5f, "Specifies the size (depth in meters) for the rendered marker",
                               fov_marker_enabled_property_, SLOT(updateMarkers()), this);
 }
 
@@ -78,7 +78,7 @@ void HandEyeCalibrationDisplay::onInitialize()
 {
   Display::onInitialize();
 
-  rviz::WindowManagerInterface* window_context = context_->getWindowManager();
+  rviz_common::WindowManagerInterface* window_context = context_->getWindowManager();
   frame_ = new HandEyeCalibrationFrame(this, context_, window_context ? window_context->getParentWindow() : nullptr);
 
   if (window_context)
@@ -87,7 +87,7 @@ void HandEyeCalibrationDisplay::onInitialize()
   }
 }
 
-void HandEyeCalibrationDisplay::save(rviz::Config config) const
+void HandEyeCalibrationDisplay::save(rviz_common::Config config) const
 {
   Display::save(config);
   if (frame_)
@@ -97,7 +97,7 @@ void HandEyeCalibrationDisplay::save(rviz::Config config) const
 }
 
 // Load all configuration data for this panel from the given Config object.
-void HandEyeCalibrationDisplay::load(const rviz::Config& config)
+void HandEyeCalibrationDisplay::load(const rviz_common::Config& config)
 {
   Display::load(config);
   if (frame_)

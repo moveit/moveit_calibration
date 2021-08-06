@@ -293,7 +293,7 @@ bool ControlTabWidget::loadSolverPlugin(std::vector<std::string>& plugins)
     }
     catch (pluginlib::PluginlibException& ex)
     {
-      calibration_display_->setStatus(rviz::StatusProperty::Error, "Calibration",
+      calibration_display_->setStatus(rviz_common::properties::StatusProperty::Error, "Calibration",
                                       "Couldn't create solver plugin loader.");
       QMessageBox::warning(this, tr("Exception while creating handeye solver plugin loader "), tr(ex.what()));
       return false;
@@ -314,8 +314,8 @@ bool ControlTabWidget::createSolverInstance(const std::string& plugin_name)
   }
   catch (pluginlib::PluginlibException& ex)
   {
-    calibration_display_->setStatus(rviz::StatusProperty::Error, "Calibration", "Couldn't load solver plugin.");
-    ROS_ERROR_STREAM_NAMED(LOGNAME, "Exception while loading handeye solver plugin: " << plugin_name << ex.what());
+    calibration_display_->setStatus(rviz_common::properties::StatusProperty::Error, "Calibration", "Couldn't load solver plugin.");
+    RCLCPP_ERROR_STREAM(LOGGER, "Exception while loading handeye solver plugin: " << plugin_name << ex.what());
     solver_ = nullptr;
   }
 
@@ -353,14 +353,14 @@ bool ControlTabWidget::takeTransformSamples()
   // Store the pair of two tf transforms and calculate camera_robot pose
   try
   {
-    geometry_msgs::TransformStamped camera_to_object_tf;
-    geometry_msgs::TransformStamped base_to_eef_tf;
+    geometry_msgs::msg::TransformStamped camera_to_object_tf;
+    geometry_msgs::msg::TransformStamped base_to_eef_tf;
 
     // Get the transform of the object w.r.t the camera
-    camera_to_object_tf = tf_buffer_->lookupTransform(frame_names_["sensor"], frame_names_["object"], ros::Time(0));
+    camera_to_object_tf = tf_buffer_->lookupTransform(frame_names_["sensor"], frame_names_["object"], rclcpp::Time(0));
 
     // Get the transform of the end-effector w.r.t the robot base
-    base_to_eef_tf = tf_buffer_->lookupTransform(frame_names_["base"], frame_names_["eef"], ros::Time(0));
+    base_to_eef_tf = tf_buffer_->lookupTransform(frame_names_["base"], frame_names_["eef"], rclcpp::Time(0));
 
     // Renormalize quaternions, to avoid numerical issues
     tf2::Quaternion tf2_quat;
@@ -379,7 +379,7 @@ bool ControlTabWidget::takeTransformSamples()
   }
   catch (tf2::TransformException& e)
   {
-    ROS_WARN("TF exception: %s", e.what());
+    RCLCPP_WARN("TF exception: %s", e.what());
     return false;
   }
 
@@ -412,7 +412,7 @@ bool ControlTabWidget::solveCameraRobotPose()
                                                              camera_robot_pose_, sensor_mount_type_);
       std::ostringstream reproj_err_text;
       reproj_err_text << "Reprojection error:\n" << reproj_err.first << " m, " << reproj_err.second << " rad";
-      ROS_WARN_NAMED(LOGNAME, "%s", reproj_err_text.str().c_str());
+      RCLCPP_WARN(LOGGER, "%s", reproj_err_text.str().c_str());
       reprojection_error_label_->setText(QString(reproj_err_text.str().c_str()));
 
       // Publish camera pose tf
@@ -421,12 +421,12 @@ bool ControlTabWidget::solveCameraRobotPose()
       if (!from_frame.empty() && !to_frame.empty())
       {
         tf_tools_->clearAllTransforms();
-        calibration_display_->setStatus(rviz::StatusProperty::Ok, "Calibration", "Calibration successful.");
-        ROS_INFO_STREAM_NAMED(LOGNAME, "Publish camera transformation" << std::endl
-                                                                       << camera_robot_pose_.matrix() << std::endl
-                                                                       << "from " << from_frame_tag_ << " frame '"
-                                                                       << from_frame << "'"
-                                                                       << "to sensor frame '" << to_frame << "'");
+        calibration_display_->setStatus(rviz_common::properties::StatusProperty::Ok, "Calibration", "Calibration successful.");
+        RCLCPP_INFO_STREAM(LOGGER, "Publish camera transformation" << std::endl
+                                                                   << camera_robot_pose_.matrix() << std::endl
+                                                                   << "from " << from_frame_tag_ << " frame '"
+                                                                   << from_frame << "'"
+                                                                   << "to sensor frame '" << to_frame << "'");
         return tf_tools_->publishTransform(camera_robot_pose_, from_frame, to_frame);
       }
       else
@@ -437,7 +437,7 @@ bool ControlTabWidget::solveCameraRobotPose()
           warn_msg << "Found camera pose:" << std::endl
                    << camera_robot_pose_.matrix() << std::endl
                    << "but " << from_frame_tag_ << " or sensor frame is undefined.";
-          ROS_ERROR_STREAM_NAMED(LOGNAME, warn_msg.str());
+          RCLCPP_ERROR_STREAM(LOGGER, warn_msg.str());
         }
         // GUI warning message with formatting
         {
@@ -447,21 +447,21 @@ bool ControlTabWidget::solveCameraRobotPose()
                    << "</pre>but <b>" << from_frame_tag_ << "</b> or <b>sensor</b> frame is undefined.";
           QMessageBox::warning(this, "Solver Failed", QString::fromStdString(warn_msg.str()));
         }
-        calibration_display_->setStatus(rviz::StatusProperty::Warn, "Calibration",
+        calibration_display_->setStatus(rviz_common::properties::StatusProperty::Warn, "Calibration",
                                         "Calibration successful but frames are undefined.");
         return false;
       }
     }
     else
     {
-      calibration_display_->setStatus(rviz::StatusProperty::Error, "Calibration", "Solver failed.");
+      calibration_display_->setStatus(rviz_common::properties::StatusProperty::Error, "Calibration", "Solver failed.");
       QMessageBox::warning(this, tr("Solver Failed"), tr((std::string("Error: ") + error_message).c_str()));
       return false;
     }
   }
   else
   {
-    calibration_display_->setStatus(rviz::StatusProperty::Error, "Calibration", "No solver available.");
+    calibration_display_->setStatus(rviz_common::properties::StatusProperty::Error, "Calibration", "No solver available.");
     QMessageBox::warning(this, tr("No Solver Available"), tr("No available handeye calibration solver instance."));
     return false;
   }
@@ -531,7 +531,7 @@ void ControlTabWidget::UpdateSensorMountType(int index)
         from_frame_tag_ = "eef";
         break;
       default:
-        ROS_ERROR_STREAM_NAMED(LOGNAME, "Error sensor mount type.");
+        RCLCPP_ERROR_STREAM(LOGGER, "Error sensor mount type.");
         break;
     }
   }
@@ -540,9 +540,9 @@ void ControlTabWidget::UpdateSensorMountType(int index)
 void ControlTabWidget::updateFrameNames(std::map<std::string, std::string> names)
 {
   frame_names_ = names;
-  ROS_DEBUG("Frame names changed:");
+  RCLCPP_DEBUG("Frame names changed:");
   for (const std::pair<const std::string, std::string>& name : frame_names_)
-    ROS_DEBUG_STREAM(name.first << " : " << name.second);
+    RCLCPP_DEBUG_STREAM(name.first << " : " << name.second);
 }
 
 void ControlTabWidget::takeSampleBtnClicked(bool clicked)
@@ -557,12 +557,12 @@ void ControlTabWidget::takeSampleBtnClicked(bool clicked)
   // Save the joint values of current robot state
   if (planning_scene_monitor_)
   {
-    planning_scene_monitor_->waitForCurrentRobotState(ros::Time::now(), 0.1);
+    planning_scene_monitor_->waitForCurrentRobotState(rclcpp::Clock(RCL_ROS_TIME).now(), 0.1); // Revisit this change
     const planning_scene_monitor::LockedPlanningSceneRO& ps =
         planning_scene_monitor::LockedPlanningSceneRO(planning_scene_monitor_);
     if (ps)
     {
-      const robot_state::RobotState& state = ps->getCurrentState();
+      const moveit::core::RobotState& state = ps->getCurrentState();
       const moveit::core::JointModelGroup* jmg = state.getJointModelGroup(group_name_->currentText().toStdString());
       const std::vector<std::string>& names = jmg->getActiveJointModelNames();
       if (joint_names_.size() != names.size() || joint_names_ != names)
@@ -693,7 +693,7 @@ void ControlTabWidget::fillPlanningGroupNameComboBox()
       service_name = ros::names::append(calibration_display_->move_group_ns_property_->getStdString(), service_name);
     if (planning_scene_monitor_->requestPlanningSceneState(service_name))
     {
-      const robot_model::RobotModelConstPtr& kmodel = planning_scene_monitor_->getRobotModel();
+      const moveit::core::RobotModelConstPtr& kmodel = planning_scene_monitor_->getRobotModel();
       for (const std::string& group_name : kmodel->getJointModelGroupNames())
       {
         group_name_->addItem(group_name.c_str());
@@ -804,7 +804,7 @@ void ControlTabWidget::saveSamplesBtnClicked(bool clicked)
 {
   if (effector_wrt_world_.size() != object_wrt_sensor_.size())
   {
-    ROS_ERROR_STREAM_NAMED(LOGNAME, "Different number of poses");
+    RCLCPP_ERROR_STREAM(LOGGER, "Different number of poses");
     return;
   }
 
@@ -879,7 +879,7 @@ void ControlTabWidget::loadJointStateBtnClicked(bool clicked)
   // Begin parsing
   try
   {
-    ROS_DEBUG_STREAM_NAMED(LOGNAME, "Load joint states from file: " << file_name.toStdString().c_str());
+    RCLCPP_DEBUG_STREAM(LOGGER, "Load joint states from file: " << file_name.toStdString().c_str());
     YAML::Node doc = YAML::LoadFile(file_name.toStdString());
     if (!doc.IsMap())
       return;
@@ -894,7 +894,7 @@ void ControlTabWidget::loadJointStateBtnClicked(bool clicked)
     }
     else
     {
-      ROS_ERROR_STREAM_NAMED(LOGNAME, "Can't find 'joint_names' in the openned file.");
+      RCLCPP_ERROR_STREAM(LOGGER, "Can't find 'joint_names' in the openned file.");
       return;
     }
 
@@ -915,13 +915,13 @@ void ControlTabWidget::loadJointStateBtnClicked(bool clicked)
     }
     else
     {
-      ROS_ERROR_STREAM_NAMED(LOGNAME, "Can't find 'joint_values' in the openned file.");
+      RCLCPP_ERROR_STREAM(LOGGER, "Can't find 'joint_values' in the openned file.");
       return;
     }
   }
   catch (YAML::ParserException& e)  // Catch errors
   {
-    ROS_ERROR_STREAM_NAMED(LOGNAME, e.what());
+    RCLCPP_ERROR_STREAM(LOGGER, e.what());
     return;
   }
 
@@ -930,7 +930,7 @@ void ControlTabWidget::loadJointStateBtnClicked(bool clicked)
     auto_progress_->setMax(joint_states_.size());
     auto_progress_->setValue(0);
   }
-  ROS_INFO_STREAM_NAMED(LOGNAME, "Loaded and parsed: " << file_name.toStdString());
+  RCLCPP_INFO_STREAM(LOGGER, "Loaded and parsed: " << file_name.toStdString());
 }
 
 void ControlTabWidget::autoPlanBtnClicked(bool clicked)
@@ -975,12 +975,12 @@ void ControlTabWidget::computePlan()
   }
 
   // Get current joint state as start state
-  robot_state::RobotStatePtr start_state = move_group_->getCurrentState();
-  planning_scene_monitor_->waitForCurrentRobotState(ros::Time::now(), 0.1);
+  moveit::core::RobotStatePtr start_state = move_group_->getCurrentState();
+  planning_scene_monitor_->waitForCurrentRobotState(rclcpp::Clock(RCL_ROS_TIME).now(), 0.1);
   const planning_scene_monitor::LockedPlanningSceneRO& ps =
       planning_scene_monitor::LockedPlanningSceneRO(planning_scene_monitor_);
   if (ps)
-    start_state.reset(new robot_state::RobotState(ps->getCurrentState()));
+    start_state.reset(new moveit::core::RobotState(ps->getCurrentState()));
 
   // Plan motion to the recorded joint state target
   if (auto_progress_->getValue() < joint_states_.size())
@@ -995,9 +995,9 @@ void ControlTabWidget::computePlan()
                         ControlTabWidget::FAILURE_PLAN_FAILED;
 
     if (planning_res_ == ControlTabWidget::SUCCESS)
-      ROS_DEBUG_STREAM_NAMED(LOGNAME, "Planning succeed.");
+      RCLCPP_DEBUG_STREAM(LOGGER, "Planning succeed.");
     else
-      ROS_ERROR_STREAM_NAMED(LOGNAME, "Planning failed.");
+      RCLCPP_ERROR_STREAM(LOGGER, "Planning failed.");
   }
 }
 
@@ -1021,10 +1021,10 @@ void ControlTabWidget::computeExecution()
 
   if (planning_res_ == ControlTabWidget::SUCCESS)
   {
-    ROS_DEBUG_STREAM_NAMED(LOGNAME, "Execution succeed.");
+    RCLCPP_DEBUG_STREAM(LOGGER, "Execution succeed.");
   }
   else
-    ROS_ERROR_STREAM_NAMED(LOGNAME, "Execution failed.");
+    RCLCPP_ERROR_STREAM(LOGGER, "Execution failed.");
 }
 
 void ControlTabWidget::planFinished()
@@ -1057,7 +1057,7 @@ void ControlTabWidget::planFinished()
     case ControlTabWidget::SUCCESS:
       break;
   }
-  ROS_DEBUG_NAMED(LOGNAME, "Plan finished");
+  RCLCPP_DEBUG(LOGGER, "Plan finished");
 }
 
 void ControlTabWidget::executeFinished()
@@ -1072,7 +1072,7 @@ void ControlTabWidget::executeFinished()
     if (effector_wrt_world_.size() == object_wrt_sensor_.size() && effector_wrt_world_.size() > 4)
       solveCameraRobotPose();
   }
-  ROS_DEBUG_NAMED(LOGNAME, "Execution finished");
+  RCLCPP_DEBUG(LOGGER, "Execution finished");
 }
 
 void ControlTabWidget::autoSkipBtnClicked(bool clicked)

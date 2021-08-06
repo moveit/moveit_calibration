@@ -169,17 +169,17 @@ public:
 
   static shape_msgs::msg::Mesh getCameraFOVMesh(const sensor_msgs::msg::CameraInfo& camera_info, double maxdist);
 
-  visualization_msgs::Marker getCameraFOVMarker(const Eigen::Isometry3d& pose, const shape_msgs::msg::Mesh& mesh,
+  visualization_msgs::msg::Marker getCameraFOVMarker(const Eigen::Isometry3d& pose, const shape_msgs::msg::Mesh& mesh,
                                                 rvt::colors color, double alpha, std::string frame_id);
 
-  visualization_msgs::Marker getCameraFOVMarker(const geometry_msgs::msg::Pose& pose, const shape_msgs::msg::Mesh& mesh,
+  visualization_msgs::msg::Marker getCameraFOVMarker(const geometry_msgs::msg::Pose& pose, const shape_msgs::msg::Mesh& mesh,
                                                 rvt::colors color, double alpha, std::string frame_id);
 
   void setCameraPose(double tx, double ty, double tz, double rx, double ry, double rz);
 
 public Q_SLOTS:
 
-  void setCameraInfo(sensor_msgs::CameraInfo camera_info);
+  void setCameraInfo(sensor_msgs::msg::CameraInfo camera_info);
 
   void setOpticalFrame(const std::string& frame_id);
 

@@ -48,10 +48,10 @@
 #include <QRadioButton>
 
 // ros
-#include <shape_msgs/msg/mesh.hpp>>
-// #include <rviz/frame_manager.h>
+#include <shape_msgs/msg/mesh.hpp>
+#include <rviz_common/frame_manager_iface.hpp>
 #include <tf2_eigen/tf2_eigen.h>
-#include <sensor_msgs/msg/camera_info.hpp>>
+#include <sensor_msgs/msg/camera_info.hpp>
 #include <tf2_ros/transform_listener.h>
 #include <rviz_visual_tools/tf_visual_tools.hpp>
 #include <rviz_visual_tools/rviz_visual_tools.hpp>
@@ -62,7 +62,7 @@
 
 #ifndef Q_MOC_RUN
 #include <rclcpp/rclcpp.hpp>
-#include <rviz_common/render_panel.hpp>
+#include <rviz_common/panel.hpp>
 #endif
 
 namespace rvt = rviz_visual_tools;
@@ -89,7 +89,7 @@ public:
   TFFrameNameComboBox(FRAME_SOURCE source = ROBOT_FRAME, QWidget* parent = 0) : QComboBox(parent), frame_source_(source)
   {
     robot_model_loader_.reset(new robot_model_loader::RobotModelLoader("robot_description"));
-    frame_manager_.reset(new rviz::FrameManager());
+    frame_manager_.reset(new rviz_common::FrameManagerIface());
   }
 
   ~TFFrameNameComboBox()
@@ -104,7 +104,7 @@ protected:
 
 private:
   FRAME_SOURCE frame_source_;
-  std::unique_ptr<rviz::FrameManager> frame_manager_;
+  std::unique_ptr<rviz_common::FrameManagerIface> frame_manager_;
   robot_model_loader::RobotModelLoaderConstPtr robot_model_loader_;
 };
 
@@ -159,20 +159,20 @@ public:
     tf_tools_.reset();
   }
 
-  void loadWidget(const rviz::Config& config);
-  void saveWidget(rviz::Config& config);
+  void loadWidget(const rviz_common::Config& config);
+  void saveWidget(rviz_common::Config& config);
   void setTFTool(rviz_visual_tools::TFVisualToolsPtr& tf_pub);
 
   void updateAllMarkers();
 
   void updateFOVPose();
 
-  static shape_msgs::Mesh getCameraFOVMesh(const sensor_msgs::CameraInfo& camera_info, double maxdist);
+  static shape_msgs::msg::Mesh getCameraFOVMesh(const sensor_msgs::msg::CameraInfo& camera_info, double maxdist);
 
-  visualization_msgs::Marker getCameraFOVMarker(const Eigen::Isometry3d& pose, const shape_msgs::Mesh& mesh,
+  visualization_msgs::Marker getCameraFOVMarker(const Eigen::Isometry3d& pose, const shape_msgs::msg::Mesh& mesh,
                                                 rvt::colors color, double alpha, std::string frame_id);
 
-  visualization_msgs::Marker getCameraFOVMarker(const geometry_msgs::Pose& pose, const shape_msgs::Mesh& mesh,
+  visualization_msgs::Marker getCameraFOVMarker(const geometry_msgs::msg::Pose& pose, const shape_msgs::msg::Mesh& mesh,
                                                 rvt::colors color, double alpha, std::string frame_id);
 
   void setCameraPose(double tx, double ty, double tz, double rx, double ry, double rz);

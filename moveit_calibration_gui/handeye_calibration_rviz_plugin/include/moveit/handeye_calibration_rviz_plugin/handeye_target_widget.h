@@ -119,7 +119,7 @@ public:
   }
 
   void loadWidget(const rviz_common::Config& config);
-  void saveWidget(rviz::Config& config);
+  void saveWidget(rviz_common::Config& config);
 
   bool loadAvailableTargetPlugins();
 
@@ -127,9 +127,9 @@ public:
 
   void fillDictionaryIds(std::string id = "");
 
-  void imageCallback(const sensor_msgs::ImageConstPtr& msg);
+  void imageCallback(const sensor_msgs::msg::Image::ConstSharedPtr& msg);
 
-  void cameraInfoCallback(const sensor_msgs::CameraInfoConstPtr& msg);
+  void cameraInfoCallback(const sensor_msgs::msg::CameraInfo::ConstSharedPtr& msg);
 
 private Q_SLOTS:
 
@@ -153,7 +153,7 @@ private Q_SLOTS:
 
 Q_SIGNALS:
 
-  void cameraInfoChanged(sensor_msgs::CameraInfo msg);
+  void cameraInfoChanged(sensor_msgs::msg::CameraInfo msg);
 
   void opticalFrameChanged(const std::string& frame_id);
 
@@ -193,13 +193,17 @@ private:
   // **************************************************************
   // Ros components
   // **************************************************************
-  ros::NodeHandle nh_;
+  // ros::NodeHandle nh_;
+  rclcpp::Node::SharedPtr node_;
   std::unique_ptr<pluginlib::ClassLoader<moveit_handeye_calibration::HandEyeTargetBase> > target_plugins_loader_;
   pluginlib::UniquePtr<moveit_handeye_calibration::HandEyeTargetBase> target_;
   image_transport::ImageTransport it_;
   image_transport::Subscriber image_sub_;
   image_transport::Publisher image_pub_;
-  ros::Subscriber camerainfo_sub_;
+
+  // ros::Subscriber camerainfo_sub_;
+  rclcpp::Subscription<sensor_msgs::msg::CameraInfo>::SharedPtr camerainfo_sub_;
+
   // tf broadcaster
   tf2_ros::TransformBroadcaster tf_pub_;
 };

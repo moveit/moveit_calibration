@@ -66,8 +66,8 @@
 #include <moveit/handeye_calibration_rviz_plugin/handeye_calibration_display.h>
 
 #ifndef Q_MOC_RUN
-#include <ros/ros.h>
-#include <rviz/panel.h>
+#include <rclcpp/rclcpp.hpp>
+#include <rviz_common/panel.hpp>
 #endif
 
 #include <yaml-cpp/yaml.h>
@@ -125,13 +125,13 @@ public:
     planning_scene_monitor_.reset();
   }
 
-  void loadWidget(const rviz::Config& config);
-  void saveWidget(rviz::Config& config);
+  void loadWidget(const rviz_common::Config& config);
+  void saveWidget(rviz_common::Config& config);
 
   void setTFTool(rviz_visual_tools::TFVisualToolsPtr& tf_pub);
 
-  void addPoseSampleToTreeView(const geometry_msgs::TransformStamped& camera_to_object_tf,
-                               const geometry_msgs::TransformStamped& base_to_eef_tf, int id);
+  void addPoseSampleToTreeView(const geometry_msgs::msg::TransformStamped& camera_to_object_tf,
+                               const geometry_msgs::msg::TransformStamped& base_to_eef_tf, int id);
 
   bool loadSolverPlugin(std::vector<std::string>& plugins);
 
@@ -256,7 +256,8 @@ private:
   // Ros components
   // **************************************************************
 
-  ros::NodeHandle nh_;
+  // ros::NodeHandle nh_;
+  rclcpp::Node::SharedPtr node_;
   // ros::CallbackQueue callback_queue_;
   // ros::AsyncSpinner spinner_;
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;

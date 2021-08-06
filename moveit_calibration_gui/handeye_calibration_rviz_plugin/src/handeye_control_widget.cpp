@@ -36,10 +36,12 @@
 
 #include <moveit/handeye_calibration_rviz_plugin/handeye_control_widget.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <rclcpp/rclcpp.hpp>
 
 namespace moveit_rviz_plugin
 {
 const std::string LOGNAME = "handeye_control_widget";
+static const rclcpp::Logger LOGGER = rclcpp::get_logger(LOGNAME);
 
 ProgressBarWidget::ProgressBarWidget(QWidget* parent, int min, int max, int value) : QWidget(parent)
 {
@@ -241,10 +243,10 @@ ControlTabWidget::ControlTabWidget(HandEyeCalibrationDisplay* pdisplay, QWidget*
   connect(execution_watcher_, &QFutureWatcher<void>::finished, this, &ControlTabWidget::executeFinished);
 
   // Set initial status
-  calibration_display_->setStatus(rviz::StatusProperty::Ok, "Calibration", "Collect 5 samples to start calibration.");
+  calibration_display_->setStatus(rviz_common::properties::StatusProperty::Ok, "Calibration", "Collect 5 samples to start calibration.");
 }
 
-void ControlTabWidget::loadWidget(const rviz::Config& config)
+void ControlTabWidget::loadWidget(const rviz_common::Config& config)
 {
   QString group_name;
   config.mapGetString("group", &group_name);
@@ -274,7 +276,7 @@ void ControlTabWidget::loadWidget(const rviz::Config& config)
   }
 }
 
-void ControlTabWidget::saveWidget(rviz::Config& config)
+void ControlTabWidget::saveWidget(rviz_common::Config& config)
 {
   config.mapSetValue("solver", calibration_solver_->currentText());
   config.mapSetValue("group", group_name_->currentText());

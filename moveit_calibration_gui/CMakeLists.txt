@@ -62,6 +62,7 @@ set(THIS_PACKAGE_INCLUDE_DEPENDS
     moveit_ros_planning
     moveit_ros_planning_interface
     moveit_ros_visualization
+    moveit_visual_tools
     rclcpp
     rviz_common
     rviz_default_plugins

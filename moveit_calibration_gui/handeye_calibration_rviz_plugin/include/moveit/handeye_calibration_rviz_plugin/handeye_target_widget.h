@@ -133,8 +133,7 @@ public:
 
   void imageCallback(const sensor_msgs::msg::Image::ConstSharedPtr& msg);
 
-  void cameraInfoCallback(const sensor_msgs::msg::CameraInfo::ConstSharedPtr& msg);
-
+  void cameraInfoCallback(sensor_msgs::msg::CameraInfo::ConstSharedPtr msg);
 private Q_SLOTS:
 
   // Called when the current item of target_type_ changed
@@ -192,7 +191,7 @@ private:
 
   std::string optical_frame_;
 
-  sensor_msgs::msg::CameraInfo::ConstSharedPtr camera_info_;
+  sensor_msgs::msg::CameraInfo::ConstPtr camera_info_;
 
   // **************************************************************
   // Ros components

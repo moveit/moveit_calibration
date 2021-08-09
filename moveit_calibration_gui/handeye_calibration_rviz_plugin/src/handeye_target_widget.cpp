@@ -474,7 +474,7 @@ void TargetTabWidget::imageCallback(const sensor_msgs::msg::Image::ConstPtr& msg
   }
 }
 
-void TargetTabWidget::cameraInfoCallback(const sensor_msgs::msg::CameraInfo::ConstSharedPtr& msg)
+void TargetTabWidget::cameraInfoCallback(sensor_msgs::msg::CameraInfo::ConstSharedPtr msg)
 {
   if (target_ && msg->height > 0 && msg->width > 0 && !msg->k.empty() && !msg->d.empty() &&
       (!camera_info_ || msg->k != camera_info_->k || msg->p != camera_info_->p))

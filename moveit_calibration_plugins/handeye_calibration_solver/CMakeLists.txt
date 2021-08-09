@@ -57,3 +57,16 @@ install(DIRECTORY include/ DESTINATION include)
 #   catkin_add_gtest(test_handeye_solver test/handeye_solver_test.cpp)
 #   target_link_libraries(test_handeye_solver ${catkin_LIBRARIES} ${MOVEIT_LIB_NAME} jsoncpp_lib)
 # endif()
+
+if(BUILD_TESTING)
+  find_package(ament_lint_auto REQUIRED)
+  find_package(ament_cmake_gtest REQUIRED)
+  find_package(jsoncpp REQUIRED)
+
+  get_target_property(JSON_INC_PATH jsoncpp_lib INTERFACE_INCLUDE_DIRECTORIES)
+  include_directories(${JSON_INC_PATH})
+
+  ament_add_gtest(test_handeye_solver test/handeye_solver_test.cpp)
+  target_link_libraries(test_handeye_solver ${MOVEIT_LIB_NAME} jsoncpp_lib)
+  ament_lint_auto_find_test_dependencies()
+endif()

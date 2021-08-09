@@ -39,10 +39,12 @@
 #include <jsoncpp/json/json.h>
 #include <moveit/handeye_calibration_solver/handeye_solver_base.h>
 #include <pluginlib/class_loader.hpp>
-#include <ros/package.h>
+// #include <ros/package.h>
+#include <rclcpp/rclcpp.hpp>
+#include <ament_index_cpp/get_package_share_directory.hpp>
 
-class MoveItHandEyeSolverTester : public ::testing::Test
-{
+static const rclcpp::Logger LOGGER = rclcpp::get_logger("handeye_solver_test");
+class MoveItHandEyeSolverTester : public ::testing::Test{
 protected:
   void SetUp() override
   {
@@ -56,12 +58,13 @@ protected:
     }
     catch (const pluginlib::PluginlibException& ex)
     {
-      ROS_ERROR_STREAM("Exception while creating handeye target plugin: " << ex.what());
+      RCLCPP_ERROR_STREAM(LOGGER, "Exception while creating handeye target plugin: " << ex.what());
       return;
     }
 
     Json::Reader reader;
-    std::string moveit_calibration_plugins_package_path = ros::package::getPath("moveit_calibration_plugins");
+    // std::string moveit_calibration_plugins_package_path = ros::package::getPath("moveit_calibration_plugins");
+    std::string moveit_calibration_plugins_package_path = ament_index_cpp::get_package_share_directory("moveit_calibration_plugins");
     moveit_calibration_plugins_package_path += "/handeye_calibration_solver/test/pose_samples.json";
     std::ifstream ifs(moveit_calibration_plugins_package_path);
 
@@ -72,10 +75,10 @@ protected:
         solver_ok_ = true;
       }
       else
-        ROS_ERROR_STREAM("Can't parse json file: ./pose_samples.json");
+        RCLCPP_ERROR_STREAM(LOGGER, "Can't parse json file: ./pose_samples.json");
     }
     else
-      ROS_ERROR_STREAM("Can't load file: ./pose_samples.json");
+      RCLCPP_ERROR_STREAM(LOGGER, "Can't load file: ./pose_samples.json");
   }
 
   void TearDown() override
@@ -153,6 +156,6 @@ TEST_F(MoveItHandEyeSolverTester, SolveAXEQXB)
 
 int main(int argc, char** argv)
 {
-  testing::InitGoogleTest(&argc, argv);
+  ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

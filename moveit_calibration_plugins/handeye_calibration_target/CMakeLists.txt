@@ -36,12 +36,17 @@ install(
     share/${PROJECT_NAME}/test
 )
 
-# if (CATKIN_ENABLE_TESTING)
+# if(BUILD_TESTING)
+#   find_package(ament_lint_auto REQUIRED)
+#   find_package(ament_cmake_gtest REQUIRED)
 
-#   catkin_add_gtest(test_handeye_target_aruco test/handeye_target_aruco_test.cpp)
-#   target_link_libraries(test_handeye_target_aruco ${catkin_LIBRARIES} ${MOVEIT_LIB_NAME} ${OpenCV_LIBS})
+#   ament_lint_auto_find_test_dependencies()
 
-#   catkin_add_gtest(test_handeye_target_charuco test/handeye_target_charuco_test.cpp)
-#   target_link_libraries(test_handeye_target_charuco ${catkin_LIBRARIES} ${MOVEIT_LIB_NAME} ${OpenCV_LIBS})
+#   ament_add_gtest(test_handeye_target_aruco test/handeye_target_aruco_test.cpp)
+#   target_link_libraries(test_handeye_target_aruco ${MOVEIT_LIB_NAME} ${OpenCV_LIBS})
+
+#   ament_add_gtest(test_handeye_target_charuco test/handeye_target_charuco_test.cpp)
+#   target_link_libraries(test_handeye_target_charuco ${MOVEIT_LIB_NAME} ${OpenCV_LIBS})
 
 # endif()
+

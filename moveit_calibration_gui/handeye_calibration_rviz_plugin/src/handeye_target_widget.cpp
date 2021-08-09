@@ -38,8 +38,7 @@
 
 namespace moveit_rviz_plugin
 {
-const std::string LOGNAME = "handeye_target_widget";
-static const rclcpp::Logger LOGGER = rclcpp::get_logger(LOGNAME);
+static const rclcpp::Logger LOGGER = rclcpp::get_logger("handeye_target_widget");
 
 void RosTopicComboBox::addMsgsFilterType(QString msgs_type)
 {
@@ -74,10 +73,10 @@ bool RosTopicComboBox::getFilteredTopics()
   for (const auto& topic_info : topic_names_and_types)
   {
     std::for_each(topic_info.second.begin(), topic_info.second.end(), [&](std::string topic_type){
-      if (message_types_.contains(QString(topic_type.c_str())) {
+      if (message_types_.contains(QString(topic_type.c_str()))) {
         image_topics_.insert(QString(topic_info.first.c_str()));
       }
-    })
+    });
   }
 
   clear();
@@ -99,7 +98,7 @@ void RosTopicComboBox::mousePressEvent(QMouseEvent* event)
 TargetTabWidget::TargetTabWidget(HandEyeCalibrationDisplay* pdisplay, QWidget* parent)
   : QWidget(parent)
   , calibration_display_(pdisplay)
-  , node_(std::make_shared<rclcpp::Node>("~"))
+  , node_(std::make_shared<rclcpp::Node>("handeye_target_widget"))
   , it_(node_)
   , tf_pub_(std::make_shared<tf2_ros::TransformBroadcaster>(node_))
   , target_plugins_loader_(nullptr)

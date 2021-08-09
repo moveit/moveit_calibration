@@ -197,7 +197,6 @@ private:
   // **************************************************************
   // Ros components
   // **************************************************************
-  // ros::NodeHandle nh_;
   rclcpp::Node::SharedPtr node_;
   std::unique_ptr<pluginlib::ClassLoader<moveit_handeye_calibration::HandEyeTargetBase> > target_plugins_loader_;
   pluginlib::UniquePtr<moveit_handeye_calibration::HandEyeTargetBase> target_;
@@ -205,7 +204,6 @@ private:
   image_transport::Subscriber image_sub_;
   image_transport::Publisher image_pub_;
 
-  // ros::Subscriber camerainfo_sub_;
   rclcpp::Subscription<sensor_msgs::msg::CameraInfo>::SharedPtr camerainfo_sub_;
 
   // tf broadcaster

@@ -39,8 +39,7 @@
 
 namespace moveit_rviz_plugin
 {
-const std::string LOGNAME = "handeye_context_widget";
-static const rclcpp::Logger LOGGER = rclcpp::get_logger(LOGNAME);
+static const rclcpp::Logger LOGGER = rclcpp::get_logger("handeye_context_widget");
 
 void TFFrameNameComboBox::mousePressEvent(QMouseEvent* event)
 {
@@ -157,7 +156,7 @@ void SliderWidget::changeSlider()
 }
 
 ContextTabWidget::ContextTabWidget(HandEyeCalibrationDisplay* pdisplay, rviz_common::DisplayContext* context, QWidget* parent)
-  : QWidget(parent), context_(context), calibration_display_(pdisplay), node_(rclcpp::Node::make_shared("handeye_context_widget")), tf_buffer_(std::make_shared<tf2_ros::Buffer>(node_->get_clock())), tf_listener_(std::make_shared<tf2_ros::TransformListener>(tf_buffer_))
+  : QWidget(parent), context_(context), calibration_display_(pdisplay), node_(rclcpp::Node::make_shared("handeye_context_widget")), tf_buffer_(std::make_shared<tf2_ros::Buffer>(node_->get_clock())), tf_listener_(std::make_shared<tf2_ros::TransformListener>(*tf_buffer_))
 {
   // Context setting tab ----------------------------------------------------
   QHBoxLayout* layout = new QHBoxLayout();

@@ -43,9 +43,7 @@
 
 namespace moveit_rviz_plugin
 {
-
-const std::string LOGNAME = "handeye_calibration_frame";
-static const rclcpp::Logger LOGGER = rclcpp::get_logger(LOGNAME);
+static const rclcpp::Logger LOGGER = rclcpp::get_logger("handeye_calibration_frame");
 
 HandEyeCalibrationFrame::HandEyeCalibrationFrame(HandEyeCalibrationDisplay* pdisplay, rviz_common::DisplayContext* context,
                                                  QWidget* parent)

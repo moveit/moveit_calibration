@@ -40,8 +40,7 @@
 
 namespace moveit_rviz_plugin
 {
-const std::string LOGNAME = "handeye_control_widget";
-static const rclcpp::Logger LOGGER = rclcpp::get_logger(LOGNAME);
+static const rclcpp::Logger LOGGER = rclcpp::get_logger("handeye_control_widget");
 
 ProgressBarWidget::ProgressBarWidget(QWidget* parent, int min, int max, int value) : QWidget(parent)
 {

@@ -46,6 +46,7 @@ void TFFrameNameComboBox::mousePressEvent(QMouseEvent* event)
 {
   std::vector<std::string> names;
   context_->getFrameManager()->update();
+  // Need an alternative for context_->getFrameManager()->getTF2BufferPtr()->_getFrameStrings(name);
   moveit::planning_interface::getSharedTF()->_getFrameStrings(names);
 
   clear();
@@ -156,7 +157,7 @@ void SliderWidget::changeSlider()
 }
 
 ContextTabWidget::ContextTabWidget(HandEyeCalibrationDisplay* pdisplay, rviz_common::DisplayContext* context, QWidget* parent)
-  : QWidget(parent), context_(context), calibration_display_(pdisplay), tf_buffer(std::make_shared<tf2_ros::Buffer>(node_->get_clock())), tf_listener_(tf_buffer_)
+  : QWidget(parent), context_(context), calibration_display_(pdisplay), node_(rclcpp::Node::make_shared("handeye_context_widget")), tf_buffer_(std::make_shared<tf2_ros::Buffer>(node_->get_clock())), tf_listener_(std::make_shared<tf2_ros::TransformListener>(tf_buffer_))
 {
   // Context setting tab ----------------------------------------------------
   QHBoxLayout* layout = new QHBoxLayout();
@@ -236,8 +237,6 @@ ContextTabWidget::ContextTabWidget(HandEyeCalibrationDisplay* pdisplay, rviz_com
   fov_pose_.translate(Eigen::Vector3d(0.0149, 0.0325, 0.0125));
 
   camera_info_.reset(new sensor_msgs::msg::CameraInfo());
-
-  node_ = rclcpp::Node::make_shared("handeye_context_widget");
 
   visual_tools_.reset(new moveit_visual_tools::MoveItVisualTools(node_, "world", "/moveit_visual_tools"));
   visual_tools_->enableFrameLocking(true);
@@ -374,7 +373,7 @@ void ContextTabWidget::updateFOVPose()
     try
     {
       // Get FOV pose W.R.T sensor frame
-      tf_msg = tf_buffer_.lookupTransform(sensor_frame.toStdString(), optical_frame_, rclcpp::Time(0));
+      tf_msg = tf_buffer_->lookupTransform(sensor_frame.toStdString(), optical_frame_, rclcpp::Time(0));
       fov_pose_ = tf2::transformToEigen(tf_msg);
       RCLCPP_DEBUG_STREAM(LOGGER, "FOV pose from '" << sensor_frame.toStdString() << "' to '" << optical_frame_
                                                         << "' is:"

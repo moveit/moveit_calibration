@@ -59,8 +59,10 @@
 #include <moveit_visual_tools/moveit_visual_tools.h>
 #include <moveit/handeye_calibration_solver/handeye_solver_base.h>
 #include <moveit/handeye_calibration_rviz_plugin/handeye_calibration_display.h>
+#include <moveit/common_planning_interface_objects/common_objects.h>
 #include <moveit/planning_scene_monitor/planning_scene_monitor.h>
 #include <moveit/background_processing/background_processing.h>
+#include <moveit/utils/rclcpp_utils.h>
 
 #ifndef Q_MOC_RUN
 #include <rclcpp/rclcpp.hpp>
@@ -245,7 +247,7 @@ private:
   moveit_visual_tools::MoveItVisualToolsPtr visual_tools_;
   rviz_visual_tools::TFVisualToolsPtr tf_tools_;
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
-  tf2_ros::TransformListener tf_listener_;
+  std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
 };
 
 }  // namespace moveit_rviz_plugin

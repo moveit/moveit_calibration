@@ -71,6 +71,7 @@
 
 #ifndef Q_MOC_RUN
 #include <rclcpp/rclcpp.hpp>
+#include <rviz_common/config.hpp>
 #include <rviz_common/render_panel.hpp>
 #endif
 
@@ -88,7 +89,7 @@ class RosTopicComboBox : public QComboBox
 {
   Q_OBJECT
 public:
-  explicit RosTopicComboBox(QWidget* parent = Q_NULLPTR) : QComboBox(parent)
+  explicit RosTopicComboBox(rclcpp::Node::SharedPtr node, QWidget* parent = Q_NULLPTR) : node_(node), QComboBox(parent)
   {
   }
   ~RosTopicComboBox() = default;
@@ -104,6 +105,9 @@ protected:
 
   QSet<QString> message_types_;
   QSet<QString> image_topics_;
+
+private:
+  rclcpp::Node::SharedPtr node_;
 };
 
 class TargetTabWidget : public QWidget

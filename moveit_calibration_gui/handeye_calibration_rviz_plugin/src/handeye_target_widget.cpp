@@ -55,18 +55,29 @@ bool RosTopicComboBox::hasTopic(const QString& topic_name)
 bool RosTopicComboBox::getFilteredTopics()
 {
   // Get all topic names
-  ros::master::V_TopicInfo ros_topic_vec;
-  if (ros::master::getTopics(ros_topic_vec))
+  // ros::master::V_TopicInfo ros_topic_vec;
+  std::map<std::string, std::vector<std::string>> topic_names_and_types = node_->get_topic_names_and_types();
+  // if (ros::master::getTopics(ros_topic_vec))
+  // {
+  //   image_topics_.clear();
+  //   // Filter out the topic names with specific topic type
+  //   for (const ros::master::TopicInfo& topic_info : ros_topic_vec)
+  //   {
+  //     if (message_types_.contains(QString(topic_info.datatype.c_str())))
+  //     {
+  //       image_topics_.insert(QString(topic_info.name.c_str()));
+  //     }
+  //   }
+  // }
+  image_topics_.clear();
+  // Filter out the topic names with specific topic type
+  for (const auto& topic_info : topic_names_and_types)
   {
-    image_topics_.clear();
-    // Filter out the topic names with specific topic type
-    for (const ros::master::TopicInfo& topic_info : ros_topic_vec)
-    {
-      if (message_types_.contains(QString(topic_info.datatype.c_str())))
-      {
-        image_topics_.insert(QString(topic_info.name.c_str()));
+    std::for_each(topic_info.second.begin(), topic_info.second.end(), [&](std::string topic_type){
+      if (message_types_.contains(QString(topic_type.c_str())) {
+        image_topics_.insert(QString(topic_info.first.c_str()));
       }
-    }
+    })
   }
 
   clear();
@@ -117,13 +128,13 @@ TargetTabWidget::TargetTabWidget(HandEyeCalibrationDisplay* pdisplay, QWidget* p
   QFormLayout* layout_left_bottom = new QFormLayout();
   group_left_bottom->setLayout(layout_left_bottom);
 
-  ros_topics_.insert(std::make_pair("image_topic", new RosTopicComboBox(this)));
+  ros_topics_.insert(std::make_pair("image_topic", new RosTopicComboBox(node_, this)));
   ros_topics_["image_topic"]->addMsgsFilterType("sensor_msgs/Image");
   layout_left_bottom->addRow("Image Topic", ros_topics_["image_topic"]);
   connect(ros_topics_["image_topic"], SIGNAL(activated(const QString&)), this,
           SLOT(imageTopicComboboxChanged(const QString&)));
 
-  ros_topics_.insert(std::make_pair("camera_info_topic", new RosTopicComboBox(this)));
+  ros_topics_.insert(std::make_pair("camera_info_topic", new RosTopicComboBox(node_, this)));
   ros_topics_["camera_info_topic"]->addMsgsFilterType("sensor_msgs/CameraInfo");
   layout_left_bottom->addRow("CameraInfo Topic", ros_topics_["camera_info_topic"]);
   connect(ros_topics_["camera_info_topic"], SIGNAL(activated(const QString&)), this,

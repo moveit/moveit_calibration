@@ -45,8 +45,8 @@ static const rclcpp::Logger LOGGER = rclcpp::get_logger(LOGNAME);
 void TFFrameNameComboBox::mousePressEvent(QMouseEvent* event)
 {
   std::vector<std::string> names;
-  frame_manager_->update();
-  frame_manager_->getTF2BufferPtr()->_getFrameStrings(names);
+  context_->getFrameManager()->update();
+  moveit::planning_interface::getSharedTF()->_getFrameStrings(names);
 
   clear();
   addItem(QString(""));
@@ -77,8 +77,8 @@ void TFFrameNameComboBox::mousePressEvent(QMouseEvent* event)
 bool TFFrameNameComboBox::hasFrame(const std::string& frame_name)
 {
   std::vector<std::string> names;
-  frame_manager_->update();
-  frame_manager_->getTF2BufferPtr()->_getFrameStrings(names);
+  context_->getFrameManager()->update();
+  moveit::planning_interface::getSharedTF()->_getFrameStrings(names);
 
   auto it = std::find(names.begin(), names.end(), frame_name);
   return it != names.end();
@@ -155,8 +155,8 @@ void SliderWidget::changeSlider()
   Q_EMIT valueChanged(value);
 }
 
-ContextTabWidget::ContextTabWidget(HandEyeCalibrationDisplay* pdisplay, QWidget* parent)
-  : QWidget(parent), calibration_display_(pdisplay), tf_listener_(tf_buffer_)
+ContextTabWidget::ContextTabWidget(HandEyeCalibrationDisplay* pdisplay, rviz_common::DisplayContext* context, QWidget* parent)
+  : QWidget(parent), context_(context), calibration_display_(pdisplay), tf_buffer(std::make_shared<tf2_ros::Buffer>(node_->get_clock())), tf_listener_(tf_buffer_)
 {
   // Context setting tab ----------------------------------------------------
   QHBoxLayout* layout = new QHBoxLayout();
@@ -184,16 +184,16 @@ ContextTabWidget::ContextTabWidget(HandEyeCalibrationDisplay* pdisplay, QWidget*
   QFormLayout* frame_layout = new QFormLayout();
   frame_group->setLayout(frame_layout);
 
-  frames_.insert(std::make_pair("sensor", new TFFrameNameComboBox(CAMERA_FRAME)));
+  frames_.insert(std::make_pair("sensor", new TFFrameNameComboBox(context_, node_, CAMERA_FRAME)));
   frame_layout->addRow("Sensor frame:", frames_["sensor"]);
 
-  frames_.insert(std::make_pair("object", new TFFrameNameComboBox(ENVIRONMENT_FRAME)));
+  frames_.insert(std::make_pair("object", new TFFrameNameComboBox(context_, node_, ENVIRONMENT_FRAME)));
   frame_layout->addRow("Object frame:", frames_["object"]);
 
-  frames_.insert(std::make_pair("eef", new TFFrameNameComboBox(ROBOT_FRAME)));
+  frames_.insert(std::make_pair("eef", new TFFrameNameComboBox(context_, node_, ROBOT_FRAME)));
   frame_layout->addRow("End-effector frame:", frames_["eef"]);
 
-  frames_.insert(std::make_pair("base", new TFFrameNameComboBox(ROBOT_FRAME)));
+  frames_.insert(std::make_pair("base", new TFFrameNameComboBox(context_, node_, ROBOT_FRAME)));
   frame_layout->addRow("Robot base frame:", frames_["base"]);
 
   for (std::pair<const std::string, TFFrameNameComboBox*>& frame : frames_)
@@ -235,9 +235,11 @@ ContextTabWidget::ContextTabWidget(HandEyeCalibrationDisplay* pdisplay, QWidget*
   fov_pose_ = Eigen::Quaterniond(0.5, -0.5, 0.5, -0.5);
   fov_pose_.translate(Eigen::Vector3d(0.0149, 0.0325, 0.0125));
 
-  camera_info_.reset(new sensor_msgs::CameraInfo());
+  camera_info_.reset(new sensor_msgs::msg::CameraInfo());
 
-  visual_tools_.reset(new moveit_visual_tools::MoveItVisualTools("world"));
+  node_ = rclcpp::Node::make_shared("handeye_context_widget");
+
+  visual_tools_.reset(new moveit_visual_tools::MoveItVisualTools(node_, "world", "/moveit_visual_tools"));
   visual_tools_->enableFrameLocking(true);
   visual_tools_->setAlpha(1.0);
   visual_tools_->setLifetime(0.0);
@@ -360,7 +362,7 @@ void ContextTabWidget::updateAllMarkers()
     visual_tools_->trigger();
   }
   else
-    RCLCPP_ERROR("Visual or TF tool is NULL.");
+    RCLCPP_ERROR(LOGGER, "Visual or TF tool is NULL.");
 }
 
 void ContextTabWidget::updateFOVPose()
@@ -372,7 +374,7 @@ void ContextTabWidget::updateFOVPose()
     try
     {
       // Get FOV pose W.R.T sensor frame
-      tf_msg = tf_buffer_.lookupTransform(sensor_frame.toStdString(), optical_frame_, ros::Time(0));
+      tf_msg = tf_buffer_.lookupTransform(sensor_frame.toStdString(), optical_frame_, rclcpp::Time(0));
       fov_pose_ = tf2::transformToEigen(tf_msg);
       RCLCPP_DEBUG_STREAM(LOGGER, "FOV pose from '" << sensor_frame.toStdString() << "' to '" << optical_frame_
                                                         << "' is:"
@@ -382,7 +384,7 @@ void ContextTabWidget::updateFOVPose()
     }
     catch (tf2::TransformException& e)
     {
-      RCLCPP_WARN_STREAM("TF exception: " << e.what());
+      RCLCPP_WARN_STREAM(LOGGER, "TF exception: " << e.what());
     }
   }
 }
@@ -428,14 +430,14 @@ shape_msgs::msg::Mesh ContextTabWidget::getCameraFOVMesh(const sensor_msgs::msg:
 }
 
 visualization_msgs::msg::Marker ContextTabWidget::getCameraFOVMarker(const Eigen::Isometry3d& pose,
-                                                                const shape_msgs::msg::Mesh& mesh, rvt::colors color,
+                                                                const shape_msgs::msg::Mesh& mesh, rvt::Colors color,
                                                                 double alpha, std::string frame_id)
 {
   return getCameraFOVMarker(rvt::RvizVisualTools::convertPose(pose), mesh, color, alpha, frame_id);
 }
 
-visualization_msgs::msg::Marker ContextTabWidget::getCameraFOVMarker(const geometry_msgs::Pose& pose,
-                                                                const shape_msgs::msg::Mesh& mesh, rvt::colors color,
+visualization_msgs::msg::Marker ContextTabWidget::getCameraFOVMarker(const geometry_msgs::msg::Pose& pose,
+                                                                const shape_msgs::msg::Mesh& mesh, rvt::Colors color,
                                                                 double alpha, std::string frame_id)
 {
   visualization_msgs::msg::Marker marker;
@@ -472,11 +474,11 @@ void ContextTabWidget::setCameraInfo(sensor_msgs::msg::CameraInfo camera_info)
   camera_info_->height = camera_info.height;
   camera_info_->width = camera_info.width;
   camera_info_->distortion_model = camera_info.distortion_model;
-  camera_info_->D = camera_info.D;
-  camera_info_->K = camera_info.K;
-  camera_info_->R = camera_info.R;
-  camera_info_->P = camera_info.P;
-  RCLCPP_DEBUG_STREAM(LOGGER, "Camera info changed: " << *camera_info_);
+  camera_info_->d = camera_info.d;
+  camera_info_->k = camera_info.k;
+  camera_info_->r = camera_info.r;
+  camera_info_->p = camera_info.p;
+  RCLCPP_DEBUG_STREAM(LOGGER, "Camera info changed: " << camera_info_);
 }
 
 void ContextTabWidget::setOpticalFrame(const std::string& frame_id)

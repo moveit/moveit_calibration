@@ -49,7 +49,7 @@
 
 #ifndef Q_MOC_RUN
 #include <rclcpp/rclcpp.hpp>
-// #include <rviz_common/display_factory.hpp> Find alternate for this
+// #include <rviz_common/display_factory.hpp> Do we need this?
 #include <rviz_common/display_context.hpp>
 #endif
 
@@ -71,7 +71,7 @@ public:
   ~HandEyeCalibrationFrame() override;
 
   virtual void loadWidget(const rviz_common::Config& config);
-  virtual void saveWidget(rviz_common::Config config) const;
+  virtual void saveWidget(rviz_common::Config& config) const;
 
 protected:
   // ******************************************************************************************

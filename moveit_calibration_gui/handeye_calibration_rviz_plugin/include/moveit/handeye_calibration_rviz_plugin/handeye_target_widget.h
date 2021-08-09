@@ -62,7 +62,7 @@
 #include <sensor_msgs/msg/joint_state.hpp>
 
 #include <cv_bridge/cv_bridge.h>
-#include <image_transport/image_transport.h>
+#include <image_transport/image_transport.hpp>
 
 #include <pluginlib/class_loader.hpp>
 #include <rviz_visual_tools/tf_visual_tools.hpp>
@@ -205,7 +205,7 @@ private:
   rclcpp::Subscription<sensor_msgs::msg::CameraInfo>::SharedPtr camerainfo_sub_;
 
   // tf broadcaster
-  tf2_ros::TransformBroadcaster tf_pub_;
+  std::shared_ptr<tf2_ros::TransformBroadcaster> tf_pub_;
 };
 
 }  // namespace moveit_rviz_plugin

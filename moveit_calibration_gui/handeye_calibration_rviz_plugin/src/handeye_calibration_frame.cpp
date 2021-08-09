@@ -38,7 +38,7 @@
 #include <moveit/handeye_calibration_rviz_plugin/handeye_calibration_frame.h>
 
 #include <Eigen/Geometry>
-#include <rclcpp/rclcpp.hpp>>
+#include <rclcpp/rclcpp.hpp>
 #include <cmath>
 
 namespace moveit_rviz_plugin
@@ -69,7 +69,7 @@ HandEyeCalibrationFrame::HandEyeCalibrationFrame(HandEyeCalibrationDisplay* pdis
 
   tf_tools_.reset(new rviz_visual_tools::TFVisualTools(250));
 
-  tab_context_ = new ContextTabWidget(calibration_display_);
+  tab_context_ = new ContextTabWidget(calibration_display_, context_);
   tab_context_->setTFTool(tf_tools_);
   connect(tab_target_, SIGNAL(cameraInfoChanged(sensor_msgs::CameraInfo)), tab_context_,
           SLOT(setCameraInfo(sensor_msgs::CameraInfo)));
@@ -95,7 +95,7 @@ HandEyeCalibrationFrame::HandEyeCalibrationFrame(HandEyeCalibrationDisplay* pdis
 
 HandEyeCalibrationFrame::~HandEyeCalibrationFrame() = default;
 
-void HandEyeCalibrationFrame::saveWidget(rviz_common::Config config) const
+void HandEyeCalibrationFrame::saveWidget(rviz_common::Config& config) const
 {
   tab_target_->saveWidget(config);
   tab_context_->saveWidget(config);

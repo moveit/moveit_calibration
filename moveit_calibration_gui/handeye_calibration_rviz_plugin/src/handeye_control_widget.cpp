@@ -100,7 +100,8 @@ int ProgressBarWidget::getValue()
 ControlTabWidget::ControlTabWidget(HandEyeCalibrationDisplay* pdisplay, QWidget* parent)
   : QWidget(parent)
   , calibration_display_(pdisplay)
-  , tf_buffer_(new tf2_ros::Buffer())
+  , node_(rclcpp::Node::make_shared("handeye_control_widget"))
+  , tf_buffer_(new tf2_ros::Buffer(std::make_shared<rclcpp::Clock>(RCL_ROS_TIME)))
   , tf_listener_(*tf_buffer_)
   , sensor_mount_type_(mhc::EYE_TO_HAND)
   , from_frame_tag_("base")
@@ -379,7 +380,7 @@ bool ControlTabWidget::takeTransformSamples()
   }
   catch (tf2::TransformException& e)
   {
-    RCLCPP_WARN("TF exception: %s", e.what());
+    RCLCPP_WARN(LOGGER, "TF exception: %s", e.what());
     return false;
   }
 
@@ -496,8 +497,8 @@ void ControlTabWidget::setTFTool(rviz_visual_tools::TFVisualToolsPtr& tf_pub)
   tf_tools_ = tf_pub;
 }
 
-void ControlTabWidget::addPoseSampleToTreeView(const geometry_msgs::TransformStamped& camera_to_object_tf,
-                                               const geometry_msgs::TransformStamped& base_to_eef_tf, int id)
+void ControlTabWidget::addPoseSampleToTreeView(const geometry_msgs::msg::TransformStamped& camera_to_object_tf,
+                                               const geometry_msgs::msg::TransformStamped& base_to_eef_tf, int id)
 {
   std::string item_name = "Sample " + std::to_string(id);
   QStandardItem* parent = new QStandardItem(QString(item_name.c_str()));
@@ -506,13 +507,13 @@ void ControlTabWidget::addPoseSampleToTreeView(const geometry_msgs::TransformSta
   std::ostringstream ss;
 
   QStandardItem* child_1 = new QStandardItem("TF base-to-eef");
-  ss << base_to_eef_tf.transform;
+  // ss << base_to_eef_tf.transform;
   child_1->appendRow(new QStandardItem(ss.str().c_str()));
   parent->appendRow(child_1);
 
   QStandardItem* child_2 = new QStandardItem("TF camera-to-target");
   ss.str("");
-  ss << camera_to_object_tf.transform;
+  // ss << camera_to_object_tf.transform;
   child_2->appendRow(new QStandardItem(ss.str().c_str()));
   parent->appendRow(child_2);
 }
@@ -540,9 +541,9 @@ void ControlTabWidget::UpdateSensorMountType(int index)
 void ControlTabWidget::updateFrameNames(std::map<std::string, std::string> names)
 {
   frame_names_ = names;
-  RCLCPP_DEBUG("Frame names changed:");
+  RCLCPP_DEBUG(LOGGER, "Frame names changed:");
   for (const std::pair<const std::string, std::string>& name : frame_names_)
-    RCLCPP_DEBUG_STREAM(name.first << " : " << name.second);
+    RCLCPP_DEBUG_STREAM(LOGGER, name.first << " : " << name.second);
 }
 
 void ControlTabWidget::takeSampleBtnClicked(bool clicked)
@@ -666,8 +667,8 @@ void ControlTabWidget::setGroupName(const std::string& group_name)
   try
   {
     moveit::planning_interface::MoveGroupInterface::Options opt(group_name);
-    opt.node_handle_ = ros::NodeHandle(calibration_display_->move_group_ns_property_->getStdString());
-    move_group_.reset(new moveit::planning_interface::MoveGroupInterface(opt, tf_buffer_, ros::WallDuration(5, 0)));
+    // opt.node_handle_ = ros::NodeHandle(calibration_display_->move_group_ns_property_->getStdString());  <- Do I need to assign opt.robot_model and opt.robot_description ?
+    move_group_.reset(new moveit::planning_interface::MoveGroupInterface(node_, opt, tf_buffer_, rclcpp::Duration(5, 0)));
 
     // Clear the joint values from any previous group
     joint_states_.clear();
@@ -675,7 +676,7 @@ void ControlTabWidget::setGroupName(const std::string& group_name)
   }
   catch (std::exception& ex)
   {
-    ROS_ERROR_NAMED(LOGNAME, "%s", ex.what());
+    RCLCPP_ERROR(LOGGER, "%s", ex.what());
   }
 }
 
@@ -684,13 +685,13 @@ void ControlTabWidget::fillPlanningGroupNameComboBox()
   group_name_->clear();
   // Fill in available planning group names
   planning_scene_monitor_.reset(
-      new planning_scene_monitor::PlanningSceneMonitor("robot_description", tf_buffer_, "planning_scene_monitor"));
+      new planning_scene_monitor::PlanningSceneMonitor(node_, "robot_description", tf_buffer_, "planning_scene_monitor"));
   if (planning_scene_monitor_)
   {
     planning_scene_monitor_->startSceneMonitor(calibration_display_->planning_scene_topic_property_->getStdString());
     std::string service_name = planning_scene_monitor::PlanningSceneMonitor::DEFAULT_PLANNING_SCENE_SERVICE;
     if (!calibration_display_->move_group_ns_property_->getStdString().empty())
-      service_name = ros::names::append(calibration_display_->move_group_ns_property_->getStdString(), service_name);
+      service_name = rclcpp::names::append(calibration_display_->move_group_ns_property_->getStdString(), service_name);
     if (planning_scene_monitor_->requestPlanningSceneState(service_name))
     {
       const moveit::core::RobotModelConstPtr& kmodel = planning_scene_monitor_->getRobotModel();

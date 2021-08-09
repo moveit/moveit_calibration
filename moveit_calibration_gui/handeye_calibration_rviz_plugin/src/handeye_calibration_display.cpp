@@ -53,8 +53,8 @@ HandEyeCalibrationDisplay::HandEyeCalibrationDisplay(QWidget* parent) : Display(
                                                      "which the move_group node is running",
                                                      this, SLOT(fillPlanningGroupNameComboBox()), this);
   planning_scene_topic_property_ =
-      new rviz_common::properties::RosTopicProperty("Planning Scene Topic", "move_group/monitored_planning_scene",
-                                 ros::message_traits::datatype<moveit_msgs::msg::PlanningScene>(),
+      new rviz_common::properties::RosTopicProperty("Planning Scene Topic", "/monitored_planning_scene",
+                                 rosidl_generator_traits::data_type<moveit_msgs::msg::PlanningScene>(),
                                  "The topic on which the moveit_msgs::msg::PlanningScene messages are received", this,
                                  SLOT(fillPlanningGroupNameComboBox()), this);
 

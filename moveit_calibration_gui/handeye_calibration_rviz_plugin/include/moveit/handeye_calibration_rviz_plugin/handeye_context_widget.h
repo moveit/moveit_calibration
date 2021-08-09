@@ -59,6 +59,8 @@
 #include <moveit_visual_tools/moveit_visual_tools.h>
 #include <moveit/handeye_calibration_solver/handeye_solver_base.h>
 #include <moveit/handeye_calibration_rviz_plugin/handeye_calibration_display.h>
+#include <moveit/planning_scene_monitor/planning_scene_monitor.h>
+#include <moveit/background_processing/background_processing.h>
 
 #ifndef Q_MOC_RUN
 #include <rclcpp/rclcpp.hpp>
@@ -86,10 +88,10 @@ class TFFrameNameComboBox : public QComboBox
 {
   Q_OBJECT
 public:
-  TFFrameNameComboBox(FRAME_SOURCE source = ROBOT_FRAME, QWidget* parent = 0) : QComboBox(parent), frame_source_(source)
+  TFFrameNameComboBox(rviz_common::DisplayContext* context, rclcpp::Node::SharedPtr& node, FRAME_SOURCE source = ROBOT_FRAME, QWidget* parent = 0) : QComboBox(parent), frame_source_(source), context_(context), node_(node)
   {
-    robot_model_loader_.reset(new robot_model_loader::RobotModelLoader("robot_description"));
-    frame_manager_.reset(new rviz_common::FrameManagerIface());
+    robot_model_loader_.reset(new robot_model_loader::RobotModelLoader(node_, "robot_description"));
+    // frame_manager_.reset(new rviz_common::FrameManagerIface());
   }
 
   ~TFFrameNameComboBox()
@@ -104,7 +106,9 @@ protected:
 
 private:
   FRAME_SOURCE frame_source_;
-  std::unique_ptr<rviz_common::FrameManagerIface> frame_manager_;
+  // std::unique_ptr<rviz_common::FrameManagerIface> frame_manager_;
+  rclcpp::Node::SharedPtr node_;
+  rviz_common::DisplayContext* context_;
   robot_model_loader::RobotModelLoaderConstPtr robot_model_loader_;
 };
 
@@ -151,7 +155,7 @@ class ContextTabWidget : public QWidget
 {
   Q_OBJECT
 public:
-  explicit ContextTabWidget(HandEyeCalibrationDisplay* pdisplay, QWidget* parent = Q_NULLPTR);
+  explicit ContextTabWidget(HandEyeCalibrationDisplay* pdisplay, rviz_common::DisplayContext* context, QWidget* parent = Q_NULLPTR);
   ~ContextTabWidget()
   {
     camera_info_.reset();
@@ -170,10 +174,10 @@ public:
   static shape_msgs::msg::Mesh getCameraFOVMesh(const sensor_msgs::msg::CameraInfo& camera_info, double maxdist);
 
   visualization_msgs::msg::Marker getCameraFOVMarker(const Eigen::Isometry3d& pose, const shape_msgs::msg::Mesh& mesh,
-                                                rvt::colors color, double alpha, std::string frame_id);
+                                                rvt::Colors color, double alpha, std::string frame_id);
 
   visualization_msgs::msg::Marker getCameraFOVMarker(const geometry_msgs::msg::Pose& pose, const shape_msgs::msg::Mesh& mesh,
-                                                rvt::colors color, double alpha, std::string frame_id);
+                                                rvt::Colors color, double alpha, std::string frame_id);
 
   void setCameraPose(double tx, double ty, double tz, double rx, double ry, double rz);
 
@@ -236,9 +240,11 @@ private:
   // Ros components
   // **************************************************************
 
+  rclcpp::Node::SharedPtr node_;
+  rviz_common::DisplayContext* context_;
   moveit_visual_tools::MoveItVisualToolsPtr visual_tools_;
   rviz_visual_tools::TFVisualToolsPtr tf_tools_;
-  tf2_ros::Buffer tf_buffer_;
+  std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
   tf2_ros::TransformListener tf_listener_;
 };
 

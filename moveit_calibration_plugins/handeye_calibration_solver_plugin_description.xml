@@ -1,4 +1,4 @@
-<library path="libmoveit_handeye_calibration_solver">
+<library path="moveit_handeye_calibration_solver">
   <class name="crigroup"
          type="moveit_handeye_calibration::HandEyeSolverDefault"
          base_class_type="moveit_handeye_calibration::HandEyeSolverBase">

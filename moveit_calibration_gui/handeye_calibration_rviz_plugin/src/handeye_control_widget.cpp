@@ -288,8 +288,8 @@ bool ControlTabWidget::loadSolverPlugin(std::vector<std::string>& plugins)
   {
     try
     {
-      solver_plugins_loader_.reset(new pluginlib::ClassLoader<moveit_handeye_calibration::HandEyeSolverBase>(
-          "moveit_calibration_plugins", "moveit_handeye_calibration::HandEyeSolverBase"));
+      solver_plugins_loader_ = std::make_unique<pluginlib::ClassLoader<moveit_handeye_calibration::HandEyeSolverBase>>(
+          "moveit_calibration_plugins", "moveit_handeye_calibration::HandEyeSolverBase");
     }
     catch (pluginlib::PluginlibException& ex)
     {

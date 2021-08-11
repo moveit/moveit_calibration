@@ -44,8 +44,7 @@
 
 namespace moveit_handeye_calibration
 {
-const std::string LOGNAME = "handeye_solver_default";
-static const rclcpp::Logger LOGGER = rclcpp::get_logger(LOGNAME);
+// static const rclcpp::Logger LOGGER = rclcpp::get_logger("handeye_solver_default");
 
 void HandEyeSolverDefault::initialize()
 {

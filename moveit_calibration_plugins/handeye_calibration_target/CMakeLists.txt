@@ -1,3 +1,9 @@
+set(HEADERS
+  include/moveit/handeye_calibration_target/handeye_target_aruco.h
+  include/moveit/handeye_calibration_target/handeye_target_base.h
+  include/moveit/handeye_calibration_target/handeye_target_charuco.h
+)
+
 set(SOURCE_FILES
   src/handeye_target_aruco.cpp
   src/handeye_target_charuco.cpp
@@ -5,26 +11,15 @@ set(SOURCE_FILES
 
 set(MOVEIT_LIB_NAME moveit_handeye_calibration_target)
 
-add_library(${MOVEIT_LIB_NAME}_core ${SOURCE_FILES})
+add_library(${MOVEIT_LIB_NAME}_core ${SOURCE_FILES} ${HEADERS})
 set_target_properties(${MOVEIT_LIB_NAME}_core PROPERTIES VERSION "${${PROJECT_NAME}_VERSION}")
 target_link_libraries(${MOVEIT_LIB_NAME}_core ${OpenCV_LIBS} ${Boost_LIBRARIES})
 ament_target_dependencies(${MOVEIT_LIB_NAME}_core ${THIS_PACKAGE_INCLUDE_DEPENDS})
 
 add_library(${MOVEIT_LIB_NAME} src/plugin_init.cpp)
 set_target_properties(${MOVEIT_LIB_NAME} PROPERTIES VERSION "${${PROJECT_NAME}_VERSION}")
-target_link_libraries(${MOVEIT_LIB_NAME} ${MOVEIT_LIB_NAME}_core ${Boost_LIBRARIES})
+target_link_libraries(${MOVEIT_LIB_NAME} ${MOVEIT_LIB_NAME}_core)
 ament_target_dependencies(${MOVEIT_LIB_NAME} ${THIS_PACKAGE_INCLUDE_DEPENDS})
-
-install(
-  TARGETS
-    ${MOVEIT_LIB_NAME}_core
-    ${MOVEIT_LIB_NAME}
-  EXPORT export_${PROJECT_NAME}
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib
-  RUNTIME DESTINATION bin
-  INCLUDES DESTINATION include
-)
 
 install(DIRECTORY include/ DESTINATION include)
 

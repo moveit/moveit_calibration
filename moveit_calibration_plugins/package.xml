@@ -14,6 +14,7 @@
   <url type="repository">https://github.com/ros-planning/moveit_calibration</url>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
+  <build_depend>class_loader</build_depend>
 
   <depend>eigen</depend>
   <depend>geometry_msgs</depend>
@@ -27,6 +28,7 @@
   <depend>tf2_geometry_msgs</depend>
 
   <export>
+    <build_type>ament_cmake</build_type>
     <moveit_calibration_plugins plugin="${prefix}/handeye_calibration_target_plugin_description.xml" />
     <moveit_calibration_plugins plugin="${prefix}/handeye_calibration_solver_plugin_description.xml" />
   </export>

@@ -19,44 +19,34 @@ if(BUILD_PYTHON_WRAPPER)
     execute_process(COMMAND python3 -c "import numpy" RESULT_VARIABLE Numpy_NOT_FOUND)
 endif(BUILD_PYTHON_WRAPPER)
 
+set(HEADERS
+  include/moveit/handeye_calibration_solver/handeye_solver_base.h
+  include/moveit/handeye_calibration_solver/handeye_solver_default.h
+)
 # Plugin Source
 set(SOURCE_FILES
   src/handeye_solver_default.cpp
 )
 
 set(MOVEIT_LIB_NAME moveit_handeye_calibration_solver)
-add_library(${MOVEIT_LIB_NAME}_core ${SOURCE_FILES})
+add_library(${MOVEIT_LIB_NAME}_core SHARED ${SOURCE_FILES} ${HEADERS})
 set_target_properties(${MOVEIT_LIB_NAME}_core PROPERTIES VERSION "${${PROJECT_NAME}_VERSION}")
 target_link_libraries(${MOVEIT_LIB_NAME}_core ${Boost_LIBRARIES} ${PYTHON_LIBRARIES})
-ament_target_dependencies(${MOVEIT_LIB_NAME}_core ${THIS_PACKAGE_INCLUDE_DEPENDS})
-
-add_library(${MOVEIT_LIB_NAME} src/plugin_init.cpp)
-set_target_properties(${MOVEIT_LIB_NAME} PROPERTIES VERSION "${${PROJECT_NAME}_VERSION}")
-target_link_libraries(${MOVEIT_LIB_NAME} ${MOVEIT_LIB_NAME}_core ${Boost_LIBRARIES} ${PYTHON_LIBRARIES})
-ament_target_dependencies(${MOVEIT_LIB_NAME}_core ${THIS_PACKAGE_INCLUDE_DEPENDS})
-
-install(
-  TARGETS
-    ${MOVEIT_LIB_NAME}_core
-    ${MOVEIT_LIB_NAME}
-  EXPORT export_${PROJECT_NAME}
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib
-  RUNTIME DESTINATION bin
-  INCLUDES DESTINATION include
+ament_target_dependencies(${MOVEIT_LIB_NAME}_core
+  geometry_msgs
+  pluginlib
+  rclcpp
+  sensor_msgs
+  tf2
+  tf2_eigen
 )
 
+add_library(${MOVEIT_LIB_NAME} SHARED src/plugin_init.cpp)
+set_target_properties(${MOVEIT_LIB_NAME} PROPERTIES VERSION "${${PROJECT_NAME}_VERSION}")
+target_link_libraries(${MOVEIT_LIB_NAME} ${MOVEIT_LIB_NAME}_core)
+ament_target_dependencies(${MOVEIT_LIB_NAME} pluginlib)
+
 install(DIRECTORY include/ DESTINATION include)
-
-# if (CATKIN_ENABLE_TESTING)
-#   find_package(jsoncpp REQUIRED)
-#   get_target_property(JSON_INC_PATH jsoncpp_lib INTERFACE_INCLUDE_DIRECTORIES)
-
-#   include_directories(${JSON_INC_PATH})
-
-#   catkin_add_gtest(test_handeye_solver test/handeye_solver_test.cpp)
-#   target_link_libraries(test_handeye_solver ${catkin_LIBRARIES} ${MOVEIT_LIB_NAME} jsoncpp_lib)
-# endif()
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

@@ -48,6 +48,7 @@ enum SensorMountType
   EYE_IN_HAND = 1,
 };
 
+static const rclcpp::Logger LOGGER = rclcpp::get_logger("handeye_solver_base");
 class HandEyeSolverBase
 {
 public:
@@ -55,8 +56,6 @@ public:
   virtual ~HandEyeSolverBase() = default;
 
   virtual void initialize() = 0;
-
-  static const rclcpp::Logger LOGGER;
 
   /**
    * @brief Get the names of available algorithms that can be used from the

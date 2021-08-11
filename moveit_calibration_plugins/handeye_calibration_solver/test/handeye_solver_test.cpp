@@ -39,7 +39,6 @@
 #include <jsoncpp/json/json.h>
 #include <moveit/handeye_calibration_solver/handeye_solver_base.h>
 #include <pluginlib/class_loader.hpp>
-// #include <ros/package.h>
 #include <rclcpp/rclcpp.hpp>
 #include <ament_index_cpp/get_package_share_directory.hpp>
 
@@ -53,6 +52,7 @@ protected:
     {
       solver_plugins_loader_.reset(new pluginlib::ClassLoader<moveit_handeye_calibration::HandEyeSolverBase>(
           "moveit_calibration_plugins", "moveit_handeye_calibration::HandEyeSolverBase"));
+      // solver_plugins_loader_ = std::make_unique<pluginlib::ClassLoader<moveit_handeye_calibration::HandEyeSolverBase>>("moveit_calibration_plugins", "moveit_handeye_calibration::HandEyeSolverBase");
       solver_ = solver_plugins_loader_->createUniqueInstance("crigroup");
       solver_->initialize();
     }

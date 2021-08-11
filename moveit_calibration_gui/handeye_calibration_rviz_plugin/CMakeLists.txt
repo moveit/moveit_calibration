@@ -1,5 +1,3 @@
-find_package(OpenCV REQUIRED)
-
 set(HEADERS
   include/moveit/handeye_calibration_rviz_plugin/handeye_calibration_display.h
   include/moveit/handeye_calibration_rviz_plugin/handeye_calibration_frame.h
@@ -22,26 +20,25 @@ set(SOURCE_FILES
 
 set(MOVEIT_LIB_NAME moveit_handeye_calibration_rviz_plugin)
 
-add_library(${MOVEIT_LIB_NAME}_core ${SOURCE_FILES} ${HEADERS})
+add_library(${MOVEIT_LIB_NAME}_core SHARED ${SOURCE_FILES} ${HEADERS})
 set_target_properties(${MOVEIT_LIB_NAME}_core PROPERTIES VERSION "${${PROJECT_NAME}_VERSION}")
-target_link_libraries(${MOVEIT_LIB_NAME}_core
-  ${OpenCV_LIBS} ${rviz_DEFAULT_PLUGIN_LIBRARIES} ${OGRE_LIBRARIES} ${QT_LIBRARIES} ${Boost_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_LIBRARY})
-ament_target_dependencies(${MOVEIT_LIB_NAME}_core ${THIS_PACKAGE_INCLUDE_DEPENDS})
+target_link_libraries(${MOVEIT_LIB_NAME}_core ${OpenCV_LIBS})
+ament_target_dependencies(${MOVEIT_LIB_NAME}_core
+  rviz2
+  rviz_ogre_vendor
+  Qt5
+  pluginlib
+  rviz_visual_tools
+  moveit_visual_tools
+  moveit_core
+  moveit_calibration_plugins
+  moveit_ros_planning_interface)
+target_include_directories(${MOVEIT_LIB_NAME}_core PRIVATE "${OGRE_PREFIX_DIR}/include")
 
-add_library(${MOVEIT_LIB_NAME} src/plugin_init.cpp)
+add_library(${MOVEIT_LIB_NAME} SHARED src/plugin_init.cpp)
 set_target_properties(${MOVEIT_LIB_NAME} PROPERTIES VERSION "${${PROJECT_NAME}_VERSION}")
-target_link_libraries(${MOVEIT_LIB_NAME} ${MOVEIT_LIB_NAME}_core ${Boost_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_LIBRARY})
-ament_target_dependencies(${MOVEIT_LIB_NAME}_core ${THIS_PACKAGE_INCLUDE_DEPENDS})
+target_link_libraries(${MOVEIT_LIB_NAME} ${MOVEIT_LIB_NAME}_core)
+ament_target_dependencies(${MOVEIT_LIB_NAME} pluginlib rviz_ogre_vendor rviz_visual_tools)
+target_include_directories(${MOVEIT_LIB_NAME} PRIVATE "${OGRE_PREFIX_DIR}/include")
 
 install(DIRECTORY include/ DESTINATION include)
-
-install(
-  TARGETS
-    ${MOVEIT_LIB_NAME}_core
-    ${MOVEIT_LIB_NAME}
-  EXPORT export_${PROJECT_NAME}
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib
-  RUNTIME DESTINATION bin
-  INCLUDES DESTINATION include
-)

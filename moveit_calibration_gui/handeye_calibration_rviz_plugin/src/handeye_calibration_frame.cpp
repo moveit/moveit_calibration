@@ -49,6 +49,7 @@ HandEyeCalibrationFrame::HandEyeCalibrationFrame(HandEyeCalibrationDisplay* pdis
                                                  QWidget* parent)
   : QWidget(parent), calibration_display_(pdisplay), context_(context)
 {
+  node_ = std::make_shared<rclcpp::Node>("handeye_calibration_frame");
   setMinimumSize(695, 460);
   // Basic widget container
   QVBoxLayout* layout = new QVBoxLayout();
@@ -65,7 +66,7 @@ HandEyeCalibrationFrame::HandEyeCalibrationFrame(HandEyeCalibrationDisplay* pdis
   QTabWidget* tabs = new QTabWidget(this);
   tab_target_ = new TargetTabWidget(calibration_display_);
 
-  tf_tools_.reset(new rviz_visual_tools::TFVisualTools(250));
+  tf_tools_.reset(new rviz_visual_tools::TFVisualTools(node_, 250));
 
   tab_context_ = new ContextTabWidget(calibration_display_, context_);
   tab_context_->setTFTool(tf_tools_);

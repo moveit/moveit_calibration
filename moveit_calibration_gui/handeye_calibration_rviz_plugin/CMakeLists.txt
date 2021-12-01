@@ -28,6 +28,7 @@ ament_target_dependencies(${MOVEIT_LIB_NAME}_core
   rviz_ogre_vendor
   Qt5
   pluginlib
+  image_transport
   rviz_visual_tools
   moveit_visual_tools
   moveit_core

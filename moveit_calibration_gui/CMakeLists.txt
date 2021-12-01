@@ -9,6 +9,7 @@ find_package(ament_cmake REQUIRED)
 find_package(ament_index_cpp REQUIRED)
 find_package(class_loader REQUIRED)
 find_package(geometric_shapes REQUIRED)
+find_package(image_transport REQUIRED)
 find_package(moveit_calibration_plugins REQUIRED)
 find_package(moveit_core REQUIRED)
 find_package(moveit_ros_perception REQUIRED)
@@ -50,6 +51,7 @@ set(THIS_PACKAGE_INCLUDE_DEPENDS
     ament_index_cpp
     Eigen3
     eigen3_cmake_module
+    image_transport
     moveit_core
     moveit_calibration_plugins
     moveit_ros_perception

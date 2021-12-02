@@ -27,6 +27,7 @@
 
   <depend>cv_bridge</depend>
   <depend>geometric_shapes</depend>
+  <depend>image_transport</depend>
   <depend>moveit_ros_visualization</depend>
   <depend>moveit_calibration_plugins</depend>
   <depend>moveit_core</depend>

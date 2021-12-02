@@ -87,6 +87,7 @@ private:
   HandEyeCalibrationDisplay* calibration_display_;
 
   rviz_visual_tools::TFVisualToolsPtr tf_tools_;
+  rclcpp::Node::SharedPtr node_;
 };
 
 }  // namespace moveit_rviz_plugin

@@ -185,6 +185,9 @@ ContextTabWidget::ContextTabWidget(HandEyeCalibrationDisplay* pdisplay, QWidget*
 
   frames_.insert(std::make_pair("sensor", new TFFrameNameComboBox(CAMERA_FRAME)));
   frame_layout->addRow("Sensor frame:", frames_["sensor"]);
+  
+  frames_.insert(std::make_pair("sensor_root", new TFFrameNameComboBox(CAMERA_FRAME)));
+  frame_layout->addRow("Sensor root frame:", frames_["sensor_root"]);
 
   frames_.insert(std::make_pair("object", new TFFrameNameComboBox(ENVIRONMENT_FRAME)));
   frame_layout->addRow("Object frame:", frames_["object"]);
@@ -340,9 +343,31 @@ void ContextTabWidget::updateAllMarkers()
         // // Get camera pose guess
         setCameraPose(guess_pose_["Tx"]->getValue(), guess_pose_["Ty"]->getValue(), guess_pose_["Tz"]->getValue(),
                       guess_pose_["Rx"]->getValue(), guess_pose_["Ry"]->getValue(), guess_pose_["Rz"]->getValue());
+        auto camera_pose = camera_pose_;    
+
+        if(setup==mhc::EYE_TO_HAND) {
+                ROS_DEBUG_STREAM_NAMED(LOGNAME, "to_frame: " << to_frame.toStdString());
+                QString to_frame_root = frames_["sensor_root"]->currentText();
+                ROS_DEBUG_STREAM_NAMED(LOGNAME, "to_frame_root: " << to_frame_root.toStdString());
+                try {
+                        auto to_frame_parent_offset =
+                                tf_buffer_.lookupTransform(to_frame.toStdString(),
+                                                to_frame_root.toStdString(),
+                                                ros::Time::now()+ros::Duration(0.01),
+                                                ros::Duration(1.));
+                        ROS_DEBUG_STREAM_NAMED(LOGNAME, "to_frame_parent_offset:\n" << to_frame_parent_offset);
+                        to_frame = to_frame_root;
+                        camera_pose = camera_pose * tf2::transformToEigen(to_frame_parent_offset);
+                } catch ( std::exception const & ex ) {
+                        std::cerr << ex.what() << std::endl;
+                        return;
+                }
+        }
 
         // Publish new transform from robot base or end-effector to sensor frame
-        tf_tools_->publishTransform(camera_pose_, from_frame.toStdString(), to_frame.toStdString());
+        ROS_DEBUG_STREAM_NAMED(LOGNAME, "publishing trafo with to_frame: " << to_frame.toStdString()
+                        << " from_frame " << from_frame.toStdString() << std::endl << camera_pose.matrix());
+        tf_tools_->publishTransform(camera_pose, from_frame.toStdString(), to_frame.toStdString());
 
         // Publish new FOV marker
         if (calibration_display_->fov_marker_enabled_property_->getBool())

@@ -415,7 +415,8 @@ bool ControlTabWidget::solveCameraRobotPose()
 
       // Publish camera pose tf
       const std::string& from_frame = frame_names_[from_frame_tag_];
-      const std::string& to_frame = frame_names_["sensor"];
+      std::string to_frame = frame_names_["sensor"];
+      const std::string& to_frame_root = frame_names_["sensor_root"];
       if (!from_frame.empty() && !to_frame.empty())
       {
         tf_tools_->clearAllTransforms();
@@ -424,8 +425,24 @@ bool ControlTabWidget::solveCameraRobotPose()
                                                                        << camera_robot_pose_.matrix() << std::endl
                                                                        << "from " << from_frame_tag_ << " frame '"
                                                                        << from_frame << "'"
-                                                                       << "to sensor frame '" << to_frame << "'");
-        return tf_tools_->publishTransform(camera_robot_pose_, from_frame, to_frame);
+                                                                       << " to sensor frame '" << to_frame << "'");
+        Eigen::Isometry3d camera_robot_pose = camera_robot_pose_;
+        if(to_frame_root.size()) {
+                ROS_DEBUG_STREAM_NAMED(LOGNAME, "to_frame: " << to_frame);
+                ROS_DEBUG_STREAM_NAMED(LOGNAME, "to_frame_root: " << to_frame_root);
+                try {
+                        auto to_frame_parent_offset =
+                                tf_buffer_->lookupTransform(to_frame,
+                                                to_frame_root, ros::Time::now()+ros::Duration(0.01), ros::Duration(1.));
+                        ROS_DEBUG_STREAM_NAMED(LOGNAME, "to_frame_parent_offset:\n" << to_frame_parent_offset);
+                        to_frame = to_frame_root;
+                        camera_robot_pose = camera_robot_pose * tf2::transformToEigen(to_frame_parent_offset);
+                } catch ( std::exception const & ex ) {
+                        ROS_ERROR_STREAM(ex.what());
+                        return false;
+                }
+        }
+        return tf_tools_->publishTransform(camera_robot_pose, from_frame, to_frame);
       }
       else
       {
@@ -596,7 +613,8 @@ void ControlTabWidget::clearSamplesBtnClicked(bool clicked)
 void ControlTabWidget::saveCameraPoseBtnClicked(bool clicked)
 {
   std::string& from_frame = frame_names_[from_frame_tag_];
-  std::string& to_frame = frame_names_["sensor"];
+  std::string to_frame = frame_names_["sensor"];
+  std::string to_frame_root = frame_names_["sensor_root"];
 
   if (from_frame.empty() || to_frame.empty())
   {
@@ -624,10 +642,30 @@ void ControlTabWidget::saveCameraPoseBtnClicked(bool clicked)
   }
 
   QTextStream out(&file);
+ 
+  Eigen::Isometry3d camera_robot_pose = camera_robot_pose_; 
+  // Detect if to_frame (sensor frame here) is the root of a tf tree ,unconnected to from_frame (base).
+  // If it is not the root of the tree, publish the transform between from_frame and the root of the tree
+  // instead of from_frame and to_frame.
+  if(to_frame_root.size()) {
+      ROS_DEBUG_STREAM_NAMED(LOGNAME, "to_frame: " << to_frame);
+      ROS_DEBUG_STREAM_NAMED(LOGNAME, "to_frame_root: " << to_frame_root);
+      try {
+          auto to_frame_parent_offset =
+              tf_buffer_->lookupTransform(to_frame,
+                      to_frame_root, ros::Time::now()+ros::Duration(0.01), ros::Duration(1.));
+          ROS_DEBUG_STREAM_NAMED(LOGNAME, "to_frame_parent_offset:\n" << to_frame_parent_offset);
+          to_frame = to_frame_root;
+          camera_robot_pose = camera_robot_pose * tf2::transformToEigen(to_frame_parent_offset);
+      } catch ( std::exception const & ex ) {
+          std::cerr << ex.what() << std::endl;
+          return;
+      }
+  }
 
-  Eigen::Vector3d t = camera_robot_pose_.translation();
-  Eigen::Quaterniond r_quat(camera_robot_pose_.rotation());
-  Eigen::Vector3d r_euler = camera_robot_pose_.rotation().eulerAngles(0, 1, 2);
+  Eigen::Vector3d t = camera_robot_pose.translation();
+  Eigen::Quaterniond r_quat(camera_robot_pose.rotation());
+  Eigen::Vector3d r_euler = camera_robot_pose.rotation().eulerAngles(0, 1, 2);
   std::stringstream ss;
   ss << "<launch>" << std::endl;
   ss << "  <!-- The rpy in the comment uses the extrinsic XYZ convention, which is the same as is used in a URDF. See"

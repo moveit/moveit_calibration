@@ -49,10 +49,15 @@
 #include <sensor_msgs/msg/camera_info.hpp>
 #include <tf2/LinearMath/Matrix3x3.h>
 #include <tf2/LinearMath/Quaternion.h>
-#include <tf2_eigen/tf2_eigen.h>
+#include <tf2_eigen/tf2_eigen.hpp>
 
 namespace moveit_handeye_calibration
 {
+
+namespace {
+  const rclcpp::Logger LOGGER_CALIBRATION_TARGET = rclcpp::get_logger("moveit_handeye_calibration_target");
+  constexpr size_t LOG_THROTTLE_PERIOD = 2;
+}
 
 /**
  * @class HandEyeTargetBase
@@ -82,7 +87,7 @@ public:
       if (parameter_type_ == ParameterType::Int)
         value_.i = default_value;
       else
-        RCLCPP_ERROR(LOGGER, "Integer default value specified for non-integer parameter %s", name.c_str());
+        RCLCPP_ERROR(LOGGER_CALIBRATION_TARGET, "Integer default value specified for non-integer parameter %s", name.c_str());
     }
 
     Parameter(std::string name, ParameterType parameter_type, float default_value = 0.)
@@ -91,7 +96,7 @@ public:
       if (parameter_type_ == ParameterType::Float)
         value_.f = default_value;
       else
-        RCLCPP_ERROR(LOGGER, "Float default value specified for non-float parameter %s", name.c_str());
+        RCLCPP_ERROR(LOGGER_CALIBRATION_TARGET, "Float default value specified for non-float parameter %s", name.c_str());
     }
 
     Parameter(std::string name, ParameterType parameter_type, double default_value = 0.)
@@ -100,7 +105,7 @@ public:
       if (parameter_type_ == ParameterType::Float)
         value_.f = default_value;
       else
-        RCLCPP_ERROR(LOGGER, "Float default value specified for non-float parameter %s", name.c_str());
+        RCLCPP_ERROR(LOGGER_CALIBRATION_TARGET, "Float default value specified for non-float parameter %s", name.c_str());
     }
 
     Parameter(std::string name, ParameterType parameter_type, std::vector<std::string> enum_values,
@@ -110,14 +115,11 @@ public:
       if (default_option < enum_values_.size())
         value_.e = default_option;
       else
-        RCLCPP_ERROR(LOGGER, "Invalid default option for enum parameter %s", name.c_str());
+        RCLCPP_ERROR(LOGGER_CALIBRATION_TARGET, "Invalid default option for enum parameter %s", name.c_str());
     }
-
-  private:
-    static const rclcpp::Logger LOGGER;
   };
 
-  // rclcpp::Logger LOGGER = rclcpp::get_logger("handeye_target_base");
+  rclcpp::Clock clock;
   const std::size_t CAMERA_MATRIX_VECTOR_DIMENSION = 9;  // 3x3 camera intrinsic matrix
   const std::size_t CAMERA_MATRIX_WIDTH = 3;
   const std::size_t CAMERA_MATRIX_HEIGHT = 3;
@@ -222,20 +224,20 @@ public:
   {
     if (!msg)
     {
-      RCLCPP_ERROR(LOGGER, "CameraInfo msg is NULL.");
+      RCLCPP_ERROR(LOGGER_CALIBRATION_TARGET, "CameraInfo msg is NULL.");
       return false;
     }
 
     if (msg->k.size() != CAMERA_MATRIX_VECTOR_DIMENSION)
     {
-      RCLCPP_ERROR(LOGGER, "Invalid camera matrix dimension, current is %ld, required is %zu.", msg->k.size(),
+      RCLCPP_ERROR(LOGGER_CALIBRATION_TARGET, "Invalid camera matrix dimension, current is %ld, required is %zu.", msg->k.size(),
                       CAMERA_MATRIX_VECTOR_DIMENSION);
       return false;
     }
 
     if (msg->d.size() != CAMERA_DISTORTION_VECTOR_DIMENSION)
     {
-      RCLCPP_ERROR(LOGGER, "Invalid distortion parameters dimension, current is %ld, required is %zu.",
+      RCLCPP_ERROR(LOGGER_CALIBRATION_TARGET, "Invalid distortion parameters dimension, current is %ld, required is %zu.",
                       msg->d.size(), CAMERA_DISTORTION_VECTOR_DIMENSION);
       return false;
     }
@@ -257,7 +259,7 @@ public:
       distortion_coeffs_.at<double>(i, 0) = msg->d[i];
     }
 
-    RCLCPP_DEBUG_STREAM(LOGGER, "Set camera intrinsic parameter to: " << msg);
+    RCLCPP_DEBUG_STREAM(LOGGER_CALIBRATION_TARGET, "Set camera intrinsic parameter to: " << msg);
     return true;
   }
 
@@ -420,7 +422,6 @@ public:
   }
 
 protected:
-  static const rclcpp::Logger LOGGER;
   // 3x3 floating-point camera matrix
   //     [fx  0 cx]
   // K = [ 0 fy cy]

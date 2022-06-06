@@ -38,20 +38,6 @@
 
 namespace moveit_handeye_calibration
 {
-const std::string LOGNAME = "handeye_aruco_target";
-static const rclcpp::Logger LOGGER = rclcpp::get_logger(LOGNAME);
-rclcpp::Clock clock;
-constexpr size_t LOG_THROTTLE_PERIOD = 2;
-
-// Predefined ARUCO dictionaries in OpenCV for creating ARUCO marker board
-const std::map<std::string, cv::aruco::PREDEFINED_DICTIONARY_NAME> ARUCO_DICTIONARY = {
-  { "DICT_4X4_250", cv::aruco::DICT_4X4_250 },
-  { "DICT_5X5_250", cv::aruco::DICT_5X5_250 },
-  { "DICT_6X6_250", cv::aruco::DICT_6X6_250 },
-  { "DICT_7X7_250", cv::aruco::DICT_7X7_250 },
-  { "DICT_ARUCO_ORIGINAL", cv::aruco::DICT_ARUCO_ORIGINAL }
-};
-
 HandEyeArucoTarget::HandEyeArucoTarget()
 {
   parameters_.push_back(Parameter("markers, X", Parameter::ParameterType::Int, 3));
@@ -71,8 +57,6 @@ HandEyeArucoTarget::HandEyeArucoTarget()
 
 bool HandEyeArucoTarget::initialize()
 {
-  marker_dictionaries_ = ARUCO_DICTIONARY;
-
   int markers_x;
   int markers_y;
   int marker_size;
@@ -98,9 +82,9 @@ bool HandEyeArucoTarget::setTargetIntrinsicParams(int markers_x, int markers_y, 
                                                   int border_bits, const std::string& dictionary_id)
 {
   if (markers_x <= 0 || markers_y <= 0 || marker_size <= 0 || separation <= 0 || border_bits <= 0 ||
-      marker_dictionaries_.find(dictionary_id) == marker_dictionaries_.end())
+      ARUCO_DICTIONARY.find(dictionary_id) == ARUCO_DICTIONARY.end())
   {
-    RCLCPP_ERROR_STREAM_THROTTLE(LOGGER, clock, LOG_THROTTLE_PERIOD,
+    RCLCPP_ERROR_STREAM_THROTTLE(LOGGER_CALIBRATION_TARGET, clock, LOG_THROTTLE_PERIOD,
                                     "Invalid target intrinsic params.\n"
                                         << "markers_x_ " << std::to_string(markers_x) << "\n"
                                         << "markers_y_ " << std::to_string(markers_y) << "\n"
@@ -118,7 +102,7 @@ bool HandEyeArucoTarget::setTargetIntrinsicParams(int markers_x, int markers_y, 
   separation_ = separation;
   border_bits_ = border_bits;
 
-  const auto& it = marker_dictionaries_.find(dictionary_id);
+  const auto& it = ARUCO_DICTIONARY.find(dictionary_id);
   dictionary_id_ = it->second;
 
   return true;
@@ -128,7 +112,7 @@ bool HandEyeArucoTarget::setTargetDimension(double marker_measured_size, double 
 {
   if (marker_measured_size <= 0 || marker_measured_separation <= 0)
   {
-    RCLCPP_ERROR_THROTTLE(LOGGER, clock, LOG_THROTTLE_PERIOD, "Invalid target measured dimensions: marker_size %f, marker_seperation %f",
+    RCLCPP_ERROR_THROTTLE(LOGGER_CALIBRATION_TARGET, clock, LOG_THROTTLE_PERIOD, "Invalid target measured dimensions: marker_size %f, marker_seperation %f",
                              marker_measured_size, marker_measured_separation);
     return false;
   }
@@ -136,7 +120,7 @@ bool HandEyeArucoTarget::setTargetDimension(double marker_measured_size, double 
   std::lock_guard<std::mutex> aruco_lock(aruco_mutex_);
   marker_size_real_ = marker_measured_size;
   marker_separation_real_ = marker_measured_separation;
-  RCLCPP_INFO_STREAM_THROTTLE(LOGGER, clock, LOG_THROTTLE_PERIOD,
+  RCLCPP_INFO_STREAM_THROTTLE(LOGGER_CALIBRATION_TARGET, clock, LOG_THROTTLE_PERIOD,
                                  "Set target real dimensions: \n"
                                      << "marker_measured_size " << std::to_string(marker_measured_size) << "\n"
                                      << "marker_measured_separation " << std::to_string(marker_measured_separation)
@@ -162,7 +146,7 @@ bool HandEyeArucoTarget::createTargetImage(cv::Mat& image) const
   }
   catch (const cv::Exception& e)
   {
-    RCLCPP_ERROR_STREAM(LOGGER, "Aruco target image creation exception: " << e.what());
+    RCLCPP_ERROR_STREAM(LOGGER_CALIBRATION_TARGET, "Aruco target image creation exception: " << e.what());
     return false;
   }
 
@@ -192,7 +176,7 @@ bool HandEyeArucoTarget::detectTargetPose(cv::Mat& image)
     cv::aruco::detectMarkers(image, dictionary, marker_corners, marker_ids, params_ptr);
     if (marker_ids.empty())
     {
-      RCLCPP_DEBUG_STREAM_THROTTLE(LOGGER, clock, LOG_THROTTLE_PERIOD, "No aruco marker detected.");
+      RCLCPP_DEBUG_STREAM_THROTTLE(LOGGER_CALIBRATION_TARGET, clock, LOG_THROTTLE_PERIOD, "No aruco marker detected.");
       return false;
     }
 
@@ -208,7 +192,7 @@ bool HandEyeArucoTarget::detectTargetPose(cv::Mat& image)
     // Draw the markers and frame axis if at least one marker is detected
     if (valid == 0)
     {
-      RCLCPP_WARN_STREAM_THROTTLE(LOGGER, clock, LOG_THROTTLE_PERIOD, "Cannot estimate aruco board pose.");
+      RCLCPP_WARN_STREAM_THROTTLE(LOGGER_CALIBRATION_TARGET, clock, LOG_THROTTLE_PERIOD, "Cannot estimate aruco board pose.");
       return false;
     }
 
@@ -216,7 +200,7 @@ bool HandEyeArucoTarget::detectTargetPose(cv::Mat& image)
         std::log10(std::fabs(rotation_vect_[2])) > 10 || std::log10(std::fabs(translation_vect_[0])) > 10 ||
         std::log10(std::fabs(translation_vect_[1])) > 10 || std::log10(std::fabs(translation_vect_[2])) > 10)
     {
-      RCLCPP_WARN_STREAM_THROTTLE(LOGGER, clock, LOG_THROTTLE_PERIOD, "Invalid target pose, please check CameraInfo msg.");
+      RCLCPP_WARN_STREAM_THROTTLE(LOGGER_CALIBRATION_TARGET, clock, LOG_THROTTLE_PERIOD, "Invalid target pose, please check CameraInfo msg.");
       return false;
     }
 
@@ -228,7 +212,7 @@ bool HandEyeArucoTarget::detectTargetPose(cv::Mat& image)
   }
   catch (const cv::Exception& e)
   {
-    RCLCPP_ERROR_STREAM_THROTTLE(LOGGER, clock, LOG_THROTTLE_PERIOD, "Aruco target detection exception: " << e.what());
+    RCLCPP_ERROR_STREAM_THROTTLE(LOGGER_CALIBRATION_TARGET, clock, LOG_THROTTLE_PERIOD, "Aruco target detection exception: " << e.what());
     return false;
   }
 

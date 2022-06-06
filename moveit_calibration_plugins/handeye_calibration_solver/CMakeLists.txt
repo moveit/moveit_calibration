@@ -1,52 +1,67 @@
-# Suppress the warning 'int _import_array()' defined but not used in 'usr/include/python2.7/numpy/__multiarray_api.h'
-add_compile_options(-Wno-unused-function)
-
-# ---[ Using cmake scripts and modules
-# list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules)
-
-# find_package(PythonLibs 2.7 REQUIRED)
-find_package(PythonLibs REQUIRED)
-include_directories(${PYTHON_INCLUDE_DIRS})
-# find_package(NumPy 1.7 REQUIRED) <- What is the alternate for this?
-
-# Python wrapper
-option(BUILD_PYTHON_WRAPPER "Builds Python wrapper" On)
-
-if(BUILD_PYTHON_WRAPPER)
-    SET(Python_ADDITIONAL_VERSIONS 3)
-    find_package(PythonLibs)
-    execute_process(COMMAND which python3 OUTPUT_QUIET RESULT_VARIABLE Python3_NOT_FOUND)
-    execute_process(COMMAND python3 -c "import numpy" RESULT_VARIABLE Numpy_NOT_FOUND)
-endif(BUILD_PYTHON_WRAPPER)
-
-set(HEADERS
-  include/moveit/handeye_calibration_solver/handeye_solver_base.h
-  include/moveit/handeye_calibration_solver/handeye_solver_default.h
-)
-# Plugin Source
-set(SOURCE_FILES
+set(MOVEIT_LIB_NAME moveit_handeye_calibration_solver)
+set(SOURCE_FILES_CORE
   src/handeye_solver_default.cpp
 )
-
-set(MOVEIT_LIB_NAME moveit_handeye_calibration_solver)
-add_library(${MOVEIT_LIB_NAME}_core SHARED ${SOURCE_FILES} ${HEADERS})
-set_target_properties(${MOVEIT_LIB_NAME}_core PROPERTIES VERSION "${${PROJECT_NAME}_VERSION}")
-target_link_libraries(${MOVEIT_LIB_NAME}_core ${Boost_LIBRARIES} ${PYTHON_LIBRARIES})
-ament_target_dependencies(${MOVEIT_LIB_NAME}_core
-  geometry_msgs
-  pluginlib
-  rclcpp
-  sensor_msgs
-  tf2
-  tf2_eigen
+set(SOURCE_FILES_PLUGINS
+  src/plugin_init.cpp
 )
 
-add_library(${MOVEIT_LIB_NAME} SHARED src/plugin_init.cpp)
+# Python wrapper
+option(BUILD_PYTHON_WRAPPER "Enable building of Python wrapper" ON)
+if(BUILD_PYTHON_WRAPPER)
+  # Suppress the warning 'int _import_array()' defined but not used in 'usr/include/python2.7/numpy/__multiarray_api.h'
+  add_compile_options(-Wno-unused-function)
+  find_package(PythonLibs REQUIRED)
+  include_directories(${PYTHON_INCLUDE_DIRS})
+  SET(Python_ADDITIONAL_VERSIONS 3)
+  find_package(PythonLibs)
+  execute_process(COMMAND which python3 OUTPUT_QUIET RESULT_VARIABLE Python3_NOT_FOUND)
+  execute_process(COMMAND python3 -c "import numpy" RESULT_VARIABLE Numpy_NOT_FOUND)
+endif(BUILD_PYTHON_WRAPPER)
+
+# Core library
+add_library(${MOVEIT_LIB_NAME}_core SHARED ${SOURCE_FILES_CORE})
+set_target_properties(${MOVEIT_LIB_NAME}_core PROPERTIES VERSION "${${PROJECT_NAME}_VERSION}")
+target_link_libraries(${MOVEIT_LIB_NAME}_core ${EIGEN3_LIBS})
+target_include_directories(${MOVEIT_LIB_NAME}_core PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>)
+ament_target_dependencies(
+  ${MOVEIT_LIB_NAME}_core
+  ${THIS_PACKAGE_INCLUDE_DEPENDS}
+)
+
+# Plugin library
+add_library(${MOVEIT_LIB_NAME} SHARED ${SOURCE_FILES_PLUGINS})
 set_target_properties(${MOVEIT_LIB_NAME} PROPERTIES VERSION "${${PROJECT_NAME}_VERSION}")
 target_link_libraries(${MOVEIT_LIB_NAME} ${MOVEIT_LIB_NAME}_core)
-ament_target_dependencies(${MOVEIT_LIB_NAME} pluginlib)
+target_include_directories(${MOVEIT_LIB_NAME} PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>)
+ament_target_dependencies(
+  ${MOVEIT_LIB_NAME}
+  pluginlib
+)
+
+include_directories(
+  SYSTEM ${EIGEN3_INCLUDE_DIRS}
+)
 
 install(DIRECTORY include/ DESTINATION include)
+install(
+  TARGETS ${MOVEIT_LIB_NAME}_core ${MOVEIT_LIB_NAME}
+  EXPORT export_${PROJECT_NAME}
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
+)
+
+ament_export_include_directories(
+  include
+)
+ament_export_libraries(
+  {MOVEIT_LIB_NAME}_core {MOVEIT_LIB_NAME}
+)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

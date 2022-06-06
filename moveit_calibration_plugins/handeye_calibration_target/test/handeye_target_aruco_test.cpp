@@ -54,7 +54,6 @@ protected:
   {
     try
     {
-      ros::Time::init();
       target_plugins_loader_.reset(new pluginlib::ClassLoader<moveit_handeye_calibration::HandEyeTargetBase>(
           "moveit_calibration_plugins", "moveit_handeye_calibration::HandEyeTargetBase"));
       target_ = target_plugins_loader_->createUniqueInstance("HandEyeTarget/Aruco");
@@ -137,7 +136,6 @@ TEST_F(MoveItHandEyeTargetTester, DetectArucoMarkerPose)
 
   // Get translation and rotation part
   geometry_msgs::msg::TransformStamped camera_transform;
-  ros::Time::init();
   camera_transform = target_->getTransformStamped(camera_info->header.frame_id);
   Eigen::Affine3d ret = tf2::transformToEigen(camera_transform);
   std::cout << "Translation:\n"

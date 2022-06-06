@@ -38,8 +38,6 @@
 
 namespace moveit_rviz_plugin
 {
-static const rclcpp::Logger LOGGER = rclcpp::get_logger("handeye_target_widget");
-
 void RosTopicComboBox::addMsgsFilterType(QString msgs_type)
 {
   message_types_.insert(msgs_type);
@@ -54,20 +52,7 @@ bool RosTopicComboBox::hasTopic(const QString& topic_name)
 bool RosTopicComboBox::getFilteredTopics()
 {
   // Get all topic names
-  // ros::master::V_TopicInfo ros_topic_vec;
   std::map<std::string, std::vector<std::string>> topic_names_and_types = node_->get_topic_names_and_types();
-  // if (ros::master::getTopics(ros_topic_vec))
-  // {
-  //   image_topics_.clear();
-  //   // Filter out the topic names with specific topic type
-  //   for (const ros::master::TopicInfo& topic_info : ros_topic_vec)
-  //   {
-  //     if (message_types_.contains(QString(topic_info.datatype.c_str())))
-  //     {
-  //       image_topics_.insert(QString(topic_info.name.c_str()));
-  //     }
-  //   }
-  // }
   image_topics_.clear();
   // Filter out the topic names with specific topic type
   for (const auto& topic_info : topic_names_and_types)
@@ -95,10 +80,10 @@ void RosTopicComboBox::mousePressEvent(QMouseEvent* event)
   showPopup();
 }
 
-TargetTabWidget::TargetTabWidget(HandEyeCalibrationDisplay* pdisplay, QWidget* parent)
+TargetTabWidget::TargetTabWidget(rclcpp::Node::SharedPtr node, HandEyeCalibrationDisplay* pdisplay, QWidget* parent)
   : QWidget(parent)
+  , node_(node)
   , calibration_display_(pdisplay)
-  , node_(std::make_shared<rclcpp::Node>("handeye_target_widget"))
   , it_(node_)
   , tf_pub_(std::make_shared<tf2_ros::TransformBroadcaster>(node_))
   , target_plugins_loader_(nullptr)
@@ -128,16 +113,10 @@ TargetTabWidget::TargetTabWidget(HandEyeCalibrationDisplay* pdisplay, QWidget* p
   group_left_bottom->setLayout(layout_left_bottom);
 
   ros_topics_.insert(std::make_pair("image_topic", new RosTopicComboBox(node_, this)));
-  ros_topics_["image_topic"]->addMsgsFilterType("sensor_msgs/Image");
-  layout_left_bottom->addRow("Image Topic", ros_topics_["image_topic"]);
+  ros_topics_["image_topic"]->addMsgsFilterType("sensor_msgs/msg/Image");
+  layout_left_bottom->addRow("Camera Image Topic", ros_topics_["image_topic"]);
   connect(ros_topics_["image_topic"], SIGNAL(activated(const QString&)), this,
           SLOT(imageTopicComboboxChanged(const QString&)));
-
-  ros_topics_.insert(std::make_pair("camera_info_topic", new RosTopicComboBox(node_, this)));
-  ros_topics_["camera_info_topic"]->addMsgsFilterType("sensor_msgs/CameraInfo");
-  layout_left_bottom->addRow("CameraInfo Topic", ros_topics_["camera_info_topic"]);
-  connect(ros_topics_["camera_info_topic"], SIGNAL(activated(const QString&)), this,
-          SLOT(cameraInfoComboBoxChanged(const QString&)));
 
   // Target image dislay, create and save area
   QGroupBox* group_right = new QGroupBox("Target", this);
@@ -222,20 +201,13 @@ void TargetTabWidget::loadWidget(const rviz_common::Config& config)
         {
           if (!topic.first.compare("image_topic"))
           {
-            image_sub_.shutdown();
-            image_sub_ = it_.subscribe(topic_name.toStdString(), 1, &TargetTabWidget::imageCallback, this);
-          }
-
-          if (!topic.first.compare("camera_info_topic"))
-          {
-            // camerainfo_sub_.shutdown();
-            camerainfo_sub_.reset();
-            camerainfo_sub_ = node_->create_subscription<sensor_msgs::msg::CameraInfo>(topic_name.toStdString(), 1, std::bind(&TargetTabWidget::cameraInfoCallback, this, std::placeholders::_1));
+            camera_sub_.shutdown();
+            camera_sub_ = it_.subscribeCamera(topic_name.toStdString(), 1, &TargetTabWidget::cameraCallback, this);
           }
         }
         catch (const image_transport::TransportLoadException& e)
         {
-          RCLCPP_ERROR_STREAM(LOGGER, "Subscribe to " << topic_name.toStdString() << " fail: " << e.what());
+          RCLCPP_ERROR_STREAM(node_->get_logger(), "Subscribe to " << topic_name.toStdString() << " fail: " << e.what());
         }
       }
     }
@@ -389,7 +361,14 @@ bool TargetTabWidget::createTargetInstance()
   return true;
 }
 
-void TargetTabWidget::imageCallback(const sensor_msgs::msg::Image::ConstPtr& msg)
+void TargetTabWidget::cameraCallback(const sensor_msgs::msg::Image::ConstSharedPtr& image,
+                                     const sensor_msgs::msg::CameraInfo::ConstSharedPtr& camera_info)
+{
+  cameraInfoCallback(camera_info);
+  imageCallback(image);
+}
+
+void TargetTabWidget::imageCallback(const sensor_msgs::msg::Image::ConstSharedPtr& msg)
 {
   createTargetInstance();
 
@@ -412,7 +391,7 @@ void TargetTabWidget::imageCallback(const sensor_msgs::msg::Image::ConstPtr& msg
   }
   else
   {
-    RCLCPP_ERROR_STREAM(LOGGER, "Image msg has empty frame_id.");
+    RCLCPP_ERROR_STREAM(node_->get_logger(), "Image msg has empty frame_id.");
     calibration_display_->setStatus(rviz_common::properties::StatusProperty::Error, "Target detection",
                                     "Image message has empty frame ID.");
     return;
@@ -420,7 +399,7 @@ void TargetTabWidget::imageCallback(const sensor_msgs::msg::Image::ConstPtr& msg
 
   if (msg->data.empty())
   {
-    RCLCPP_ERROR_STREAM(LOGGER, "Image msg has empty data.");
+    RCLCPP_ERROR_STREAM(node_->get_logger(), "Image msg has empty data.");
     calibration_display_->setStatus(rviz_common::properties::StatusProperty::Error, "Target detection",
                                     "Image message is empty.");
     return;
@@ -463,26 +442,35 @@ void TargetTabWidget::imageCallback(const sensor_msgs::msg::Image::ConstPtr& msg
     std::string error_message = "cv_bridge exception: " + std::string(e.what());
     calibration_display_->setStatusStd(rviz_common::properties::StatusProperty::Error, "Target detection",
                                        error_message);
-    RCLCPP_ERROR(LOGGER, "%s", error_message.c_str());
+    RCLCPP_ERROR(node_->get_logger(), "%s", error_message.c_str());
   }
   catch (cv::Exception& e)
   {
     std::string error_message = "cv exception: " + std::string(e.what());
     calibration_display_->setStatusStd(rviz_common::properties::StatusProperty::Error, "Target detection",
                                        error_message);
-    RCLCPP_ERROR(LOGGER, "%s", error_message.c_str());
+    RCLCPP_ERROR(node_->get_logger(), "%s", error_message.c_str());
   }
 }
 
 void TargetTabWidget::cameraInfoCallback(sensor_msgs::msg::CameraInfo::ConstSharedPtr msg)
 {
-  if (target_ && msg->height > 0 && msg->width > 0 && !msg->k.empty() && !msg->d.empty() &&
-      (!camera_info_ || msg->k != camera_info_->k || msg->p != camera_info_->p))
+  if (!camera_info_ || msg->k != camera_info_->k || msg->p != camera_info_->p)
   {
-    RCLCPP_DEBUG(LOGGER, "Received camera info.");
-    camera_info_ = msg;
-    target_->setCameraIntrinsicParams(camera_info_);
-    Q_EMIT cameraInfoChanged(*camera_info_);
+    if (target_ && msg->height > 0 && msg->width > 0 && !msg->k.empty() && !msg->d.empty())
+    {
+      RCLCPP_DEBUG(node_->get_logger(), "Received camera info.");
+      camera_info_ = msg;
+      target_->setCameraIntrinsicParams(camera_info_);
+      Q_EMIT cameraInfoChanged(*camera_info_);
+    }
+    else
+    {
+      std::string error_message = "Invalid CameraInfo message was received.";
+      calibration_display_->setStatusStd(rviz_common::properties::StatusProperty::Error, "Target detection",
+                                        error_message);
+      RCLCPP_ERROR(node_->get_logger(), "%s", error_message.c_str());
+    }
   }
 }
 
@@ -547,12 +535,12 @@ void TargetTabWidget::saveTargetImageBtnClicked(bool clicked)
   }
 
   if (!cv::imwrite(cv::String(fileName.toStdString()), target_image_))
-    RCLCPP_ERROR_STREAM(LOGGER, "Error OpenCV saving image.");
+    RCLCPP_ERROR_STREAM(node_->get_logger(), "Error OpenCV saving image.");
 }
 
 void TargetTabWidget::imageTopicComboboxChanged(const QString& topic)
 {
-  image_sub_.shutdown();
+  camera_sub_.shutdown();
 
   calibration_display_->setStatusStd(rviz_common::properties::StatusProperty::Warn, "Target detection",
                                      "Not subscribed to image topic.");
@@ -560,34 +548,13 @@ void TargetTabWidget::imageTopicComboboxChanged(const QString& topic)
   {
     try
     {
-      image_sub_ = it_.subscribe(topic.toStdString(), 1, &TargetTabWidget::imageCallback, this);
+      camera_sub_ = it_.subscribeCamera(topic.toStdString(), 1, &TargetTabWidget::cameraCallback, this);
     }
     catch (image_transport::TransportLoadException& e)
     {
-      RCLCPP_ERROR_STREAM(LOGGER, "Subscribe to image topic: " << topic.toStdString() << " failed. " << e.what());
+      RCLCPP_ERROR_STREAM(node_->get_logger(), "Subscribe to image topic: " << topic.toStdString() << " failed. " << e.what());
       calibration_display_->setStatusStd(rviz_common::properties::StatusProperty::Error, "Target detection",
                                          "Failed to subscribe to image topic.");
-    }
-  }
-}
-
-void TargetTabWidget::cameraInfoComboBoxChanged(const QString& topic)
-{
-  camerainfo_sub_.reset();
-  calibration_display_->setStatusStd(rviz_common::properties::StatusProperty::Warn, "Target detection",
-                                     "Not subscribed to camera info topic.");
-  if (!topic.isNull() and !topic.isEmpty())
-  {
-    try
-    {
-      camerainfo_sub_ = node_->create_subscription<sensor_msgs::msg::CameraInfo>(
-          topic.toStdString(), 1, std::bind(&TargetTabWidget::cameraInfoCallback, this, std::placeholders::_1));
-    }
-    catch (rclcpp::exceptions::InvalidTopicNameError& e)
-    {
-      RCLCPP_ERROR_STREAM(LOGGER, "Subscribe to camera info topic: " << topic.toStdString() << " failed. " << e.what());
-      calibration_display_->setStatusStd(rviz_common::properties::StatusProperty::Error, "Target detection",
-                                         "Failed to subscribe to camera info topic.");
     }
   }
 }

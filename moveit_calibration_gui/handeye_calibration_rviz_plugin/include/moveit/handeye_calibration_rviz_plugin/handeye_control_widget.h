@@ -114,7 +114,7 @@ class ControlTabWidget : public QWidget
   };
 
 public:
-  explicit ControlTabWidget(HandEyeCalibrationDisplay* pdisplay, QWidget* parent = Q_NULLPTR);
+  explicit ControlTabWidget(rclcpp::Node::SharedPtr node, HandEyeCalibrationDisplay* pdisplay, QWidget* parent = Q_NULLPTR);
   ~ControlTabWidget()
   {
     tf_tools_.reset();
@@ -255,11 +255,7 @@ private:
   // **************************************************************
   // Ros components
   // **************************************************************
-
-  // ros::NodeHandle nh_;
   rclcpp::Node::SharedPtr node_;
-  // ros::CallbackQueue callback_queue_;
-  // ros::AsyncSpinner spinner_;
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
   tf2_ros::TransformListener tf_listener_;
   rviz_visual_tools::TFVisualToolsPtr tf_tools_;

@@ -93,7 +93,6 @@ public:
   TFFrameNameComboBox(rviz_common::DisplayContext* context, rclcpp::Node::SharedPtr& node, FRAME_SOURCE source = ROBOT_FRAME, QWidget* parent = 0) : QComboBox(parent), frame_source_(source), context_(context), node_(node)
   {
     robot_model_loader_.reset(new robot_model_loader::RobotModelLoader(node_, "robot_description"));
-    // frame_manager_.reset(new rviz_common::FrameManagerIface());
   }
 
   ~TFFrameNameComboBox()
@@ -108,7 +107,6 @@ protected:
 
 private:
   FRAME_SOURCE frame_source_;
-  // std::unique_ptr<rviz_common::FrameManagerIface> frame_manager_;
   rclcpp::Node::SharedPtr node_;
   rviz_common::DisplayContext* context_;
   robot_model_loader::RobotModelLoaderConstPtr robot_model_loader_;
@@ -157,7 +155,7 @@ class ContextTabWidget : public QWidget
 {
   Q_OBJECT
 public:
-  explicit ContextTabWidget(HandEyeCalibrationDisplay* pdisplay, rviz_common::DisplayContext* context, QWidget* parent = Q_NULLPTR);
+  explicit ContextTabWidget(rclcpp::Node::SharedPtr node, HandEyeCalibrationDisplay* pdisplay, rviz_common::DisplayContext* context, QWidget* parent = Q_NULLPTR);
   ~ContextTabWidget()
   {
     camera_info_.reset();

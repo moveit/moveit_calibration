@@ -54,6 +54,7 @@
 
 namespace moveit_rviz_plugin
 {
+class HandEyeCalibrationFrame;
 class HandEyeCalibrationDisplay : public rviz_common::Display
 {
   Q_OBJECT

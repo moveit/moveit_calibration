@@ -40,8 +40,6 @@
 
 namespace moveit_rviz_plugin
 {
-static const rclcpp::Logger LOGGER = rclcpp::get_logger("handeye_control_widget");
-
 ProgressBarWidget::ProgressBarWidget(QWidget* parent, int min, int max, int value) : QWidget(parent)
 {
   QHBoxLayout* row = new QHBoxLayout(this);
@@ -96,12 +94,12 @@ int ProgressBarWidget::getValue()
   return bar_->value();
 }
 
-ControlTabWidget::ControlTabWidget(HandEyeCalibrationDisplay* pdisplay, QWidget* parent)
+ControlTabWidget::ControlTabWidget(rclcpp::Node::SharedPtr node, HandEyeCalibrationDisplay* pdisplay, QWidget* parent)
   : QWidget(parent)
+  , node_(node)
   , calibration_display_(pdisplay)
-  , node_(rclcpp::Node::make_shared("handeye_control_widget"))
-  , tf_buffer_(new tf2_ros::Buffer(std::make_shared<rclcpp::Clock>(RCL_ROS_TIME)))
-  , tf_listener_(*tf_buffer_)
+  , tf_buffer_(new tf2_ros::Buffer(std::make_shared<rclcpp::Clock>(RCL_ROS_TIME), (tf2::Duration)(tf2::BUFFER_CORE_DEFAULT_CACHE_TIME), node_))
+  , tf_listener_(*tf_buffer_, node_)
   , sensor_mount_type_(mhc::EYE_TO_HAND)
   , from_frame_tag_("base")
   , solver_plugins_loader_(nullptr)
@@ -110,7 +108,6 @@ ControlTabWidget::ControlTabWidget(HandEyeCalibrationDisplay* pdisplay, QWidget*
   , camera_robot_pose_(Eigen::Isometry3d::Identity())
   , auto_started_(false)
   , planning_res_(ControlTabWidget::SUCCESS)
-// spinner_(0, &callback_queue_)
 {
   QVBoxLayout* layout = new QVBoxLayout();
   this->setLayout(layout);
@@ -315,7 +312,7 @@ bool ControlTabWidget::createSolverInstance(const std::string& plugin_name)
   catch (pluginlib::PluginlibException& ex)
   {
     calibration_display_->setStatus(rviz_common::properties::StatusProperty::Error, "Calibration", "Couldn't load solver plugin.");
-    RCLCPP_ERROR_STREAM(LOGGER, "Exception while loading handeye solver plugin: " << plugin_name << ex.what());
+    RCLCPP_ERROR_STREAM(node_->get_logger(), "Exception while loading handeye solver plugin: " << plugin_name << ex.what());
     solver_ = nullptr;
   }
 
@@ -379,7 +376,7 @@ bool ControlTabWidget::takeTransformSamples()
   }
   catch (tf2::TransformException& e)
   {
-    RCLCPP_WARN(LOGGER, "TF exception: %s", e.what());
+    RCLCPP_WARN(node_->get_logger(), "TF exception: %s", e.what());
     return false;
   }
 
@@ -412,7 +409,7 @@ bool ControlTabWidget::solveCameraRobotPose()
                                                              camera_robot_pose_, sensor_mount_type_);
       std::ostringstream reproj_err_text;
       reproj_err_text << "Reprojection error:\n" << reproj_err.first << " m, " << reproj_err.second << " rad";
-      RCLCPP_WARN(LOGGER, "%s", reproj_err_text.str().c_str());
+      RCLCPP_WARN(node_->get_logger(), "%s", reproj_err_text.str().c_str());
       reprojection_error_label_->setText(QString(reproj_err_text.str().c_str()));
 
       // Publish camera pose tf
@@ -422,7 +419,7 @@ bool ControlTabWidget::solveCameraRobotPose()
       {
         tf_tools_->clearAllTransforms();
         calibration_display_->setStatus(rviz_common::properties::StatusProperty::Ok, "Calibration", "Calibration successful.");
-        RCLCPP_INFO_STREAM(LOGGER, "Publish camera transformation" << std::endl
+        RCLCPP_INFO_STREAM(node_->get_logger(), "Publish camera transformation" << std::endl
                                                                    << camera_robot_pose_.matrix() << std::endl
                                                                    << "from " << from_frame_tag_ << " frame '"
                                                                    << from_frame << "'"
@@ -437,7 +434,7 @@ bool ControlTabWidget::solveCameraRobotPose()
           warn_msg << "Found camera pose:" << std::endl
                    << camera_robot_pose_.matrix() << std::endl
                    << "but " << from_frame_tag_ << " or sensor frame is undefined.";
-          RCLCPP_ERROR_STREAM(LOGGER, warn_msg.str());
+          RCLCPP_ERROR_STREAM(node_->get_logger(), warn_msg.str());
         }
         // GUI warning message with formatting
         {
@@ -506,13 +503,19 @@ void ControlTabWidget::addPoseSampleToTreeView(const geometry_msgs::msg::Transfo
   std::ostringstream ss;
 
   QStandardItem* child_1 = new QStandardItem("TF base-to-eef");
-  // ss << base_to_eef_tf.transform;
+  ss << "((" << base_to_eef_tf.transform.translation.x << ", " << base_to_eef_tf.transform.translation.y << ", "
+     << base_to_eef_tf.transform.translation.z << ",), (" << base_to_eef_tf.transform.rotation.x << ", "
+     << base_to_eef_tf.transform.rotation.y << ", " << base_to_eef_tf.transform.rotation.z << ", "
+     << base_to_eef_tf.transform.rotation.w << "))";
   child_1->appendRow(new QStandardItem(ss.str().c_str()));
   parent->appendRow(child_1);
 
   QStandardItem* child_2 = new QStandardItem("TF camera-to-target");
   ss.str("");
-  // ss << camera_to_object_tf.transform;
+  ss << "((" << camera_to_object_tf.transform.translation.x << ", " << camera_to_object_tf.transform.translation.y
+     << ", " << camera_to_object_tf.transform.translation.z << ",), (" << camera_to_object_tf.transform.rotation.x
+     << ", " << camera_to_object_tf.transform.rotation.y << ", " << camera_to_object_tf.transform.rotation.z << ", "
+     << camera_to_object_tf.transform.rotation.w << "))";
   child_2->appendRow(new QStandardItem(ss.str().c_str()));
   parent->appendRow(child_2);
 }
@@ -531,7 +534,7 @@ void ControlTabWidget::UpdateSensorMountType(int index)
         from_frame_tag_ = "eef";
         break;
       default:
-        RCLCPP_ERROR_STREAM(LOGGER, "Error sensor mount type.");
+        RCLCPP_ERROR_STREAM(node_->get_logger(), "Error sensor mount type.");
         break;
     }
   }
@@ -540,9 +543,9 @@ void ControlTabWidget::UpdateSensorMountType(int index)
 void ControlTabWidget::updateFrameNames(std::map<std::string, std::string> names)
 {
   frame_names_ = names;
-  RCLCPP_DEBUG(LOGGER, "Frame names changed:");
+  RCLCPP_DEBUG(node_->get_logger(), "Frame names changed:");
   for (const std::pair<const std::string, std::string>& name : frame_names_)
-    RCLCPP_DEBUG_STREAM(LOGGER, name.first << " : " << name.second);
+    RCLCPP_DEBUG_STREAM(node_->get_logger(), name.first << " : " << name.second);
 }
 
 void ControlTabWidget::takeSampleBtnClicked(bool clicked)
@@ -675,7 +678,7 @@ void ControlTabWidget::setGroupName(const std::string& group_name)
   }
   catch (std::exception& ex)
   {
-    RCLCPP_ERROR(LOGGER, "%s", ex.what());
+    RCLCPP_ERROR(node_->get_logger(), "%s", ex.what());
   }
 }
 
@@ -804,7 +807,7 @@ void ControlTabWidget::saveSamplesBtnClicked(bool clicked)
 {
   if (effector_wrt_world_.size() != object_wrt_sensor_.size())
   {
-    RCLCPP_ERROR_STREAM(LOGGER, "Different number of poses");
+    RCLCPP_ERROR_STREAM(node_->get_logger(), "Different number of poses");
     return;
   }
 
@@ -879,7 +882,7 @@ void ControlTabWidget::loadJointStateBtnClicked(bool clicked)
   // Begin parsing
   try
   {
-    RCLCPP_DEBUG_STREAM(LOGGER, "Load joint states from file: " << file_name.toStdString().c_str());
+    RCLCPP_DEBUG_STREAM(node_->get_logger(), "Load joint states from file: " << file_name.toStdString().c_str());
     YAML::Node doc = YAML::LoadFile(file_name.toStdString());
     if (!doc.IsMap())
       return;
@@ -894,7 +897,7 @@ void ControlTabWidget::loadJointStateBtnClicked(bool clicked)
     }
     else
     {
-      RCLCPP_ERROR_STREAM(LOGGER, "Can't find 'joint_names' in the openned file.");
+      RCLCPP_ERROR_STREAM(node_->get_logger(), "Can't find 'joint_names' in the openned file.");
       return;
     }
 
@@ -915,13 +918,13 @@ void ControlTabWidget::loadJointStateBtnClicked(bool clicked)
     }
     else
     {
-      RCLCPP_ERROR_STREAM(LOGGER, "Can't find 'joint_values' in the openned file.");
+      RCLCPP_ERROR_STREAM(node_->get_logger(), "Can't find 'joint_values' in the openned file.");
       return;
     }
   }
   catch (YAML::ParserException& e)  // Catch errors
   {
-    RCLCPP_ERROR_STREAM(LOGGER, e.what());
+    RCLCPP_ERROR_STREAM(node_->get_logger(), e.what());
     return;
   }
 
@@ -930,7 +933,7 @@ void ControlTabWidget::loadJointStateBtnClicked(bool clicked)
     auto_progress_->setMax(joint_states_.size());
     auto_progress_->setValue(0);
   }
-  RCLCPP_INFO_STREAM(LOGGER, "Loaded and parsed: " << file_name.toStdString());
+  RCLCPP_INFO_STREAM(node_->get_logger(), "Loaded and parsed: " << file_name.toStdString());
 }
 
 void ControlTabWidget::autoPlanBtnClicked(bool clicked)
@@ -995,9 +998,9 @@ void ControlTabWidget::computePlan()
                         ControlTabWidget::FAILURE_PLAN_FAILED;
 
     if (planning_res_ == ControlTabWidget::SUCCESS)
-      RCLCPP_DEBUG_STREAM(LOGGER, "Planning succeed.");
+      RCLCPP_DEBUG_STREAM(node_->get_logger(), "Planning succeed.");
     else
-      RCLCPP_ERROR_STREAM(LOGGER, "Planning failed.");
+      RCLCPP_ERROR_STREAM(node_->get_logger(), "Planning failed.");
   }
 }
 
@@ -1021,10 +1024,10 @@ void ControlTabWidget::computeExecution()
 
   if (planning_res_ == ControlTabWidget::SUCCESS)
   {
-    RCLCPP_DEBUG_STREAM(LOGGER, "Execution succeed.");
+    RCLCPP_DEBUG_STREAM(node_->get_logger(), "Execution succeed.");
   }
   else
-    RCLCPP_ERROR_STREAM(LOGGER, "Execution failed.");
+    RCLCPP_ERROR_STREAM(node_->get_logger(), "Execution failed.");
 }
 
 void ControlTabWidget::planFinished()
@@ -1057,7 +1060,7 @@ void ControlTabWidget::planFinished()
     case ControlTabWidget::SUCCESS:
       break;
   }
-  RCLCPP_DEBUG(LOGGER, "Plan finished");
+  RCLCPP_DEBUG(node_->get_logger(), "Plan finished");
 }
 
 void ControlTabWidget::executeFinished()
@@ -1072,7 +1075,7 @@ void ControlTabWidget::executeFinished()
     if (effector_wrt_world_.size() == object_wrt_sensor_.size() && effector_wrt_world_.size() > 4)
       solveCameraRobotPose();
   }
-  RCLCPP_DEBUG(LOGGER, "Execution finished");
+  RCLCPP_DEBUG(node_->get_logger(), "Execution finished");
 }
 
 void ControlTabWidget::autoSkipBtnClicked(bool clicked)

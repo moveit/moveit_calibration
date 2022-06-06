@@ -43,8 +43,6 @@
 
 namespace moveit_rviz_plugin
 {
-static const rclcpp::Logger LOGGER = rclcpp::get_logger("handeye_calibration_frame");
-
 HandEyeCalibrationFrame::HandEyeCalibrationFrame(HandEyeCalibrationDisplay* pdisplay, rviz_common::DisplayContext* context,
                                                  QWidget* parent)
   : QWidget(parent), calibration_display_(pdisplay), context_(context)
@@ -64,18 +62,18 @@ HandEyeCalibrationFrame::HandEyeCalibrationFrame(HandEyeCalibrationDisplay* pdis
 
   // Tab menu ------------------------------------------------------------
   QTabWidget* tabs = new QTabWidget(this);
-  tab_target_ = new TargetTabWidget(calibration_display_);
+  tab_target_ = new TargetTabWidget(node_, calibration_display_);
 
   tf_tools_.reset(new rviz_visual_tools::TFVisualTools(node_, 250));
 
-  tab_context_ = new ContextTabWidget(calibration_display_, context_);
+  tab_context_ = new ContextTabWidget(node_, calibration_display_, context_);
   tab_context_->setTFTool(tf_tools_);
-  connect(tab_target_, SIGNAL(cameraInfoChanged(sensor_msgs::CameraInfo)), tab_context_,
-          SLOT(setCameraInfo(sensor_msgs::CameraInfo)));
+  connect(tab_target_, SIGNAL(cameraInfoChanged(sensor_msgs::msg::CameraInfo)), tab_context_,
+          SLOT(setCameraInfo(sensor_msgs::msg::CameraInfo)));
   connect(tab_target_, SIGNAL(opticalFrameChanged(const std::string&)), tab_context_,
           SLOT(setOpticalFrame(const std::string&)));
 
-  tab_control_ = new ControlTabWidget(calibration_display_);
+  tab_control_ = new ControlTabWidget(node_, calibration_display_);
   tab_control_->setTFTool(tf_tools_);
   tab_control_->UpdateSensorMountType(0);
   connect(tab_context_, SIGNAL(sensorMountTypeChanged(int)), tab_control_, SLOT(UpdateSensorMountType(int)));
@@ -89,7 +87,17 @@ HandEyeCalibrationFrame::HandEyeCalibrationFrame(HandEyeCalibrationDisplay* pdis
   tabs->addTab(tab_control_, "Calibrate");
   layout->addWidget(tabs);
 
-  RCLCPP_INFO_STREAM(LOGGER, "handeye calibration gui created.");
+  // Spin node in the background for sub callbacks
+  executor_.add_node(node_);
+  auto spin = [this]()
+  {
+    while (rclcpp::ok()) {
+      executor_.spin_once();
+    }
+  };
+  executor_thread_ = std::thread(spin);
+
+  RCLCPP_INFO_STREAM(node_->get_logger(), "handeye calibration gui created.");
 }
 
 HandEyeCalibrationFrame::~HandEyeCalibrationFrame() = default;
@@ -108,7 +116,7 @@ void HandEyeCalibrationFrame::loadWidget(const rviz_common::Config& config)
   tab_context_->loadWidget(config);
   tab_control_->loadWidget(config);
 
-  RCLCPP_INFO_STREAM(LOGGER, "handeye calibration gui loaded.");
+  RCLCPP_INFO_STREAM(node_->get_logger(), "handeye calibration gui loaded.");
 }
 
 }  // namespace moveit_rviz_plugin

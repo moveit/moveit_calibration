@@ -114,7 +114,7 @@ class TargetTabWidget : public QWidget
 {
   Q_OBJECT
 public:
-  explicit TargetTabWidget(HandEyeCalibrationDisplay* pdisplay, QWidget* parent = Q_NULLPTR);
+  explicit TargetTabWidget(rclcpp::Node::SharedPtr node, HandEyeCalibrationDisplay* pdisplay, QWidget* parent = Q_NULLPTR);
   ~TargetTabWidget()
   {
     target_.reset();
@@ -131,7 +131,10 @@ public:
 
   void fillDictionaryIds(std::string id = "");
 
-  void imageCallback(const sensor_msgs::msg::Image::ConstSharedPtr& msg);
+  void cameraCallback(const sensor_msgs::msg::Image::ConstSharedPtr& image,
+                      const sensor_msgs::msg::CameraInfo::ConstSharedPtr& camera_info);
+
+  void imageCallback(const sensor_msgs::msg::Image::ConstSharedPtr &msg);
 
   void cameraInfoCallback(sensor_msgs::msg::CameraInfo::ConstSharedPtr msg);
 private Q_SLOTS:
@@ -150,9 +153,6 @@ private Q_SLOTS:
 
   // Called when the item of image_topic_field_ combobox is selected
   void imageTopicComboboxChanged(const QString& topic);
-
-  // Called when the item of camera_info_topic_field_ combobox is selected
-  void cameraInfoComboBoxChanged(const QString& topic);
 
 Q_SIGNALS:
 
@@ -200,10 +200,8 @@ private:
   std::unique_ptr<pluginlib::ClassLoader<moveit_handeye_calibration::HandEyeTargetBase> > target_plugins_loader_;
   pluginlib::UniquePtr<moveit_handeye_calibration::HandEyeTargetBase> target_;
   image_transport::ImageTransport it_;
-  image_transport::Subscriber image_sub_;
+  image_transport::CameraSubscriber camera_sub_;
   image_transport::Publisher image_pub_;
-
-  rclcpp::Subscription<sensor_msgs::msg::CameraInfo>::SharedPtr camerainfo_sub_;
 
   // tf broadcaster
   std::shared_ptr<tf2_ros::TransformBroadcaster> tf_pub_;

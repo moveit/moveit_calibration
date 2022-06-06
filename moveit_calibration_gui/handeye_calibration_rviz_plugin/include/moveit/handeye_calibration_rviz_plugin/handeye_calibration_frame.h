@@ -81,6 +81,8 @@ protected:
   TargetTabWidget* tab_target_;
   ContextTabWidget* tab_context_;
   ControlTabWidget* tab_control_;
+  rclcpp::executors::MultiThreadedExecutor executor_;
+  std::thread executor_thread_;
 
 private:
   rviz_common::DisplayContext* context_;

@@ -39,14 +39,10 @@
 
 namespace moveit_rviz_plugin
 {
-static const rclcpp::Logger LOGGER = rclcpp::get_logger("handeye_context_widget");
-
 void TFFrameNameComboBox::mousePressEvent(QMouseEvent* event)
 {
-  std::vector<std::string> names;
   context_->getFrameManager()->update();
-  // Need an alternative for context_->getFrameManager()->getTF2BufferPtr()->_getFrameStrings(name);
-  moveit::planning_interface::getSharedTF()->_getFrameStrings(names);
+  std::vector<std::string> names = context_->getFrameManager()->getAllFrameNames();
 
   clear();
   addItem(QString(""));
@@ -155,8 +151,8 @@ void SliderWidget::changeSlider()
   Q_EMIT valueChanged(value);
 }
 
-ContextTabWidget::ContextTabWidget(HandEyeCalibrationDisplay* pdisplay, rviz_common::DisplayContext* context, QWidget* parent)
-  : QWidget(parent), context_(context), calibration_display_(pdisplay), node_(rclcpp::Node::make_shared("handeye_context_widget")), tf_buffer_(std::make_shared<tf2_ros::Buffer>(node_->get_clock())), tf_listener_(std::make_shared<tf2_ros::TransformListener>(*tf_buffer_))
+ContextTabWidget::ContextTabWidget(rclcpp::Node::SharedPtr node, HandEyeCalibrationDisplay* pdisplay, rviz_common::DisplayContext* context, QWidget* parent)
+  : QWidget(parent), node_(node), context_(context), calibration_display_(pdisplay), tf_buffer_(std::make_shared<tf2_ros::Buffer>(node_->get_clock())), tf_listener_(std::make_shared<tf2_ros::TransformListener>(*tf_buffer_))
 {
   // Context setting tab ----------------------------------------------------
   QHBoxLayout* layout = new QHBoxLayout();
@@ -316,7 +312,7 @@ void ContextTabWidget::updateAllMarkers()
         from_frame = frames_["eef"]->currentText();
         break;
       default:
-        RCLCPP_ERROR_STREAM(LOGGER, "Error sensor mount type.");
+        RCLCPP_ERROR_STREAM(node_->get_logger(), "Error sensor mount type.");
         break;
     }
 
@@ -360,7 +356,7 @@ void ContextTabWidget::updateAllMarkers()
     visual_tools_->trigger();
   }
   else
-    RCLCPP_ERROR(LOGGER, "Visual or TF tool is NULL.");
+    RCLCPP_ERROR(node_->get_logger(), "Visual or TF tool is NULL.");
 }
 
 void ContextTabWidget::updateFOVPose()
@@ -374,7 +370,7 @@ void ContextTabWidget::updateFOVPose()
       // Get FOV pose W.R.T sensor frame
       tf_msg = tf_buffer_->lookupTransform(sensor_frame.toStdString(), optical_frame_, rclcpp::Time(0));
       fov_pose_ = tf2::transformToEigen(tf_msg);
-      RCLCPP_DEBUG_STREAM(LOGGER, "FOV pose from '" << sensor_frame.toStdString() << "' to '" << optical_frame_
+      RCLCPP_DEBUG_STREAM(node_->get_logger(), "FOV pose from '" << sensor_frame.toStdString() << "' to '" << optical_frame_
                                                         << "' is:"
                                                         << "\nTranslation:\n"
                                                         << fov_pose_.translation() << "\nRotation:\n"
@@ -382,7 +378,7 @@ void ContextTabWidget::updateFOVPose()
     }
     catch (tf2::TransformException& e)
     {
-      RCLCPP_WARN_STREAM(LOGGER, "TF exception: " << e.what());
+      RCLCPP_WARN_STREAM(node_->get_logger(), "TF exception: " << e.what());
     }
   }
 }
@@ -476,7 +472,7 @@ void ContextTabWidget::setCameraInfo(sensor_msgs::msg::CameraInfo camera_info)
   camera_info_->k = camera_info.k;
   camera_info_->r = camera_info.r;
   camera_info_->p = camera_info.p;
-  RCLCPP_DEBUG_STREAM(LOGGER, "Camera info changed: " << camera_info_);
+  RCLCPP_DEBUG_STREAM(node_->get_logger(), "Camera info changed: " << camera_info_);
 }
 
 void ContextTabWidget::setOpticalFrame(const std::string& frame_id)

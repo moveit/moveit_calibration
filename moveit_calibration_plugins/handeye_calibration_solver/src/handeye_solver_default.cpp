@@ -44,8 +44,6 @@
 
 namespace moveit_handeye_calibration
 {
-// static const rclcpp::Logger LOGGER = rclcpp::get_logger("handeye_solver_default");
-
 void HandEyeSolverDefault::initialize()
 {
   solver_names_ = { "Daniilidis1999", "ParkBryan1994", "TsaiLenz1989" };
@@ -62,6 +60,7 @@ const Eigen::Isometry3d& HandEyeSolverDefault::getCameraRobotPose() const
   return camera_robot_pose_;
 }
 
+// TODO: HandEyeSolverDefault::solve() needs to be ported to ROS
 bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_wrt_world,
                                  const std::vector<Eigen::Isometry3d>& object_wrt_sensor, SensorMountType setup,
                                  const std::string& solver_name, std::string* error_message)
@@ -77,7 +76,7 @@ bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_
     *error_message = "The sizes of the two input pose sample vectors are not equal: effector_wrt_world.size() = " +
                      std::to_string(effector_wrt_world.size()) +
                      " and object_wrt_sensor.size() == " + std::to_string(object_wrt_sensor.size());
-    RCLCPP_ERROR_STREAM(LOGGER, *error_message);
+    RCLCPP_ERROR_STREAM(LOGGER_CALIBRATION_SOLVER, *error_message);
     return false;
   }
 
@@ -85,7 +84,7 @@ bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_
   if (it == solver_names_.end())
   {
     *error_message = "Unknown handeye solver name: " + solver_name;
-    RCLCPP_ERROR_STREAM(LOGGER, *error_message);
+    RCLCPP_ERROR_STREAM(LOGGER_CALIBRATION_SOLVER, *error_message);
     return false;
   }
 
@@ -103,13 +102,13 @@ bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_
     atexit(Py_Finalize);
     numpy_loaded = true;
   }
-  RCLCPP_DEBUG_STREAM(LOGGER, "Python C API start");
+  RCLCPP_DEBUG_STREAM(LOGGER_CALIBRATION_SOLVER, "Python C API start");
 
   // Load numpy c api
   if (_import_array() < 0)
   {
     *error_message = "Error importing numpy";
-    RCLCPP_ERROR_STREAM(LOGGER, *error_message);
+    RCLCPP_ERROR_STREAM(LOGGER_CALIBRATION_SOLVER, *error_message);
     return false;
   }
 
@@ -123,7 +122,7 @@ bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_
   if (!python_module)
   {
     *error_message = "Failed to load python module: handeye.calibrator";
-    RCLCPP_ERROR_STREAM(LOGGER, *error_message);
+    RCLCPP_ERROR_STREAM(LOGGER_CALIBRATION_SOLVER, *error_message);
     PyErr_Print();
     return false;
   }
@@ -134,7 +133,7 @@ bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_
   if (!python_class || !PyCallable_Check(python_class))
   {
     *error_message = "Can't find \"HandEyeCalibrator\" python class";
-    RCLCPP_ERROR_STREAM(LOGGER, *error_message);
+    RCLCPP_ERROR_STREAM(LOGGER_CALIBRATION_SOLVER, *error_message);
     PyErr_Print();
     return false;
   }
@@ -148,7 +147,7 @@ bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_
   if (!python_value)
   {
     *error_message = "Can't create sensor mount type python value";
-    RCLCPP_ERROR_STREAM(LOGGER, *error_message);
+    RCLCPP_ERROR_STREAM(LOGGER_CALIBRATION_SOLVER, *error_message);
     Py_DECREF(python_class);
     PyErr_Print();
     return false;
@@ -160,7 +159,7 @@ bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_
   if (!python_args)
   {
     *error_message = "Can't build python arguments";
-    RCLCPP_ERROR_STREAM(LOGGER, *error_message);
+    RCLCPP_ERROR_STREAM(LOGGER_CALIBRATION_SOLVER, *error_message);
     Py_DECREF(python_class);
     PyErr_Print();
     return false;
@@ -171,7 +170,7 @@ bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_
   if (!python_instance)
   {
     *error_message = "Can't create \"HandEyeCalibrator\" python instance";
-    RCLCPP_ERROR_STREAM(LOGGER, *error_message);
+    RCLCPP_ERROR_STREAM(LOGGER_CALIBRATION_SOLVER, *error_message);
     PyErr_Print();
     return false;
   }
@@ -181,7 +180,7 @@ bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_
   if (!python_func_add_sample || !PyCallable_Check(python_func_add_sample))
   {
     *error_message = "Can't find 'add_sample' method";
-    RCLCPP_ERROR_STREAM(LOGGER, *error_message);
+    RCLCPP_ERROR_STREAM(LOGGER_CALIBRATION_SOLVER, *error_message);
     Py_DECREF(python_instance);
     PyErr_Print();
     return false;
@@ -203,7 +202,7 @@ bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_
     if (!toCArray(effector_wrt_world[i], c_arr_eef_wrt_world[i]))
     {
       *error_message = "Error converting Eigen::isometry3d to C array";
-      RCLCPP_ERROR_STREAM(LOGGER, *error_message);
+      RCLCPP_ERROR_STREAM(LOGGER_CALIBRATION_SOLVER, *error_message);
       Py_DECREF(python_func_add_sample);
       Py_DECREF(python_instance);
       PyErr_Print();
@@ -216,7 +215,7 @@ bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_
     if (!python_array_eef_wrt_base[i])
     {
       *error_message = "Error creating PyArray object";
-      RCLCPP_ERROR_STREAM(LOGGER, *error_message);
+      RCLCPP_ERROR_STREAM(LOGGER_CALIBRATION_SOLVER, *error_message);
       Py_DECREF(python_func_add_sample);
       Py_DECREF(python_instance);
       PyErr_Print();
@@ -230,7 +229,7 @@ bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_
       {
         *error_message =
             "Error PyArrayObject dims: " + std::to_string(py_array_dims[0]) + "x" + std::to_string(py_array_dims[1]);
-        RCLCPP_ERROR_STREAM(LOGGER, *error_message);
+        RCLCPP_ERROR_STREAM(LOGGER_CALIBRATION_SOLVER, *error_message);
         Py_DECREF(numpy_arg_eef_wrt_base[i]);
         Py_DECREF(python_func_add_sample);
         Py_DECREF(python_instance);
@@ -242,7 +241,7 @@ bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_
     if (!toCArray(object_wrt_sensor[i], c_arr_obj_wrt_sensor[i]))
     {
       *error_message = "Error converting Eigen::isometry3d to C array";
-      RCLCPP_ERROR_STREAM(LOGGER, *error_message);
+      RCLCPP_ERROR_STREAM(LOGGER_CALIBRATION_SOLVER, *error_message);
       Py_DECREF(python_func_add_sample);
       Py_DECREF(python_instance);
       PyErr_Print();
@@ -255,7 +254,7 @@ bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_
     if (!python_array_obj_wrt_sensor[i])
     {
       *error_message = "Error creating PyArray object";
-      RCLCPP_ERROR_STREAM(LOGGER, *error_message);
+      RCLCPP_ERROR_STREAM(LOGGER_CALIBRATION_SOLVER, *error_message);
       Py_DECREF(python_func_add_sample);
       Py_DECREF(python_instance);
       PyErr_Print();
@@ -269,7 +268,7 @@ bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_
       {
         *error_message =
             "Error PyArrayObject dims: " + std::to_string(py_array_dims[0]) + "x" + std::to_string(py_array_dims[1]);
-        RCLCPP_ERROR_STREAM(LOGGER, *error_message);
+        RCLCPP_ERROR_STREAM(LOGGER_CALIBRATION_SOLVER, *error_message);
         Py_DECREF(numpy_arg_obj_wrt_sensor[i]);
         Py_DECREF(python_func_add_sample);
         Py_DECREF(python_instance);
@@ -282,7 +281,7 @@ bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_
     if (!python_args_sample[i])
     {
       *error_message = "Can't create argument tuple for 'add_sample' method";
-      RCLCPP_ERROR_STREAM(LOGGER, *error_message);
+      RCLCPP_ERROR_STREAM(LOGGER_CALIBRATION_SOLVER, *error_message);
       Py_DECREF(python_func_add_sample);
       Py_DECREF(python_instance);
       PyErr_Print();
@@ -292,13 +291,13 @@ bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_
     if (!python_value)
     {
       *error_message = "Error calling 'add_sample' method";
-      RCLCPP_ERROR_STREAM(LOGGER, *error_message);
+      RCLCPP_ERROR_STREAM(LOGGER_CALIBRATION_SOLVER, *error_message);
       Py_DECREF(python_func_add_sample);
       Py_DECREF(python_instance);
       PyErr_Print();
       return false;
     }
-    RCLCPP_DEBUG_STREAM(LOGGER, "num_samples: " << PyInt_AsLong(python_value));
+    RCLCPP_DEBUG_STREAM(LOGGER_CALIBRATION_SOLVER, "num_samples: " << PyInt_AsLong(python_value));
     Py_DECREF(python_value);
   }
   Py_DECREF(python_func_add_sample);
@@ -321,7 +320,7 @@ bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_
       for (size_t n = 0; n < TRANSFORM_MATRIX_DIMENSION; n++)
         ss << *(double*)PyArray_GETPTR2(numpy_arg_obj_wrt_sensor[i], m, n) << " ";
     }
-    RCLCPP_DEBUG_STREAM(LOGGER, ss.str());
+    RCLCPP_DEBUG_STREAM(LOGGER_CALIBRATION_SOLVER, ss.str());
   }
 
   // Import handeye.solver python module
@@ -331,7 +330,7 @@ bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_
   if (!python_module)
   {
     *error_message = "Failed to load python module: handeye.solver";
-    RCLCPP_ERROR_STREAM(LOGGER, *error_message);
+    RCLCPP_ERROR_STREAM(LOGGER_CALIBRATION_SOLVER, *error_message);
     Py_DECREF(python_instance);
     PyErr_Print();
     return false;
@@ -343,7 +342,7 @@ bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_
   if (!python_class || !PyCallable_Check(python_class))
   {
     *error_message = "Can't find \"" + solver_name + "\" python class";
-    RCLCPP_ERROR_STREAM(LOGGER, *error_message);
+    RCLCPP_ERROR_STREAM(LOGGER_CALIBRATION_SOLVER, *error_message);
     Py_DECREF(python_instance);
     PyErr_Print();
     return false;
@@ -354,7 +353,7 @@ bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_
   if (!python_func_solve || !PyCallable_Check(python_func_solve))
   {
     *error_message = "Can't find 'solve' method";
-    RCLCPP_ERROR_STREAM(LOGGER, *error_message);
+    RCLCPP_ERROR_STREAM(LOGGER_CALIBRATION_SOLVER, *error_message);
     Py_DECREF(python_class);
     Py_DECREF(python_instance);
     PyErr_Print();
@@ -367,7 +366,7 @@ bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_
   if (!python_args)
   {
     *error_message = "Can't create argument tuple for 'solve' method";
-    RCLCPP_ERROR_STREAM(LOGGER, *error_message);
+    RCLCPP_ERROR_STREAM(LOGGER_CALIBRATION_SOLVER, *error_message);
     Py_DECREF(python_instance);
     PyErr_Print();
     return false;
@@ -383,7 +382,7 @@ bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_
   if (!python_value)
   {
     *error_message = "Error calling 'solve' method";
-    RCLCPP_ERROR_STREAM(LOGGER, *error_message);
+    RCLCPP_ERROR_STREAM(LOGGER_CALIBRATION_SOLVER, *error_message);
     PyErr_Print();
     return false;
   }
@@ -391,7 +390,7 @@ bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_
   if (!PyArray_Check(python_value) || PyArray_NDIM(np_ret) != 2 || PyArray_NBYTES(np_ret) != sizeof(double) * 16)
   {
     *error_message = "Did not return a valid array";
-    RCLCPP_ERROR_STREAM(LOGGER, *error_message);
+    RCLCPP_ERROR_STREAM(LOGGER_CALIBRATION_SOLVER, *error_message);
     Py_DECREF(python_value);
     PyErr_Print();
     return false;
@@ -409,10 +408,10 @@ bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_
       ss << item << " ";
     }
   }
-  RCLCPP_DEBUG_STREAM(LOGGER, ss.str());
+  RCLCPP_DEBUG_STREAM(LOGGER_CALIBRATION_SOLVER, ss.str());
 
   Py_DECREF(python_value);
-  RCLCPP_DEBUG_STREAM(LOGGER, "Python C API end");
+  RCLCPP_DEBUG_STREAM(LOGGER_CALIBRATION_SOLVER, "Python C API end");
   return true;
 }
 
@@ -422,7 +421,7 @@ bool HandEyeSolverDefault::toCArray(const Eigen::Isometry3d& pose, double (*c_ar
 
   if (mat.rows() != TRANSFORM_MATRIX_DIMENSION || mat.cols() != TRANSFORM_MATRIX_DIMENSION)
   {
-    RCLCPP_ERROR(LOGGER, "Error matrix dims: %zux%zu, required %dx%d", mat.rows(), mat.cols(),
+    RCLCPP_ERROR(LOGGER_CALIBRATION_SOLVER, "Error matrix dims: %zux%zu, required %dx%d", mat.rows(), mat.cols(),
                     TRANSFORM_MATRIX_DIMENSION, TRANSFORM_MATRIX_DIMENSION);
     return false;
   }

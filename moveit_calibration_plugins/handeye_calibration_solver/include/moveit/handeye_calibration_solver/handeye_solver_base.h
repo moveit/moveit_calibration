@@ -42,8 +42,9 @@
 
 namespace moveit_handeye_calibration
 {
-namespace {
-  const rclcpp::Logger LOGGER_CALIBRATION_SOLVER = rclcpp::get_logger("moveit_handeye_calibration_solver");
+namespace
+{
+const rclcpp::Logger LOGGER_CALIBRATION_SOLVER = rclcpp::get_logger("moveit_handeye_calibration_solver");
 }
 
 enum SensorMountType
@@ -105,7 +106,8 @@ public:
     auto ret = std::make_pair(std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::quiet_NaN());
     if (effector_wrt_world.size() != object_wrt_sensor.size())
     {
-      RCLCPP_ERROR(LOGGER_CALIBRATION_SOLVER, "Different number of optical and kinematic transforms when calculating reprojection error.");
+      RCLCPP_ERROR(LOGGER_CALIBRATION_SOLVER,
+                   "Different number of optical and kinematic transforms when calculating reprojection error.");
       return ret;
     }
 

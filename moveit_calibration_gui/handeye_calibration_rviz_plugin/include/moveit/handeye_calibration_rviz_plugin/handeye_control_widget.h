@@ -114,7 +114,8 @@ class ControlTabWidget : public QWidget
   };
 
 public:
-  explicit ControlTabWidget(rclcpp::Node::SharedPtr node, HandEyeCalibrationDisplay* pdisplay, QWidget* parent = Q_NULLPTR);
+  explicit ControlTabWidget(rclcpp::Node::SharedPtr node, HandEyeCalibrationDisplay* pdisplay,
+                            QWidget* parent = Q_NULLPTR);
   ~ControlTabWidget()
   {
     tf_tools_.reset();

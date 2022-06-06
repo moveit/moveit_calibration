@@ -57,8 +57,9 @@ bool RosTopicComboBox::getFilteredTopics()
   // Filter out the topic names with specific topic type
   for (const auto& topic_info : topic_names_and_types)
   {
-    std::for_each(topic_info.second.begin(), topic_info.second.end(), [&](std::string topic_type){
-      if (message_types_.contains(QString(topic_type.c_str()))) {
+    std::for_each(topic_info.second.begin(), topic_info.second.end(), [&](std::string topic_type) {
+      if (message_types_.contains(QString(topic_type.c_str())))
+      {
         image_topics_.insert(QString(topic_info.first.c_str()));
       }
     });
@@ -207,7 +208,8 @@ void TargetTabWidget::loadWidget(const rviz_common::Config& config)
         }
         catch (const image_transport::TransportLoadException& e)
         {
-          RCLCPP_ERROR_STREAM(node_->get_logger(), "Subscribe to " << topic_name.toStdString() << " fail: " << e.what());
+          RCLCPP_ERROR_STREAM(node_->get_logger(),
+                              "Subscribe to " << topic_name.toStdString() << " fail: " << e.what());
         }
       }
     }
@@ -468,7 +470,7 @@ void TargetTabWidget::cameraInfoCallback(sensor_msgs::msg::CameraInfo::ConstShar
     {
       std::string error_message = "Invalid CameraInfo message was received.";
       calibration_display_->setStatusStd(rviz_common::properties::StatusProperty::Error, "Target detection",
-                                        error_message);
+                                         error_message);
       RCLCPP_ERROR(node_->get_logger(), "%s", error_message.c_str());
     }
   }
@@ -552,7 +554,8 @@ void TargetTabWidget::imageTopicComboboxChanged(const QString& topic)
     }
     catch (image_transport::TransportLoadException& e)
     {
-      RCLCPP_ERROR_STREAM(node_->get_logger(), "Subscribe to image topic: " << topic.toStdString() << " failed. " << e.what());
+      RCLCPP_ERROR_STREAM(node_->get_logger(),
+                          "Subscribe to image topic: " << topic.toStdString() << " failed. " << e.what());
       calibration_display_->setStatusStd(rviz_common::properties::StatusProperty::Error, "Target detection",
                                          "Failed to subscribe to image topic.");
     }

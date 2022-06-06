@@ -422,7 +422,7 @@ bool HandEyeSolverDefault::toCArray(const Eigen::Isometry3d& pose, double (*c_ar
   if (mat.rows() != TRANSFORM_MATRIX_DIMENSION || mat.cols() != TRANSFORM_MATRIX_DIMENSION)
   {
     RCLCPP_ERROR(LOGGER_CALIBRATION_SOLVER, "Error matrix dims: %zux%zu, required %dx%d", mat.rows(), mat.cols(),
-                    TRANSFORM_MATRIX_DIMENSION, TRANSFORM_MATRIX_DIMENSION);
+                 TRANSFORM_MATRIX_DIMENSION, TRANSFORM_MATRIX_DIMENSION);
     return false;
   }
 

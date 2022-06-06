@@ -82,7 +82,7 @@ protected:
 
     resource_ok_ = false;
     if (!image_.data)
-      RCLCPP_ERROR_STREAM(LOGGER,"Could not open or find the image file: " << image_path);
+      RCLCPP_ERROR_STREAM(LOGGER, "Could not open or find the image file: " << image_path);
     else
       resource_ok_ = true;
   }
@@ -121,7 +121,7 @@ TEST_F(MoveItHandEyeTargetTester, DetectCharucoMarkerPose)
       std::array<double, 9>{ 590.6972346, 0.0, 322.33104773, 0.0, 592.84676713, 247.40030325, 0.0, 0.0, 1.0 };
   camera_info->r = std::array<double, 9>{ 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0 };
   camera_info->p = std::array<double, 12>{ 590.6972346,  0.0, 322.33104773, 0.0, 0.0, 592.84676713,
-                                             247.40030325, 0.0, 0.0,          0.0, 1.0, 0.0 };
+                                           247.40030325, 0.0, 0.0,          0.0, 1.0, 0.0 };
   ASSERT_TRUE(target_->setCameraIntrinsicParams(camera_info));
 
   // Check target image creation

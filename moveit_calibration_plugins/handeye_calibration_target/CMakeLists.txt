@@ -67,7 +67,7 @@ if(BUILD_TESTING)
       ./test/test_charuco_board_detection.jpg
     DESTINATION
       share/${PROJECT_NAME}/test
-  )  
+  )
 
   ament_add_gtest(test_handeye_target_aruco test/handeye_target_aruco_test.cpp)
   target_link_libraries(test_handeye_target_aruco ${MOVEIT_LIB_NAME} jsoncpp_lib)

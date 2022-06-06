@@ -90,7 +90,9 @@ class TFFrameNameComboBox : public QComboBox
 {
   Q_OBJECT
 public:
-  TFFrameNameComboBox(rviz_common::DisplayContext* context, rclcpp::Node::SharedPtr& node, FRAME_SOURCE source = ROBOT_FRAME, QWidget* parent = 0) : QComboBox(parent), frame_source_(source), context_(context), node_(node)
+  TFFrameNameComboBox(rviz_common::DisplayContext* context, rclcpp::Node::SharedPtr& node,
+                      FRAME_SOURCE source = ROBOT_FRAME, QWidget* parent = 0)
+    : QComboBox(parent), frame_source_(source), context_(context), node_(node)
   {
     robot_model_loader_.reset(new robot_model_loader::RobotModelLoader(node_, "robot_description"));
   }
@@ -155,7 +157,8 @@ class ContextTabWidget : public QWidget
 {
   Q_OBJECT
 public:
-  explicit ContextTabWidget(rclcpp::Node::SharedPtr node, HandEyeCalibrationDisplay* pdisplay, rviz_common::DisplayContext* context, QWidget* parent = Q_NULLPTR);
+  explicit ContextTabWidget(rclcpp::Node::SharedPtr node, HandEyeCalibrationDisplay* pdisplay,
+                            rviz_common::DisplayContext* context, QWidget* parent = Q_NULLPTR);
   ~ContextTabWidget()
   {
     camera_info_.reset();
@@ -174,10 +177,11 @@ public:
   static shape_msgs::msg::Mesh getCameraFOVMesh(const sensor_msgs::msg::CameraInfo& camera_info, double maxdist);
 
   visualization_msgs::msg::Marker getCameraFOVMarker(const Eigen::Isometry3d& pose, const shape_msgs::msg::Mesh& mesh,
-                                                rvt::Colors color, double alpha, std::string frame_id);
+                                                     rvt::Colors color, double alpha, std::string frame_id);
 
-  visualization_msgs::msg::Marker getCameraFOVMarker(const geometry_msgs::msg::Pose& pose, const shape_msgs::msg::Mesh& mesh,
-                                                rvt::Colors color, double alpha, std::string frame_id);
+  visualization_msgs::msg::Marker getCameraFOVMarker(const geometry_msgs::msg::Pose& pose,
+                                                     const shape_msgs::msg::Mesh& mesh, rvt::Colors color, double alpha,
+                                                     std::string frame_id);
 
   void setCameraPose(double tx, double ty, double tz, double rx, double ry, double rz);
 

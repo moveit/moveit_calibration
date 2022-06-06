@@ -43,7 +43,8 @@
 #include <ament_index_cpp/get_package_share_directory.hpp>
 
 static const rclcpp::Logger LOGGER = rclcpp::get_logger("handeye_solver_test");
-class MoveItHandEyeSolverTester : public ::testing::Test{
+class MoveItHandEyeSolverTester : public ::testing::Test
+{
 protected:
   void SetUp() override
   {
@@ -52,7 +53,9 @@ protected:
     {
       solver_plugins_loader_.reset(new pluginlib::ClassLoader<moveit_handeye_calibration::HandEyeSolverBase>(
           "moveit_calibration_plugins", "moveit_handeye_calibration::HandEyeSolverBase"));
-      // solver_plugins_loader_ = std::make_unique<pluginlib::ClassLoader<moveit_handeye_calibration::HandEyeSolverBase>>("moveit_calibration_plugins", "moveit_handeye_calibration::HandEyeSolverBase");
+      // solver_plugins_loader_ =
+      // std::make_unique<pluginlib::ClassLoader<moveit_handeye_calibration::HandEyeSolverBase>>("moveit_calibration_plugins",
+      // "moveit_handeye_calibration::HandEyeSolverBase");
       solver_ = solver_plugins_loader_->createUniqueInstance("crigroup");
       solver_->initialize();
     }
@@ -64,7 +67,8 @@ protected:
 
     Json::Reader reader;
     // std::string moveit_calibration_plugins_package_path = ros::package::getPath("moveit_calibration_plugins");
-    std::string moveit_calibration_plugins_package_path = ament_index_cpp::get_package_share_directory("moveit_calibration_plugins");
+    std::string moveit_calibration_plugins_package_path =
+        ament_index_cpp::get_package_share_directory("moveit_calibration_plugins");
     moveit_calibration_plugins_package_path += "/handeye_calibration_solver/test/pose_samples.json";
     std::ifstream ifs(moveit_calibration_plugins_package_path);
 

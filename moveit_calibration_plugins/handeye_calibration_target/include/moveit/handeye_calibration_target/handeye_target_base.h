@@ -53,11 +53,11 @@
 
 namespace moveit_handeye_calibration
 {
-
-namespace {
-  const rclcpp::Logger LOGGER_CALIBRATION_TARGET = rclcpp::get_logger("moveit_handeye_calibration_target");
-  constexpr size_t LOG_THROTTLE_PERIOD = 2;
-}
+namespace
+{
+const rclcpp::Logger LOGGER_CALIBRATION_TARGET = rclcpp::get_logger("moveit_handeye_calibration_target");
+constexpr size_t LOG_THROTTLE_PERIOD = 2;
+}  // namespace
 
 /**
  * @class HandEyeTargetBase
@@ -87,7 +87,8 @@ public:
       if (parameter_type_ == ParameterType::Int)
         value_.i = default_value;
       else
-        RCLCPP_ERROR(LOGGER_CALIBRATION_TARGET, "Integer default value specified for non-integer parameter %s", name.c_str());
+        RCLCPP_ERROR(LOGGER_CALIBRATION_TARGET, "Integer default value specified for non-integer parameter %s",
+                     name.c_str());
     }
 
     Parameter(std::string name, ParameterType parameter_type, float default_value = 0.)
@@ -96,7 +97,8 @@ public:
       if (parameter_type_ == ParameterType::Float)
         value_.f = default_value;
       else
-        RCLCPP_ERROR(LOGGER_CALIBRATION_TARGET, "Float default value specified for non-float parameter %s", name.c_str());
+        RCLCPP_ERROR(LOGGER_CALIBRATION_TARGET, "Float default value specified for non-float parameter %s",
+                     name.c_str());
     }
 
     Parameter(std::string name, ParameterType parameter_type, double default_value = 0.)
@@ -105,7 +107,8 @@ public:
       if (parameter_type_ == ParameterType::Float)
         value_.f = default_value;
       else
-        RCLCPP_ERROR(LOGGER_CALIBRATION_TARGET, "Float default value specified for non-float parameter %s", name.c_str());
+        RCLCPP_ERROR(LOGGER_CALIBRATION_TARGET, "Float default value specified for non-float parameter %s",
+                     name.c_str());
     }
 
     Parameter(std::string name, ParameterType parameter_type, std::vector<std::string> enum_values,
@@ -162,7 +165,7 @@ public:
   virtual geometry_msgs::msg::TransformStamped getTransformStamped(const std::string& frame_id) const
   {
     geometry_msgs::msg::TransformStamped transform_stamped;
-    transform_stamped.header.stamp = rclcpp::Clock(RCL_ROS_TIME).now(); //Not sure if this is the right approach
+    transform_stamped.header.stamp = rclcpp::Clock(RCL_ROS_TIME).now();  // Not sure if this is the right approach
     transform_stamped.header.frame_id = frame_id;
     transform_stamped.child_frame_id = "handeye_target";
 
@@ -230,15 +233,16 @@ public:
 
     if (msg->k.size() != CAMERA_MATRIX_VECTOR_DIMENSION)
     {
-      RCLCPP_ERROR(LOGGER_CALIBRATION_TARGET, "Invalid camera matrix dimension, current is %ld, required is %zu.", msg->k.size(),
-                      CAMERA_MATRIX_VECTOR_DIMENSION);
+      RCLCPP_ERROR(LOGGER_CALIBRATION_TARGET, "Invalid camera matrix dimension, current is %ld, required is %zu.",
+                   msg->k.size(), CAMERA_MATRIX_VECTOR_DIMENSION);
       return false;
     }
 
     if (msg->d.size() != CAMERA_DISTORTION_VECTOR_DIMENSION)
     {
-      RCLCPP_ERROR(LOGGER_CALIBRATION_TARGET, "Invalid distortion parameters dimension, current is %ld, required is %zu.",
-                      msg->d.size(), CAMERA_DISTORTION_VECTOR_DIMENSION);
+      RCLCPP_ERROR(LOGGER_CALIBRATION_TARGET,
+                   "Invalid distortion parameters dimension, current is %ld, required is %zu.", msg->d.size(),
+                   CAMERA_DISTORTION_VECTOR_DIMENSION);
       return false;
     }
 

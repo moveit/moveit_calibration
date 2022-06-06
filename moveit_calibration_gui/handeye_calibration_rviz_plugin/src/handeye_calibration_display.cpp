@@ -48,24 +48,25 @@ namespace moveit_rviz_plugin
 {
 HandEyeCalibrationDisplay::HandEyeCalibrationDisplay(QWidget* parent) : Display()
 {
-  move_group_ns_property_ = new rviz_common::properties::StringProperty("Move Group Namespace", "",
-                                                     "The name of the ROS namespace in "
-                                                     "which the move_group node is running",
-                                                     this, SLOT(fillPlanningGroupNameComboBox()), this);
-  planning_scene_topic_property_ =
-      new rviz_common::properties::RosTopicProperty("Planning Scene Topic", "/monitored_planning_scene",
-                                 rosidl_generator_traits::data_type<moveit_msgs::msg::PlanningScene>(),
-                                 "The topic on which the moveit_msgs::msg::PlanningScene messages are received", this,
-                                 SLOT(fillPlanningGroupNameComboBox()), this);
+  move_group_ns_property_ =
+      new rviz_common::properties::StringProperty("Move Group Namespace", "",
+                                                  "The name of the ROS namespace in "
+                                                  "which the move_group node is running",
+                                                  this, SLOT(fillPlanningGroupNameComboBox()), this);
+  planning_scene_topic_property_ = new rviz_common::properties::RosTopicProperty(
+      "Planning Scene Topic", "/monitored_planning_scene",
+      rosidl_generator_traits::data_type<moveit_msgs::msg::PlanningScene>(),
+      "The topic on which the moveit_msgs::msg::PlanningScene messages are received", this,
+      SLOT(fillPlanningGroupNameComboBox()), this);
 
   fov_marker_enabled_property_ = new rviz_common::properties::BoolProperty(
       "Camera FOV Marker", true, "Enable marker showing camera field of view", this, SLOT(updateMarkers()), this);
-  fov_marker_alpha_property_ =
-      new rviz_common::properties::FloatProperty("Marker Alpha", 0.3f, "Specifies the alpha (transparency) for the rendered marker",
-                              fov_marker_enabled_property_, SLOT(updateMarkers()), this);
-  fov_marker_size_property_ =
-      new rviz_common::properties::FloatProperty("Marker Size", 1.5f, "Specifies the size (depth in meters) for the rendered marker",
-                              fov_marker_enabled_property_, SLOT(updateMarkers()), this);
+  fov_marker_alpha_property_ = new rviz_common::properties::FloatProperty(
+      "Marker Alpha", 0.3f, "Specifies the alpha (transparency) for the rendered marker", fov_marker_enabled_property_,
+      SLOT(updateMarkers()), this);
+  fov_marker_size_property_ = new rviz_common::properties::FloatProperty(
+      "Marker Size", 1.5f, "Specifies the size (depth in meters) for the rendered marker", fov_marker_enabled_property_,
+      SLOT(updateMarkers()), this);
 }
 
 HandEyeCalibrationDisplay::~HandEyeCalibrationDisplay()

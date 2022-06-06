@@ -38,7 +38,5 @@
 #include <moveit/handeye_calibration_target/handeye_target_aruco.h>
 #include <moveit/handeye_calibration_target/handeye_target_charuco.h>
 
-PLUGINLIB_EXPORT_CLASS(moveit_handeye_calibration::HandEyeArucoTarget,
-                            moveit_handeye_calibration::HandEyeTargetBase)
-PLUGINLIB_EXPORT_CLASS(moveit_handeye_calibration::HandEyeCharucoTarget,
-                            moveit_handeye_calibration::HandEyeTargetBase)
+PLUGINLIB_EXPORT_CLASS(moveit_handeye_calibration::HandEyeArucoTarget, moveit_handeye_calibration::HandEyeTargetBase)
+PLUGINLIB_EXPORT_CLASS(moveit_handeye_calibration::HandEyeCharucoTarget, moveit_handeye_calibration::HandEyeTargetBase)

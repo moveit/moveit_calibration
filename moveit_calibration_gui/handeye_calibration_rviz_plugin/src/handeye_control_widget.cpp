@@ -98,7 +98,8 @@ ControlTabWidget::ControlTabWidget(rclcpp::Node::SharedPtr node, HandEyeCalibrat
   : QWidget(parent)
   , node_(node)
   , calibration_display_(pdisplay)
-  , tf_buffer_(new tf2_ros::Buffer(std::make_shared<rclcpp::Clock>(RCL_ROS_TIME), (tf2::Duration)(tf2::BUFFER_CORE_DEFAULT_CACHE_TIME), node_))
+  , tf_buffer_(new tf2_ros::Buffer(std::make_shared<rclcpp::Clock>(RCL_ROS_TIME),
+                                   (tf2::Duration)(tf2::BUFFER_CORE_DEFAULT_CACHE_TIME), node_))
   , tf_listener_(*tf_buffer_, node_)
   , sensor_mount_type_(mhc::EYE_TO_HAND)
   , from_frame_tag_("base")
@@ -240,7 +241,8 @@ ControlTabWidget::ControlTabWidget(rclcpp::Node::SharedPtr node, HandEyeCalibrat
   connect(execution_watcher_, &QFutureWatcher<void>::finished, this, &ControlTabWidget::executeFinished);
 
   // Set initial status
-  calibration_display_->setStatus(rviz_common::properties::StatusProperty::Ok, "Calibration", "Collect 5 samples to start calibration.");
+  calibration_display_->setStatus(rviz_common::properties::StatusProperty::Ok, "Calibration",
+                                  "Collect 5 samples to start calibration.");
 }
 
 void ControlTabWidget::loadWidget(const rviz_common::Config& config)
@@ -311,8 +313,10 @@ bool ControlTabWidget::createSolverInstance(const std::string& plugin_name)
   }
   catch (pluginlib::PluginlibException& ex)
   {
-    calibration_display_->setStatus(rviz_common::properties::StatusProperty::Error, "Calibration", "Couldn't load solver plugin.");
-    RCLCPP_ERROR_STREAM(node_->get_logger(), "Exception while loading handeye solver plugin: " << plugin_name << ex.what());
+    calibration_display_->setStatus(rviz_common::properties::StatusProperty::Error, "Calibration",
+                                    "Couldn't load solver plugin.");
+    RCLCPP_ERROR_STREAM(node_->get_logger(),
+                        "Exception while loading handeye solver plugin: " << plugin_name << ex.what());
     solver_ = nullptr;
   }
 
@@ -418,12 +422,13 @@ bool ControlTabWidget::solveCameraRobotPose()
       if (!from_frame.empty() && !to_frame.empty())
       {
         tf_tools_->clearAllTransforms();
-        calibration_display_->setStatus(rviz_common::properties::StatusProperty::Ok, "Calibration", "Calibration successful.");
-        RCLCPP_INFO_STREAM(node_->get_logger(), "Publish camera transformation" << std::endl
-                                                                   << camera_robot_pose_.matrix() << std::endl
-                                                                   << "from " << from_frame_tag_ << " frame '"
-                                                                   << from_frame << "'"
-                                                                   << "to sensor frame '" << to_frame << "'");
+        calibration_display_->setStatus(rviz_common::properties::StatusProperty::Ok, "Calibration",
+                                        "Calibration successful.");
+        RCLCPP_INFO_STREAM(node_->get_logger(), "Publish camera transformation"
+                                                    << std::endl
+                                                    << camera_robot_pose_.matrix() << std::endl
+                                                    << "from " << from_frame_tag_ << " frame '" << from_frame << "'"
+                                                    << "to sensor frame '" << to_frame << "'");
         return tf_tools_->publishTransform(camera_robot_pose_, from_frame, to_frame);
       }
       else
@@ -458,7 +463,8 @@ bool ControlTabWidget::solveCameraRobotPose()
   }
   else
   {
-    calibration_display_->setStatus(rviz_common::properties::StatusProperty::Error, "Calibration", "No solver available.");
+    calibration_display_->setStatus(rviz_common::properties::StatusProperty::Error, "Calibration",
+                                    "No solver available.");
     QMessageBox::warning(this, tr("No Solver Available"), tr("No available handeye calibration solver instance."));
     return false;
   }
@@ -560,7 +566,7 @@ void ControlTabWidget::takeSampleBtnClicked(bool clicked)
   // Save the joint values of current robot state
   if (planning_scene_monitor_)
   {
-    planning_scene_monitor_->waitForCurrentRobotState(rclcpp::Clock(RCL_ROS_TIME).now(), 0.1); // Revisit this change
+    planning_scene_monitor_->waitForCurrentRobotState(rclcpp::Clock(RCL_ROS_TIME).now(), 0.1);  // Revisit this change
     const planning_scene_monitor::LockedPlanningSceneRO& ps =
         planning_scene_monitor::LockedPlanningSceneRO(planning_scene_monitor_);
     if (ps)
@@ -669,8 +675,10 @@ void ControlTabWidget::setGroupName(const std::string& group_name)
   try
   {
     moveit::planning_interface::MoveGroupInterface::Options opt(group_name);
-    // opt.node_handle_ = ros::NodeHandle(calibration_display_->move_group_ns_property_->getStdString());  <- Do I need to assign opt.robot_model and opt.robot_description ?
-    move_group_.reset(new moveit::planning_interface::MoveGroupInterface(node_, opt, tf_buffer_, rclcpp::Duration(5, 0)));
+    // opt.node_handle_ = ros::NodeHandle(calibration_display_->move_group_ns_property_->getStdString());  <- Do I need
+    // to assign opt.robot_model and opt.robot_description ?
+    move_group_.reset(
+        new moveit::planning_interface::MoveGroupInterface(node_, opt, tf_buffer_, rclcpp::Duration(5, 0)));
 
     // Clear the joint values from any previous group
     joint_states_.clear();
@@ -686,8 +694,8 @@ void ControlTabWidget::fillPlanningGroupNameComboBox()
 {
   group_name_->clear();
   // Fill in available planning group names
-  planning_scene_monitor_.reset(
-      new planning_scene_monitor::PlanningSceneMonitor(node_, "robot_description", tf_buffer_, "planning_scene_monitor"));
+  planning_scene_monitor_.reset(new planning_scene_monitor::PlanningSceneMonitor(node_, "robot_description", tf_buffer_,
+                                                                                 "planning_scene_monitor"));
   if (planning_scene_monitor_)
   {
     planning_scene_monitor_->startSceneMonitor(calibration_display_->planning_scene_topic_property_->getStdString());

@@ -43,8 +43,8 @@
 
 namespace moveit_rviz_plugin
 {
-HandEyeCalibrationFrame::HandEyeCalibrationFrame(HandEyeCalibrationDisplay* pdisplay, rviz_common::DisplayContext* context,
-                                                 QWidget* parent)
+HandEyeCalibrationFrame::HandEyeCalibrationFrame(HandEyeCalibrationDisplay* pdisplay,
+                                                 rviz_common::DisplayContext* context, QWidget* parent)
   : QWidget(parent), calibration_display_(pdisplay), context_(context)
 {
   node_ = std::make_shared<rclcpp::Node>("handeye_calibration_frame");
@@ -89,9 +89,9 @@ HandEyeCalibrationFrame::HandEyeCalibrationFrame(HandEyeCalibrationDisplay* pdis
 
   // Spin node in the background for sub callbacks
   executor_.add_node(node_);
-  auto spin = [this]()
-  {
-    while (rclcpp::ok()) {
+  auto spin = [this]() {
+    while (rclcpp::ok())
+    {
       executor_.spin_once();
     }
   };

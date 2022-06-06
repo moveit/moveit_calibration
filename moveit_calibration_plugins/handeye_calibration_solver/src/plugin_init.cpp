@@ -36,5 +36,4 @@
 #include <pluginlib/class_list_macros.hpp>
 #include <moveit/handeye_calibration_solver/handeye_solver_default.h>
 
-PLUGINLIB_EXPORT_CLASS(moveit_handeye_calibration::HandEyeSolverDefault,
-                            moveit_handeye_calibration::HandEyeSolverBase)
+PLUGINLIB_EXPORT_CLASS(moveit_handeye_calibration::HandEyeSolverDefault, moveit_handeye_calibration::HandEyeSolverBase)

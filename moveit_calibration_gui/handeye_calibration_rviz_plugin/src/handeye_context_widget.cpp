@@ -151,8 +151,14 @@ void SliderWidget::changeSlider()
   Q_EMIT valueChanged(value);
 }
 
-ContextTabWidget::ContextTabWidget(rclcpp::Node::SharedPtr node, HandEyeCalibrationDisplay* pdisplay, rviz_common::DisplayContext* context, QWidget* parent)
-  : QWidget(parent), node_(node), context_(context), calibration_display_(pdisplay), tf_buffer_(std::make_shared<tf2_ros::Buffer>(node_->get_clock())), tf_listener_(std::make_shared<tf2_ros::TransformListener>(*tf_buffer_))
+ContextTabWidget::ContextTabWidget(rclcpp::Node::SharedPtr node, HandEyeCalibrationDisplay* pdisplay,
+                                   rviz_common::DisplayContext* context, QWidget* parent)
+  : QWidget(parent)
+  , node_(node)
+  , context_(context)
+  , calibration_display_(pdisplay)
+  , tf_buffer_(std::make_shared<tf2_ros::Buffer>(node_->get_clock()))
+  , tf_listener_(std::make_shared<tf2_ros::TransformListener>(*tf_buffer_))
 {
   // Context setting tab ----------------------------------------------------
   QHBoxLayout* layout = new QHBoxLayout();
@@ -370,11 +376,11 @@ void ContextTabWidget::updateFOVPose()
       // Get FOV pose W.R.T sensor frame
       tf_msg = tf_buffer_->lookupTransform(sensor_frame.toStdString(), optical_frame_, rclcpp::Time(0));
       fov_pose_ = tf2::transformToEigen(tf_msg);
-      RCLCPP_DEBUG_STREAM(node_->get_logger(), "FOV pose from '" << sensor_frame.toStdString() << "' to '" << optical_frame_
-                                                        << "' is:"
-                                                        << "\nTranslation:\n"
-                                                        << fov_pose_.translation() << "\nRotation:\n"
-                                                        << fov_pose_.rotation());
+      RCLCPP_DEBUG_STREAM(node_->get_logger(), "FOV pose from '" << sensor_frame.toStdString() << "' to '"
+                                                                 << optical_frame_ << "' is:"
+                                                                 << "\nTranslation:\n"
+                                                                 << fov_pose_.translation() << "\nRotation:\n"
+                                                                 << fov_pose_.rotation());
     }
     catch (tf2::TransformException& e)
     {
@@ -383,7 +389,8 @@ void ContextTabWidget::updateFOVPose()
   }
 }
 
-shape_msgs::msg::Mesh ContextTabWidget::getCameraFOVMesh(const sensor_msgs::msg::CameraInfo& camera_info, double max_dist)
+shape_msgs::msg::Mesh ContextTabWidget::getCameraFOVMesh(const sensor_msgs::msg::CameraInfo& camera_info,
+                                                         double max_dist)
 {
   shape_msgs::msg::Mesh mesh;
   image_geometry::PinholeCameraModel camera_model;
@@ -424,15 +431,17 @@ shape_msgs::msg::Mesh ContextTabWidget::getCameraFOVMesh(const sensor_msgs::msg:
 }
 
 visualization_msgs::msg::Marker ContextTabWidget::getCameraFOVMarker(const Eigen::Isometry3d& pose,
-                                                                const shape_msgs::msg::Mesh& mesh, rvt::Colors color,
-                                                                double alpha, std::string frame_id)
+                                                                     const shape_msgs::msg::Mesh& mesh,
+                                                                     rvt::Colors color, double alpha,
+                                                                     std::string frame_id)
 {
   return getCameraFOVMarker(rvt::RvizVisualTools::convertPose(pose), mesh, color, alpha, frame_id);
 }
 
 visualization_msgs::msg::Marker ContextTabWidget::getCameraFOVMarker(const geometry_msgs::msg::Pose& pose,
-                                                                const shape_msgs::msg::Mesh& mesh, rvt::Colors color,
-                                                                double alpha, std::string frame_id)
+                                                                     const shape_msgs::msg::Mesh& mesh,
+                                                                     rvt::Colors color, double alpha,
+                                                                     std::string frame_id)
 {
   visualization_msgs::msg::Marker marker;
   marker.header.frame_id = frame_id;

@@ -114,7 +114,8 @@ class TargetTabWidget : public QWidget
 {
   Q_OBJECT
 public:
-  explicit TargetTabWidget(rclcpp::Node::SharedPtr node, HandEyeCalibrationDisplay* pdisplay, QWidget* parent = Q_NULLPTR);
+  explicit TargetTabWidget(rclcpp::Node::SharedPtr node, HandEyeCalibrationDisplay* pdisplay,
+                           QWidget* parent = Q_NULLPTR);
   ~TargetTabWidget()
   {
     target_.reset();
@@ -134,7 +135,7 @@ public:
   void cameraCallback(const sensor_msgs::msg::Image::ConstSharedPtr& image,
                       const sensor_msgs::msg::CameraInfo::ConstSharedPtr& camera_info);
 
-  void imageCallback(const sensor_msgs::msg::Image::ConstSharedPtr &msg);
+  void imageCallback(const sensor_msgs::msg::Image::ConstSharedPtr& msg);
 
   void cameraInfoCallback(sensor_msgs::msg::CameraInfo::ConstSharedPtr msg);
 private Q_SLOTS:

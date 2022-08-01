@@ -13,6 +13,7 @@ find_package(eigen3_cmake_module REQUIRED)
 find_package(image_geometry REQUIRED)
 find_package(image_transport REQUIRED)
 find_package(moveit_calibration_plugins REQUIRED)
+find_package(moveit_ros_visualization REQUIRED)
 find_package(moveit_ros_planning_interface REQUIRED)
 find_package(moveit_visual_tools REQUIRED)
 find_package(OpenCV REQUIRED)
@@ -28,6 +29,7 @@ set(THIS_PACKAGE_INCLUDE_DEPENDS
   image_geometry
   image_transport
   moveit_calibration_plugins
+  moveit_ros_visualization
   moveit_ros_planning_interface
   moveit_visual_tools
   pluginlib

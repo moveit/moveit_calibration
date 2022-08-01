@@ -61,7 +61,7 @@
 #include <moveit/handeye_calibration_rviz_plugin/handeye_calibration_display.h>
 #include <moveit/common_planning_interface_objects/common_objects.h>
 #include <moveit/planning_scene_monitor/planning_scene_monitor.h>
-#include <moveit/background_processing/background_processing.h>
+#include <moveit/planning_scene_rviz_plugin/background_processing.hpp>
 #include <moveit/utils/rclcpp_utils.h>
 
 #ifndef Q_MOC_RUN

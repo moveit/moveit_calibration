@@ -24,6 +24,7 @@
   <depend>image_transport</depend>
   <depend>libopencv-dev</depend>
   <depend>moveit_calibration_plugins</depend>
+  <depend>moveit_ros_visualization</depend>
   <depend>moveit_ros_planning_interface</depend>
   <depend>moveit_visual_tools</depend>
   <depend>pluginlib</depend>

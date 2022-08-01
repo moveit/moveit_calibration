@@ -449,7 +449,7 @@ visualization_msgs::msg::Marker ContextTabWidget::getCameraFOVMarker(const geome
   marker.id = 0;
   marker.type = visualization_msgs::msg::Marker::TRIANGLE_LIST;
   marker.action = visualization_msgs::msg::Marker::ADD;
-  marker.lifetime = rclcpp::Duration(0.0);
+  marker.lifetime = rclcpp::Duration(0, 0);
   visual_tools_->setAlpha(alpha);
   marker.color = visual_tools_->getColor(color);
   marker.pose = pose;

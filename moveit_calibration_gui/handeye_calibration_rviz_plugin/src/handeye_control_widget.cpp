@@ -180,23 +180,28 @@ ControlTabWidget::ControlTabWidget(QWidget* parent)
   // Manual calibration area
   QGroupBox* manual_cal_group = new QGroupBox("Manual Calibration");
   layout_right->addWidget(manual_cal_group);
-  QHBoxLayout* control_cal_layout = new QHBoxLayout();
+  QGridLayout* control_cal_layout = new QGridLayout();
   manual_cal_group->setLayout(control_cal_layout);
 
   take_sample_btn_ = new QPushButton("Take sample");
-  take_sample_btn_->setMinimumHeight(35);
+  take_sample_btn_->setMinimumHeight(25);
   connect(take_sample_btn_, SIGNAL(clicked(bool)), this, SLOT(takeSampleBtnClicked(bool)));
-  control_cal_layout->addWidget(take_sample_btn_);
+  control_cal_layout->addWidget(take_sample_btn_, 0, 0);
 
-  reset_sample_btn_ = new QPushButton("Clear samples");
-  reset_sample_btn_->setMinimumHeight(35);
+  delete_latest_btn_ = new QPushButton("Delete latest sample");
+  delete_latest_btn_->setMinimumHeight(25);
+  connect(delete_latest_btn_, SIGNAL(clicked(bool)), this, SLOT(deleteLatestSampleBtnClicked(bool)));
+  control_cal_layout->addWidget(delete_latest_btn_, 0, 1);
+
+  reset_sample_btn_ = new QPushButton("Clear all samples");
+  reset_sample_btn_->setMinimumHeight(25);
   connect(reset_sample_btn_, SIGNAL(clicked(bool)), this, SLOT(clearSamplesBtnClicked(bool)));
-  control_cal_layout->addWidget(reset_sample_btn_);
+  control_cal_layout->addWidget(reset_sample_btn_, 1, 0);
 
   solve_btn_ = new QPushButton("Solve");
-  solve_btn_->setMinimumHeight(35);
+  solve_btn_->setMinimumHeight(25);
   connect(solve_btn_, SIGNAL(clicked(bool)), this, SLOT(solveBtnClicked(bool)));
-  control_cal_layout->addWidget(solve_btn_);
+  control_cal_layout->addWidget(solve_btn_, 1, 1);
 
   // Auto calibration area
   QGroupBox* auto_cal_group = new QGroupBox("Calibrate With Recorded Joint States");
@@ -590,6 +595,24 @@ void ControlTabWidget::takeSampleBtnClicked(bool clicked)
       }
     }
   }
+}
+
+void ControlTabWidget::deleteLatestSampleBtnClicked(bool clicked)
+{
+  if (joint_states_.empty())
+  {
+    QMessageBox::warning(this, tr("Empty Pose samples"), tr("Cannot delete last sample, list is already empty."));
+    return;
+  }
+
+  // Delete latest recorded transform
+  effector_wrt_world_.pop_back();
+  object_wrt_sensor_.pop_back();
+
+  // Delete latest recorded joint state, update progress bar
+  joint_states_.pop_back();
+  tree_view_model_->takeRow(joint_states_.size());
+  auto_progress_->setMax(joint_states_.size());
 }
 
 void ControlTabWidget::clearSamplesBtnClicked(bool clicked)

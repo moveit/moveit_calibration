@@ -56,7 +56,7 @@ protected:
       // solver_plugins_loader_ =
       // std::make_unique<pluginlib::ClassLoader<moveit_handeye_calibration::HandEyeSolverBase>>("moveit_calibration_plugins",
       // "moveit_handeye_calibration::HandEyeSolverBase");
-      solver_ = solver_plugins_loader_->createUniqueInstance("crigroup");
+      solver_ = solver_plugins_loader_->createUniqueInstance("OpenCV");
       solver_->initialize();
     }
     catch (const pluginlib::PluginlibException& ex)

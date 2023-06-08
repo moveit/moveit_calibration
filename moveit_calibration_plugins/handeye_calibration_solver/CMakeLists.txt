@@ -1,28 +1,15 @@
 set(MOVEIT_LIB_NAME moveit_handeye_calibration_solver)
 set(SOURCE_FILES_CORE
-  src/handeye_solver_default.cpp
+  src/handeye_solver_opencv.cpp
 )
 set(SOURCE_FILES_PLUGINS
   src/plugin_init.cpp
 )
 
-# Python wrapper
-option(BUILD_PYTHON_WRAPPER "Enable building of Python wrapper" ON)
-if(BUILD_PYTHON_WRAPPER)
-  # Suppress the warning 'int _import_array()' defined but not used in 'usr/include/python2.7/numpy/__multiarray_api.h'
-  add_compile_options(-Wno-unused-function)
-  find_package(PythonLibs REQUIRED)
-  include_directories(${PYTHON_INCLUDE_DIRS})
-  SET(Python_ADDITIONAL_VERSIONS 3)
-  find_package(PythonLibs)
-  execute_process(COMMAND which python3 OUTPUT_QUIET RESULT_VARIABLE Python3_NOT_FOUND)
-  execute_process(COMMAND python3 -c "import numpy" RESULT_VARIABLE Numpy_NOT_FOUND)
-endif(BUILD_PYTHON_WRAPPER)
-
 # Core library
 add_library(${MOVEIT_LIB_NAME}_core SHARED ${SOURCE_FILES_CORE})
 set_target_properties(${MOVEIT_LIB_NAME}_core PROPERTIES VERSION "${${PROJECT_NAME}_VERSION}")
-target_link_libraries(${MOVEIT_LIB_NAME}_core ${EIGEN3_LIBS})
+target_link_libraries(${MOVEIT_LIB_NAME}_core ${OpenCV_LIBS} ${EIGEN3_LIBS})
 target_include_directories(${MOVEIT_LIB_NAME}_core PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)
@@ -44,7 +31,9 @@ ament_target_dependencies(
 )
 
 include_directories(
-  SYSTEM ${EIGEN3_INCLUDE_DIRS}
+  SYSTEM
+    ${OpenCV_INCLUDE_DIRS}
+    ${EIGEN3_INCLUDE_DIRS}
 )
 
 install(DIRECTORY include/ DESTINATION include)

@@ -37,7 +37,6 @@
 #pragma once
 
 #include <tf2_eigen/tf2_eigen.hpp>
-// #include <ros/console.h>
 #include <rclcpp/rclcpp.hpp>
 
 namespace moveit_handeye_calibration

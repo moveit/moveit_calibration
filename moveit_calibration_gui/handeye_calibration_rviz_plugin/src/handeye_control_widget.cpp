@@ -618,14 +618,19 @@ void ControlTabWidget::saveCameraPoseBtnClicked(bool clicked)
 
   // DontUseNativeDialog option set to avoid this issue: https://github.com/ros-planning/moveit/issues/2357
   QString file_name =
-      QFileDialog::getSaveFileName(this, tr("Save Camera Robot Pose"), "", tr("Target File (*.launch);;All Files (*)"),
+      QFileDialog::getSaveFileName(this, tr("Save Camera Robot Pose"), "",
+                                   tr("Launch scripts - ALL (*.launch* *.py *.xml *.yaml);;Launch scripts - "
+                                      "PYTHON (*.launch.py *.py);;Launch scripts - XML (*.launch.xml *.xml);;Launch "
+                                      "scripts - YAML (*.launch.yaml *.yaml);;All Files (*)"),
                                    nullptr, QFileDialog::DontUseNativeDialog);
 
   if (file_name.isEmpty())
     return;
 
-  if (!file_name.endsWith(".launch"))
-    file_name += ".launch";
+  if (!file_name.contains("."))
+    file_name += ".launch.py";
+  else if (file_name.endsWith(".launch"))
+    file_name += ".py";
 
   QFile file(file_name);
   if (!file.open(QIODevice::WriteOnly))
@@ -634,24 +639,133 @@ void ControlTabWidget::saveCameraPoseBtnClicked(bool clicked)
     return;
   }
 
-  QTextStream out(&file);
+  std::string setupType;
+  switch (sensor_mount_type_)
+  {
+    case mhc::EYE_TO_HAND:
+      setupType = "EYE-TO-HAND";
+      break;
+    case mhc::EYE_IN_HAND:
+      setupType = "EYE-IN-HAND";
+      break;
+    default:
+      RCLCPP_ERROR_STREAM(node_->get_logger(), "Error sensor mount type.");
+      break;
+  }
 
   Eigen::Vector3d t = camera_robot_pose_.translation();
   Eigen::Quaterniond r_quat(camera_robot_pose_.rotation());
   Eigen::Vector3d r_euler = camera_robot_pose_.rotation().eulerAngles(0, 1, 2);
+
   std::stringstream ss;
-  ss << "<launch>" << std::endl;
-  ss << "  <!-- The rpy in the comment uses the extrinsic XYZ convention, which is the same as is used in a URDF. See"
-     << std::endl;
-  ss << "       http://wiki.ros.org/geometry2/RotationMethods and https://en.wikipedia.org/wiki/Euler_angles for more "
-        "info. -->"
-     << std::endl;
-  ss << "  <!-- xyz=\"" << t[0] << " " << t[1] << " " << t[2] << "\" rpy=\"" << r_euler[0] << " " << r_euler[1] << " "
-     << r_euler[2] << "\" -->" << std::endl;
-  ss << "  <node pkg=\"tf2_ros\" type=\"static_transform_publisher\" name=\"camera_link_broadcaster\"" << std::endl;
-  ss << "      args=\"" << t[0] << " " << t[1] << " " << t[2] << "   " << r_quat.x() << " " << r_quat.y() << " "
-     << r_quat.z() << " " << r_quat.w() << " " << from_frame << " " << to_frame << "\" />" << std::endl;
-  ss << "</launch>" << std::endl;
+  if (file_name.endsWith(".py"))
+  {
+    ss << "\"\"\" Static transform publisher acquired via MoveIt 2 hand-eye calibration \"\"\"" << std::endl;
+    ss << "\"\"\" " << setupType << ": " << from_frame << " -> " << to_frame << " \"\"\"" << std::endl;
+    ss << "from launch import LaunchDescription" << std::endl;
+    ss << "from launch_ros.actions import Node" << std::endl;
+    ss << std::endl;
+    ss << std::endl;
+    ss << "def generate_launch_description() -> LaunchDescription:" << std::endl;
+    ss << "    nodes = [" << std::endl;
+    ss << "        Node(" << std::endl;
+    ss << "            package=\"tf2_ros\"," << std::endl;
+    ss << "            executable=\"static_transform_publisher\"," << std::endl;
+    ss << "            output=\"log\"," << std::endl;
+    ss << "            arguments=[" << std::endl;
+    ss << "                \"--frame-id\"," << std::endl;
+    ss << "                \"" << from_frame << "\"," << std::endl;
+    ss << "                \"--child-frame-id\"," << std::endl;
+    ss << "                \"" << to_frame << "\"," << std::endl;
+    ss << "                \"--x\"," << std::endl;
+    ss << "                \"" << t[0] << "\"," << std::endl;
+    ss << "                \"--y\"," << std::endl;
+    ss << "                \"" << t[1] << "\"," << std::endl;
+    ss << "                \"--z\"," << std::endl;
+    ss << "                \"" << t[2] << "\"," << std::endl;
+    ss << "                \"--qx\"," << std::endl;
+    ss << "                \"" << r_quat.x() << "\"," << std::endl;
+    ss << "                \"--qy\"," << std::endl;
+    ss << "                \"" << r_quat.y() << "\"," << std::endl;
+    ss << "                \"--qz\"," << std::endl;
+    ss << "                \"" << r_quat.z() << "\"," << std::endl;
+    ss << "                \"--qw\"," << std::endl;
+    ss << "                \"" << r_quat.w() << "\"," << std::endl;
+    ss << "                # \"--roll\"," << std::endl;
+    ss << "                # \"" << r_euler[0] << "\"," << std::endl;
+    ss << "                # \"--pitch\"," << std::endl;
+    ss << "                # \"" << r_euler[1] << "\"," << std::endl;
+    ss << "                # \"--yaw\"," << std::endl;
+    ss << "                # \"" << r_euler[2] << "\"," << std::endl;
+    ss << "            ]," << std::endl;
+    ss << "        )," << std::endl;
+    ss << "    ]" << std::endl;
+    ss << "    return LaunchDescription(nodes)" << std::endl;
+  }
+  else if (file_name.endsWith(".xml"))
+  {
+    ss << "<!-- Static transform publisher acquired via MoveIt 2 hand-eye calibration -->" << std::endl;
+    ss << "<!-- " << setupType << ": " << from_frame << " -> " << to_frame << " -->" << std::endl;
+    ss << std::endl;
+    ss << "<launch>" << std::endl;
+    ss << "    <node" << std::endl;
+    ss << "        pkg=\"tf2_ros\"" << std::endl;
+    ss << "        exec=\"static_transform_publisher\"" << std::endl;
+    ss << "        output=\"log\"" << std::endl;
+    ss << "        args=\"" << std::endl;
+    ss << "            --frame-id " << from_frame << std::endl;
+    ss << "            --child-frame-id " << to_frame << std::endl;
+    ss << "            --x " << t[0] << std::endl;
+    ss << "            --y " << t[1] << std::endl;
+    ss << "            --z " << t[2] << std::endl;
+    ss << "            --qx " << r_quat.x() << std::endl;
+    ss << "            --qy " << r_quat.y() << std::endl;
+    ss << "            --qz " << r_quat.z() << std::endl;
+    ss << "            --qw " << r_quat.w() << std::endl;
+    ss << "        \"" << std::endl;
+    ss << "    />" << std::endl;
+    ss << "    <!--" << std::endl;
+    ss << "            roll " << r_euler[0] << std::endl;
+    ss << "            pitch " << r_euler[1] << std::endl;
+    ss << "            yaw " << r_euler[2] << std::endl;
+    ss << "    -->" << std::endl;
+    ss << "</launch>" << std::endl;
+  }
+  else if (file_name.endsWith(".yaml"))
+  {
+    ss << "# Static transform publisher acquired via MoveIt 2 hand-eye calibration" << std::endl;
+    ss << "# " << setupType << ": " << from_frame << " -> " << to_frame << std::endl;
+    ss << std::endl;
+    ss << "launch:" << std::endl;
+    ss << "    - node:" << std::endl;
+    ss << "          pkg: tf2_ros" << std::endl;
+    ss << "          exec: static_transform_publisher" << std::endl;
+    ss << "          output: log" << std::endl;
+    ss << "          args:" << std::endl;
+    ss << "              \"" << std::endl;
+    ss << "              --frame-id " << from_frame << std::endl;
+    ss << "              --child-frame-id " << to_frame << std::endl;
+    ss << "              --x " << t[0] << std::endl;
+    ss << "              --y " << t[1] << std::endl;
+    ss << "              --z " << t[2] << std::endl;
+    ss << "              --qx " << r_quat.x() << std::endl;
+    ss << "              --qy " << r_quat.y() << std::endl;
+    ss << "              --qz " << r_quat.z() << std::endl;
+    ss << "              --qw " << r_quat.w() << std::endl;
+    ss << "              \"" << std::endl;
+    ss << "              # --roll " << r_euler[0] << std::endl;
+    ss << "              # --pitch " << r_euler[1] << std::endl;
+    ss << "              # --yaw " << r_euler[2] << std::endl;
+  }
+  else
+  {
+    QMessageBox::warning(this, tr("Unknown file type"),
+                         tr("Unable to save file, unknown file type. Only `.py`, `.xml`, and `.yaml` are currently "
+                            "supported for ROS 2 launch scripts."));
+    return;
+  }
+
+  QTextStream out(&file);
   out << ss.str().c_str();
 }
 
@@ -719,7 +833,7 @@ void ControlTabWidget::saveJointStateBtnClicked(bool clicked)
 {
   if (!checkJointStates())
   {
-    QMessageBox::warning(this, tr("Error"), tr("No joint states or joint state dosen't match joint names."));
+    QMessageBox::warning(this, tr("Error"), tr("No joint states or joint state doesn't match joint names."));
     return;
   }
 
@@ -905,7 +1019,7 @@ void ControlTabWidget::loadJointStateBtnClicked(bool clicked)
     }
     else
     {
-      RCLCPP_ERROR_STREAM(node_->get_logger(), "Can't find 'joint_names' in the openned file.");
+      RCLCPP_ERROR_STREAM(node_->get_logger(), "Can't find 'joint_names' in the opened file.");
       return;
     }
 
@@ -926,7 +1040,7 @@ void ControlTabWidget::loadJointStateBtnClicked(bool clicked)
     }
     else
     {
-      RCLCPP_ERROR_STREAM(node_->get_logger(), "Can't find 'joint_values' in the openned file.");
+      RCLCPP_ERROR_STREAM(node_->get_logger(), "Can't find 'joint_values' in the opened file.");
       return;
     }
   }

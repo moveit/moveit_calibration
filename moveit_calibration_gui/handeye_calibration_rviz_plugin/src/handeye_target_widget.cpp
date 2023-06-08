@@ -119,7 +119,7 @@ TargetTabWidget::TargetTabWidget(rclcpp::Node::SharedPtr node, HandEyeCalibratio
   connect(ros_topics_["image_topic"], SIGNAL(activated(const QString&)), this,
           SLOT(imageTopicComboboxChanged(const QString&)));
 
-  // Target image dislay, create and save area
+  // Target image display, create and save area
   QGroupBox* group_right = new QGroupBox("Target", this);
   group_right->setMinimumWidth(330);
   layout->addWidget(group_right);
@@ -138,7 +138,7 @@ TargetTabWidget::TargetTabWidget(rclcpp::Node::SharedPtr node, HandEyeCalibratio
   layout_right->addWidget(save_target_btn);
   connect(save_target_btn, SIGNAL(clicked(bool)), this, SLOT(saveTargetImageBtnClicked(bool)));
 
-  // Load availible target plugins
+  // Load available target plugins
   loadAvailableTargetPlugins();
 
   // Initialize image publisher

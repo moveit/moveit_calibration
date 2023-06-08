@@ -202,7 +202,7 @@ ContextTabWidget::ContextTabWidget(rclcpp::Node::SharedPtr node, HandEyeCalibrat
     connect(frame.second, SIGNAL(activated(int)), this, SLOT(updateFrameName(int)));
 
   // Camera Pose initial guess area
-  QGroupBox* pose_group = new QGroupBox("Camera Pose Inital Guess", this);
+  QGroupBox* pose_group = new QGroupBox("Camera Pose Initial Guess", this);
   pose_group->setMinimumWidth(300);
   layout_right->addWidget(pose_group);
   QFormLayout* pose_layout = new QFormLayout();

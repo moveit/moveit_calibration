@@ -617,12 +617,12 @@ void ControlTabWidget::saveCameraPoseBtnClicked(bool clicked)
   }
 
   // DontUseNativeDialog option set to avoid this issue: https://github.com/ros-planning/moveit/issues/2357
-  QString file_name =
-      QFileDialog::getSaveFileName(this, tr("Save Camera Robot Pose"), "",
-                                   tr("Launch scripts - ALL (*.launch* *.py *.xml *.yaml);;Launch scripts - "
-                                      "PYTHON (*.launch.py *.py);;Launch scripts - XML (*.launch.xml *.xml);;Launch "
-                                      "scripts - YAML (*.launch.yaml *.yaml);;All Files (*)"),
-                                   nullptr, QFileDialog::DontUseNativeDialog);
+  QString file_name = QFileDialog::getSaveFileName(
+      this, tr("Save Camera Robot Pose"), "",
+      tr("Launch scripts - ALL (*.launch* *.py *.xml *.yaml *.yml);;Launch scripts - "
+         "PYTHON (*.launch.py *.py);;Launch scripts - XML (*.launch *.launch.xml *.xml);;Launch "
+         "scripts - YAML (*.launch.yaml *.launch.yml *.yaml *.yml);;All Files (*)"),
+      nullptr, QFileDialog::DontUseNativeDialog);
 
   if (file_name.isEmpty())
     return;
@@ -731,7 +731,7 @@ void ControlTabWidget::saveCameraPoseBtnClicked(bool clicked)
     ss << "    -->" << std::endl;
     ss << "</launch>" << std::endl;
   }
-  else if (file_name.endsWith(".yaml"))
+  else if (file_name.endsWith(".yaml") || file_name.endsWith(".yml"))
   {
     ss << "# Static transform publisher acquired via MoveIt 2 hand-eye calibration" << std::endl;
     ss << "# " << setupType << ": " << from_frame << " -> " << to_frame << std::endl;
@@ -759,9 +759,10 @@ void ControlTabWidget::saveCameraPoseBtnClicked(bool clicked)
   }
   else
   {
-    QMessageBox::warning(this, tr("Unknown file type"),
-                         tr("Unable to save file, unknown file type. Only `.py`, `.xml`, and `.yaml` are currently "
-                            "supported for ROS 2 launch scripts."));
+    QMessageBox::warning(
+        this, tr("Unknown file type"),
+        tr("Unable to save file, unknown file type. Only `.py`, `.xml`, and `.yaml`/`.yml` are currently "
+           "supported for ROS 2 launch scripts."));
     return;
   }
 

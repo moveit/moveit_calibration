@@ -639,123 +639,36 @@ void ControlTabWidget::saveCameraPoseBtnClicked(bool clicked)
     return;
   }
 
-  std::string setupType;
+  Eigen::Vector3d t = camera_robot_pose_.translation();
+  Eigen::Quaterniond r_quat(camera_robot_pose_.rotation());
+  Eigen::Vector3d r_euler = camera_robot_pose_.rotation().eulerAngles(0, 1, 2);
+
+  std::string mount_type;
   switch (sensor_mount_type_)
   {
     case mhc::EYE_TO_HAND:
-      setupType = "EYE-TO-HAND";
+      mount_type = "EYE-TO-HAND";
       break;
     case mhc::EYE_IN_HAND:
-      setupType = "EYE-IN-HAND";
+      mount_type = "EYE-IN-HAND";
       break;
     default:
       RCLCPP_ERROR_STREAM(node_->get_logger(), "Error sensor mount type.");
       break;
   }
 
-  Eigen::Vector3d t = camera_robot_pose_.translation();
-  Eigen::Quaterniond r_quat(camera_robot_pose_.rotation());
-  Eigen::Vector3d r_euler = camera_robot_pose_.rotation().eulerAngles(0, 1, 2);
-
   std::stringstream ss;
   if (file_name.endsWith(".py"))
   {
-    ss << "\"\"\" Static transform publisher acquired via MoveIt 2 hand-eye calibration \"\"\"" << std::endl;
-    ss << "\"\"\" " << setupType << ": " << from_frame << " -> " << to_frame << " \"\"\"" << std::endl;
-    ss << "from launch import LaunchDescription" << std::endl;
-    ss << "from launch_ros.actions import Node" << std::endl;
-    ss << std::endl;
-    ss << std::endl;
-    ss << "def generate_launch_description() -> LaunchDescription:" << std::endl;
-    ss << "    nodes = [" << std::endl;
-    ss << "        Node(" << std::endl;
-    ss << "            package=\"tf2_ros\"," << std::endl;
-    ss << "            executable=\"static_transform_publisher\"," << std::endl;
-    ss << "            output=\"log\"," << std::endl;
-    ss << "            arguments=[" << std::endl;
-    ss << "                \"--frame-id\"," << std::endl;
-    ss << "                \"" << from_frame << "\"," << std::endl;
-    ss << "                \"--child-frame-id\"," << std::endl;
-    ss << "                \"" << to_frame << "\"," << std::endl;
-    ss << "                \"--x\"," << std::endl;
-    ss << "                \"" << t[0] << "\"," << std::endl;
-    ss << "                \"--y\"," << std::endl;
-    ss << "                \"" << t[1] << "\"," << std::endl;
-    ss << "                \"--z\"," << std::endl;
-    ss << "                \"" << t[2] << "\"," << std::endl;
-    ss << "                \"--qx\"," << std::endl;
-    ss << "                \"" << r_quat.x() << "\"," << std::endl;
-    ss << "                \"--qy\"," << std::endl;
-    ss << "                \"" << r_quat.y() << "\"," << std::endl;
-    ss << "                \"--qz\"," << std::endl;
-    ss << "                \"" << r_quat.z() << "\"," << std::endl;
-    ss << "                \"--qw\"," << std::endl;
-    ss << "                \"" << r_quat.w() << "\"," << std::endl;
-    ss << "                # \"--roll\"," << std::endl;
-    ss << "                # \"" << r_euler[0] << "\"," << std::endl;
-    ss << "                # \"--pitch\"," << std::endl;
-    ss << "                # \"" << r_euler[1] << "\"," << std::endl;
-    ss << "                # \"--yaw\"," << std::endl;
-    ss << "                # \"" << r_euler[2] << "\"," << std::endl;
-    ss << "            ]," << std::endl;
-    ss << "        )," << std::endl;
-    ss << "    ]" << std::endl;
-    ss << "    return LaunchDescription(nodes)" << std::endl;
+    ss = generateCalibrationPython(from_frame, to_frame, t, r_quat, r_euler, mount_type);
   }
   else if (file_name.endsWith(".xml"))
   {
-    ss << "<!-- Static transform publisher acquired via MoveIt 2 hand-eye calibration -->" << std::endl;
-    ss << "<!-- " << setupType << ": " << from_frame << " -> " << to_frame << " -->" << std::endl;
-    ss << std::endl;
-    ss << "<launch>" << std::endl;
-    ss << "    <node" << std::endl;
-    ss << "        pkg=\"tf2_ros\"" << std::endl;
-    ss << "        exec=\"static_transform_publisher\"" << std::endl;
-    ss << "        output=\"log\"" << std::endl;
-    ss << "        args=\"" << std::endl;
-    ss << "            --frame-id " << from_frame << std::endl;
-    ss << "            --child-frame-id " << to_frame << std::endl;
-    ss << "            --x " << t[0] << std::endl;
-    ss << "            --y " << t[1] << std::endl;
-    ss << "            --z " << t[2] << std::endl;
-    ss << "            --qx " << r_quat.x() << std::endl;
-    ss << "            --qy " << r_quat.y() << std::endl;
-    ss << "            --qz " << r_quat.z() << std::endl;
-    ss << "            --qw " << r_quat.w() << std::endl;
-    ss << "        \"" << std::endl;
-    ss << "    />" << std::endl;
-    ss << "    <!--" << std::endl;
-    ss << "            roll " << r_euler[0] << std::endl;
-    ss << "            pitch " << r_euler[1] << std::endl;
-    ss << "            yaw " << r_euler[2] << std::endl;
-    ss << "    -->" << std::endl;
-    ss << "</launch>" << std::endl;
+    ss = generateCalibrationXml(from_frame, to_frame, t, r_quat, r_euler, mount_type);
   }
   else if (file_name.endsWith(".yaml") || file_name.endsWith(".yml"))
   {
-    ss << "# Static transform publisher acquired via MoveIt 2 hand-eye calibration" << std::endl;
-    ss << "# " << setupType << ": " << from_frame << " -> " << to_frame << std::endl;
-    ss << std::endl;
-    ss << "launch:" << std::endl;
-    ss << "    - node:" << std::endl;
-    ss << "          pkg: tf2_ros" << std::endl;
-    ss << "          exec: static_transform_publisher" << std::endl;
-    ss << "          output: log" << std::endl;
-    ss << "          args:" << std::endl;
-    ss << "              \"" << std::endl;
-    ss << "              --frame-id " << from_frame << std::endl;
-    ss << "              --child-frame-id " << to_frame << std::endl;
-    ss << "              --x " << t[0] << std::endl;
-    ss << "              --y " << t[1] << std::endl;
-    ss << "              --z " << t[2] << std::endl;
-    ss << "              --qx " << r_quat.x() << std::endl;
-    ss << "              --qy " << r_quat.y() << std::endl;
-    ss << "              --qz " << r_quat.z() << std::endl;
-    ss << "              --qw " << r_quat.w() << std::endl;
-    ss << "              \"" << std::endl;
-    ss << "              # --roll " << r_euler[0] << std::endl;
-    ss << "              # --pitch " << r_euler[1] << std::endl;
-    ss << "              # --yaw " << r_euler[2] << std::endl;
+    ss = generateCalibrationYaml(from_frame, to_frame, t, r_quat, r_euler, mount_type);
   }
   else
   {
@@ -1204,6 +1117,120 @@ void ControlTabWidget::executeFinished()
 void ControlTabWidget::autoSkipBtnClicked(bool clicked)
 {
   auto_progress_->setValue(auto_progress_->getValue() + 1);
+}
+
+std::stringstream ControlTabWidget::generateCalibrationPython(std::string& from_frame, std::string& to_frame,
+                                                              Eigen::Vector3d& t, Eigen::Quaterniond& r_quat,
+                                                              Eigen::Vector3d& r_euler, std::string& mount_type)
+{
+  std::stringstream ss;
+  ss << "\"\"\" Static transform publisher acquired via MoveIt 2 hand-eye calibration \"\"\"" << std::endl;
+  ss << "\"\"\" " << mount_type << ": " << from_frame << " -> " << to_frame << " \"\"\"" << std::endl;
+  ss << "from launch import LaunchDescription" << std::endl;
+  ss << "from launch_ros.actions import Node" << std::endl;
+  ss << std::endl;
+  ss << std::endl;
+  ss << "def generate_launch_description() -> LaunchDescription:" << std::endl;
+  ss << "    nodes = [" << std::endl;
+  ss << "        Node(" << std::endl;
+  ss << "            package=\"tf2_ros\"," << std::endl;
+  ss << "            executable=\"static_transform_publisher\"," << std::endl;
+  ss << "            output=\"log\"," << std::endl;
+  ss << "            arguments=[" << std::endl;
+  ss << "                \"--frame-id\"," << std::endl;
+  ss << "                \"" << from_frame << "\"," << std::endl;
+  ss << "                \"--child-frame-id\"," << std::endl;
+  ss << "                \"" << to_frame << "\"," << std::endl;
+  ss << "                \"--x\"," << std::endl;
+  ss << "                \"" << t[0] << "\"," << std::endl;
+  ss << "                \"--y\"," << std::endl;
+  ss << "                \"" << t[1] << "\"," << std::endl;
+  ss << "                \"--z\"," << std::endl;
+  ss << "                \"" << t[2] << "\"," << std::endl;
+  ss << "                \"--qx\"," << std::endl;
+  ss << "                \"" << r_quat.x() << "\"," << std::endl;
+  ss << "                \"--qy\"," << std::endl;
+  ss << "                \"" << r_quat.y() << "\"," << std::endl;
+  ss << "                \"--qz\"," << std::endl;
+  ss << "                \"" << r_quat.z() << "\"," << std::endl;
+  ss << "                \"--qw\"," << std::endl;
+  ss << "                \"" << r_quat.w() << "\"," << std::endl;
+  ss << "                # \"--roll\"," << std::endl;
+  ss << "                # \"" << r_euler[0] << "\"," << std::endl;
+  ss << "                # \"--pitch\"," << std::endl;
+  ss << "                # \"" << r_euler[1] << "\"," << std::endl;
+  ss << "                # \"--yaw\"," << std::endl;
+  ss << "                # \"" << r_euler[2] << "\"," << std::endl;
+  ss << "            ]," << std::endl;
+  ss << "        )," << std::endl;
+  ss << "    ]" << std::endl;
+  ss << "    return LaunchDescription(nodes)" << std::endl;
+  return ss;
+}
+
+std::stringstream ControlTabWidget::generateCalibrationXml(std::string& from_frame, std::string& to_frame,
+                                                           Eigen::Vector3d& t, Eigen::Quaterniond& r_quat,
+                                                           Eigen::Vector3d& r_euler, std::string& mount_type)
+{
+  std::stringstream ss;
+  ss << "<!-- Static transform publisher acquired via MoveIt 2 hand-eye calibration -->" << std::endl;
+  ss << "<!-- " << mount_type << ": " << from_frame << " -> " << to_frame << " -->" << std::endl;
+  ss << std::endl;
+  ss << "<launch>" << std::endl;
+  ss << "    <node" << std::endl;
+  ss << "        pkg=\"tf2_ros\"" << std::endl;
+  ss << "        exec=\"static_transform_publisher\"" << std::endl;
+  ss << "        output=\"log\"" << std::endl;
+  ss << "        args=\"" << std::endl;
+  ss << "            --frame-id " << from_frame << std::endl;
+  ss << "            --child-frame-id " << to_frame << std::endl;
+  ss << "            --x " << t[0] << std::endl;
+  ss << "            --y " << t[1] << std::endl;
+  ss << "            --z " << t[2] << std::endl;
+  ss << "            --qx " << r_quat.x() << std::endl;
+  ss << "            --qy " << r_quat.y() << std::endl;
+  ss << "            --qz " << r_quat.z() << std::endl;
+  ss << "            --qw " << r_quat.w() << std::endl;
+  ss << "        \"" << std::endl;
+  ss << "    />" << std::endl;
+  ss << "    <!--" << std::endl;
+  ss << "            roll " << r_euler[0] << std::endl;
+  ss << "            pitch " << r_euler[1] << std::endl;
+  ss << "            yaw " << r_euler[2] << std::endl;
+  ss << "    -->" << std::endl;
+  ss << "</launch>" << std::endl;
+  return ss;
+}
+
+std::stringstream ControlTabWidget::generateCalibrationYaml(std::string& from_frame, std::string& to_frame,
+                                                            Eigen::Vector3d& t, Eigen::Quaterniond& r_quat,
+                                                            Eigen::Vector3d& r_euler, std::string& mount_type)
+{
+  std::stringstream ss;
+  ss << "# Static transform publisher acquired via MoveIt 2 hand-eye calibration" << std::endl;
+  ss << "# " << mount_type << ": " << from_frame << " -> " << to_frame << std::endl;
+  ss << std::endl;
+  ss << "launch:" << std::endl;
+  ss << "    - node:" << std::endl;
+  ss << "          pkg: tf2_ros" << std::endl;
+  ss << "          exec: static_transform_publisher" << std::endl;
+  ss << "          output: log" << std::endl;
+  ss << "          args:" << std::endl;
+  ss << "              \"" << std::endl;
+  ss << "              --frame-id " << from_frame << std::endl;
+  ss << "              --child-frame-id " << to_frame << std::endl;
+  ss << "              --x " << t[0] << std::endl;
+  ss << "              --y " << t[1] << std::endl;
+  ss << "              --z " << t[2] << std::endl;
+  ss << "              --qx " << r_quat.x() << std::endl;
+  ss << "              --qy " << r_quat.y() << std::endl;
+  ss << "              --qz " << r_quat.z() << std::endl;
+  ss << "              --qw " << r_quat.w() << std::endl;
+  ss << "              \"" << std::endl;
+  ss << "              # --roll " << r_euler[0] << std::endl;
+  ss << "              # --pitch " << r_euler[1] << std::endl;
+  ss << "              # --yaw " << r_euler[2] << std::endl;
+  return ss;
 }
 
 }  // namespace moveit_rviz_plugin

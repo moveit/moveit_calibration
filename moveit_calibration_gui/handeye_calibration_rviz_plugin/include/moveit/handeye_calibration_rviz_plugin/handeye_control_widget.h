@@ -265,6 +265,19 @@ private:
   planning_scene_monitor::PlanningSceneMonitorPtr planning_scene_monitor_;
   moveit::planning_interface::MoveGroupInterfacePtr move_group_;
   moveit::planning_interface::MoveGroupInterface::PlanPtr current_plan_;
+
+  // **************************************************************
+  // Launch script exporters
+  // **************************************************************
+  std::stringstream generateCalibrationPython(std::string& from_frame, std::string& to_frame, Eigen::Vector3d& t,
+                                              Eigen::Quaterniond& r_quat, Eigen::Vector3d& r_euler,
+                                              std::string& mount_type);
+  std::stringstream generateCalibrationXml(std::string& from_frame, std::string& to_frame, Eigen::Vector3d& t,
+                                           Eigen::Quaterniond& r_quat, Eigen::Vector3d& r_euler,
+                                           std::string& mount_type);
+  std::stringstream generateCalibrationYaml(std::string& from_frame, std::string& to_frame, Eigen::Vector3d& t,
+                                            Eigen::Quaterniond& r_quat, Eigen::Vector3d& r_euler,
+                                            std::string& mount_type);
 };
 
 }  // namespace moveit_rviz_plugin

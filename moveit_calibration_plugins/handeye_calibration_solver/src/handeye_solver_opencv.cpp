@@ -93,6 +93,11 @@ namespace moveit_handeye_calibration
 void HandEyeSolverDefault::initialize()
 {
   solver_names_ = { "Tsai1989", "Park1994", "Horaud1995", "Andreff1999", "Daniilidis1998" };
+  solvers_["Tsai1989"] = cv::CALIB_HAND_EYE_TSAI;
+  solvers_["Park1994"] = cv::CALIB_HAND_EYE_PARK;
+  solvers_["Horaud1995"] = cv::CALIB_HAND_EYE_HORAUD;
+  solvers_["Andreff1999"] = cv::CALIB_HAND_EYE_ANDREFF;
+  solvers_["Daniilidis1998"] = cv::CALIB_HAND_EYE_DANIILIDIS;
   camera_robot_pose_ = Eigen::Isometry3d::Identity();
 }
 
@@ -134,32 +139,7 @@ bool HandEyeSolverDefault::solve(const std::vector<Eigen::Isometry3d>& effector_
     RCLCPP_ERROR_STREAM(LOGGER_CALIBRATION_SOLVER, *error_message);
     return false;
   }
-  if ("Tsai1989" == solver_name)
-  {
-    solver_method = cv::CALIB_HAND_EYE_TSAI;
-  }
-  else if ("Park1994" == solver_name)
-  {
-    solver_method = cv::CALIB_HAND_EYE_PARK;
-  }
-  else if ("Horaud1995" == solver_name)
-  {
-    solver_method = cv::CALIB_HAND_EYE_HORAUD;
-  }
-  else if ("Andreff1999" == solver_name)
-  {
-    solver_method = cv::CALIB_HAND_EYE_ANDREFF;
-  }
-  else if ("Daniilidis1998" == solver_name)
-  {
-    solver_method = cv::CALIB_HAND_EYE_DANIILIDIS;
-  }
-  else
-  {
-    *error_message = "Unsupported handeye solver: " + solver_name;
-    RCLCPP_ERROR_STREAM(LOGGER_CALIBRATION_SOLVER, *error_message);
-    return false;
-  }
+  solver_method = solvers_[solver_name];
 
   std::vector<cv::Mat> R_gripper2base, t_gripper2base, R_target2cam, t_target2cam;
 

@@ -1,13 +1,6 @@
 cmake_minimum_required(VERSION 3.1.3)
 project(moveit_calibration_plugins)
 
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_EXTENSIONS OFF)
-
-if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE Release)
-endif()
-
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   rosconsole
@@ -20,6 +13,9 @@ find_package(catkin REQUIRED COMPONENTS
 
 find_package(Eigen3 REQUIRED)
 find_package(OpenCV REQUIRED imgcodecs aruco)
+find_package(moveit_core REQUIRED)
+
+moveit_build_options()
 
 if(OpenCV_VERSION VERSION_EQUAL 3.2)
   message(WARNING "Your version of OpenCV (3.2) is known to have buggy ArUco pose detection! Use a ChArUco target or upgrade OpenCV")

@@ -11,12 +11,9 @@ jobs:
       fail-fast: false
       matrix:
         env:
-          - IMAGE: melodic
-            CCOV: true
-            CATKIN_LINT: true
-            UPSTREAM_WORKSPACE: github:PickNikRobotics/rviz_visual_tools#master
           - IMAGE: noetic
             CATKIN_LINT: true
+            CCOV: true
     env:
       DOCKER_IMAGE: 'moveit/moveit:${{ matrix.env.IMAGE }}-release'
       AFTER_RUN_TARGET_TEST: ${{ matrix.env.CCOV && './.ci.prepare_codecov' || '' }}
@@ -31,33 +28,35 @@ jobs:
     name: "${{ matrix.env.IMAGE }}${{ matrix.env.CATKIN_LINT && ' + catkin_lint' || ''}}${{ matrix.env.CCOV && ' + ccov' || ''}}${{ matrix.env.IKFAST_TEST && ' + ikfast' || ''}}${{ matrix.env.CLANG_TIDY && ' + clang-tidy' || '' }}"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: cache upstream_ws
-        uses: pat-s/always-upload-cache@v2.1.3
+        uses: actions/cache@v4
         with:
+          save-always: true
           path: ${{ env.BASEDIR }}/upstream_ws
           key: upstream_ws-${{ env.CACHE_PREFIX }}-${{ hashFiles('upstream.rosinstall') }}-${{ github.run_id }}
           restore-keys: |
             upstream_ws-${{ env.CACHE_PREFIX }}-${{ hashFiles('upstream.rosinstall') }}
       - name: cache ccache
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
+          save-always: true
           path: ${{ env.CCACHE_DIR }}
           key: ccache-${{ env.CACHE_PREFIX }}-${{ github.sha }}-${{ github.run_id }}
           restore-keys: |
             ccache-${{ env.CACHE_PREFIX }}-${{ github.sha }}
             ccache-${{ env.CACHE_PREFIX }}
       - name: industrial_ci
-        uses: 'ros-industrial/industrial_ci@master'
+        uses: ros-industrial/industrial_ci@master
         env: ${{ matrix.env }}
       - name: upload test artifacts (on failure)
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: test-results
           path: ${{ env.BASEDIR }}/target_ws/**/test_results/**/*.xml
       - name: upload codecov report
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v4
         if: ${{ matrix.env.CCOV }}
         with:
           files: ${{ env.BASEDIR }}/coverage.info

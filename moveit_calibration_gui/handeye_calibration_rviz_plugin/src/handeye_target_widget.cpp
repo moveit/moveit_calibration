@@ -411,10 +411,20 @@ void TargetTabWidget::imageCallback(const sensor_msgs::ImageConstPtr& msg)
     return;
   }
 
+
   cv_bridge::CvImagePtr cv_ptr;
   try
   {
-    cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::MONO8);
+      if (msg->encoding == "mono16")
+      {
+        cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::MONO16);
+        cv::normalize(cv_ptr->image, cv_ptr->image, 0, 255, cv::NORM_MINMAX, CV_8U);
+
+      }
+      else
+      {
+        cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::MONO8);
+      }
 
     sensor_msgs::ImagePtr pub_msg;
     if (target_ && target_->detectTargetPose(cv_ptr->image))

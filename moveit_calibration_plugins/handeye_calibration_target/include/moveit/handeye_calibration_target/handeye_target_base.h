@@ -243,17 +243,18 @@ public:
 
     if (0 == CAMERA_DISTORTION_MODELS_VECTOR_DIMENSIONS.count(msg->distortion_model))
     {
-      ROS_ERROR_NAMED(LOGNAME, "Invalid camera distortion model, '%s'.", msg->distortion_model.c_str());
+      RCLCPP_ERROR(LOGGER_CALIBRATION_TARGET, "Invalid camera distortion model, '%s'.", msg->distortion_model.c_str());
       return false;
     }
 
     const size_t camera_distortion_vector_dimension =
         CAMERA_DISTORTION_MODELS_VECTOR_DIMENSIONS.at(msg->distortion_model);
 
-    if (msg->D.size() != camera_distortion_vector_dimension)
+    if (msg->d.size() != camera_distortion_vector_dimension)
     {
-      ROS_ERROR_NAMED(LOGNAME, "Invalid distortion parameters dimension, current is %ld, required is %zu.",
-                      msg->D.size(), camera_distortion_vector_dimension);
+      RCLCPP_ERROR(LOGGER_CALIBRATION_TARGET,
+                   "Invalid distortion parameters dimension, current is %ld, required is %zu.", msg->d.size(),
+                   camera_distortion_vector_dimension);
       return false;
     }
 

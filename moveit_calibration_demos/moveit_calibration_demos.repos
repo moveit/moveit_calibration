@@ -1,0 +1,6 @@
+repositories:
+  # TODO: Use config from moveit2_tutorials once it supports this use case
+  panda_ign_moveit2:
+    type: git
+    url: https://github.com/AndrejOrsula/panda_ign_moveit2.git
+    version: humble

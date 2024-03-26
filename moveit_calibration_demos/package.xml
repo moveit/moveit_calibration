@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>moveit_calibration_demos</name>
+  <version>1.0.0</version>
+  <description>Demos for MoveIt 2 Calibration inside Gazebo simulation</description>
+  <maintainer email="orsula.andrej@gmail.com">Andrej Orsula</maintainer>
+  <author>Andrej Orsula</author>
+  <license>BSD</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>moveit_ros_planning_interface</exec_depend>
+  <exec_depend>moveit</exec_depend>
+  <exec_depend>rviz2</exec_depend>
+
+  <exec_depend>moveit_calibration_gui</exec_depend>
+  <exec_depend>moveit_calibration_plugins</exec_depend>
+  <exec_depend>ros_gz_sim</exec_depend>
+  <exec_depend>ros_gz_bridge</exec_depend>
+  <exec_depend>panda_moveit_config</exec_depend>
+  <exec_depend>panda_description</exec_depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

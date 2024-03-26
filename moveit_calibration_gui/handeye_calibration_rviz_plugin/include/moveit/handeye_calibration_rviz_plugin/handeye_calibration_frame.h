@@ -39,7 +39,7 @@
 // qt
 
 // ros
-#include <rviz_visual_tools/tf_visual_tools.h>
+#include <rviz_visual_tools/tf_visual_tools.hpp>
 
 // local
 #include <moveit/handeye_calibration_rviz_plugin/handeye_calibration_display.h>
@@ -48,9 +48,9 @@
 #include <moveit/handeye_calibration_rviz_plugin/handeye_control_widget.h>
 
 #ifndef Q_MOC_RUN
-#include <ros/ros.h>
-#include <rviz/display_factory.h>
-#include <rviz/display_context.h>
+#include <rclcpp/rclcpp.hpp>
+// #include <rviz_common/display_factory.hpp> Do we need this?
+#include <rviz_common/display_context.hpp>
 #endif
 
 namespace moveit_rviz_plugin
@@ -66,12 +66,12 @@ class HandEyeCalibrationFrame : public QWidget
   Q_OBJECT
 
 public:
-  explicit HandEyeCalibrationFrame(HandEyeCalibrationDisplay* pdisplay, rviz::DisplayContext* context,
+  explicit HandEyeCalibrationFrame(HandEyeCalibrationDisplay* pdisplay, rviz_common::DisplayContext* context,
                                    QWidget* parent = 0);
   ~HandEyeCalibrationFrame() override;
 
-  virtual void loadWidget(const rviz::Config& config);
-  virtual void saveWidget(rviz::Config config) const;
+  virtual void loadWidget(const rviz_common::Config& config);
+  virtual void saveWidget(rviz_common::Config& config) const;
 
 protected:
   // ******************************************************************************************
@@ -81,12 +81,15 @@ protected:
   TargetTabWidget* tab_target_;
   ContextTabWidget* tab_context_;
   ControlTabWidget* tab_control_;
+  rclcpp::executors::MultiThreadedExecutor executor_;
+  std::thread executor_thread_;
 
 private:
-  rviz::DisplayContext* context_;
+  rviz_common::DisplayContext* context_;
   HandEyeCalibrationDisplay* calibration_display_;
 
   rviz_visual_tools::TFVisualToolsPtr tf_tools_;
+  rclcpp::Node::SharedPtr node_;
 };
 
 }  // namespace moveit_rviz_plugin

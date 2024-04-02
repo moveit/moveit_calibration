@@ -37,20 +37,11 @@
 #pragma once
 
 #include <moveit/handeye_calibration_solver/handeye_solver_base.h>
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
-// Disable clang warnings
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-register"
-#include <Python.h>
-#pragma clang diagnostic pop
-#elif defined(__GNUC__) || defined(__GNUG__)
-#include <Python.h>
-#endif
-
-#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
-#include <numpy/arrayobject.h>
+#include <opencv2/core/eigen.hpp>
+#include <opencv2/opencv.hpp>
+#include <opencv2/calib3d.hpp>
 
 namespace moveit_handeye_calibration
 {
@@ -72,16 +63,9 @@ public:
 
   virtual const Eigen::Isometry3d& getCameraRobotPose() const override;
 
-private:
-  /**
-   * @brief Convert a Eigen::Isometry3d pose to a 4x4 C array
-   * @param pose A Eigen::Isometry3d pose.
-   * @param c_arr Pointer to a C array of 4 elements.
-   */
-  bool toCArray(const Eigen::Isometry3d& pose, double (*c_arr)[TRANSFORM_MATRIX_DIMENSION]) const;
-
-  std::vector<std::string> solver_names_;  // Solver algorithm names
-  Eigen::Isometry3d camera_robot_pose_;    // Computed camera pose with respect to a robot
+  std::vector<std::string> solver_names_;                        // Solver algorithm names
+  std::map<std::string, cv::HandEyeCalibrationMethod> solvers_;  // Map of solvers
+  Eigen::Isometry3d camera_robot_pose_;                          // Computed camera pose with respect to a robot
 };
 
 }  // namespace moveit_handeye_calibration

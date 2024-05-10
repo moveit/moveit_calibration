@@ -141,10 +141,9 @@ bool HandEyeCharucoTarget::setTargetDimension(double board_size_meters, double m
   }
 
   std::lock_guard<std::mutex> charuco_lock(charuco_mutex_);
-  ROS_INFO_STREAM_THROTTLE_NAMED(2., LOGNAME,
-                                 "Set target real dimensions: \n"
-                                     << "board_size_meters " << std::to_string(board_size_meters) << "\n"
-                                     << "marker_size_meters " << std::to_string(marker_size_meters) << "\n"
+  ROS_INFO_STREAM_NAMED(LOGNAME, "Set target real dimensions: \n"
+                                     << "  board_size_meters " << std::to_string(board_size_meters) << "\n"
+                                     << "  marker_size_meters " << std::to_string(marker_size_meters) << "\n"
                                      << "\n");
   board_size_meters_ = board_size_meters;
   marker_size_meters_ = marker_size_meters;
@@ -185,7 +184,7 @@ bool HandEyeCharucoTarget::detectTargetPose(cv::Mat& image)
   std::lock_guard<std::mutex> base_lock(base_mutex_);
   try
   {
-    // Detect aruco board
+    // Detect ChArUco board
     charuco_mutex_.lock();
     cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(dictionary_id_);
     float square_size_meters = board_size_meters_ / std::max(squares_x_, squares_y_);
@@ -204,7 +203,7 @@ bool HandEyeCharucoTarget::detectTargetPose(cv::Mat& image)
     cv::aruco::detectMarkers(image, dictionary, marker_corners, marker_ids, params_ptr);
     if (marker_ids.empty())
     {
-      ROS_DEBUG_STREAM_THROTTLE_NAMED(1., LOGNAME, "No aruco marker detected. Dictionary ID: " << dictionary_id_);
+      ROS_DEBUG_STREAM_THROTTLE_NAMED(1., LOGNAME, "No ArUco marker detected. Dictionary ID: " << dictionary_id_);
       return false;
     }
 
@@ -214,14 +213,14 @@ bool HandEyeCharucoTarget::detectTargetPose(cv::Mat& image)
     cv::aruco::interpolateCornersCharuco(marker_corners, marker_ids, image, board, charuco_corners, charuco_ids,
                                          camera_matrix_, distortion_coeffs_);
 
-    // Estimate aruco board pose
+    // Estimate ChArUco board pose
     bool valid = cv::aruco::estimatePoseCharucoBoard(charuco_corners, charuco_ids, board, camera_matrix_,
                                                      distortion_coeffs_, rotation_vect_, translation_vect_);
 
     // Draw the markers and frame axis if at least one marker is detected
     if (!valid)
     {
-      ROS_WARN_STREAM_THROTTLE_NAMED(1., LOGNAME, "Cannot estimate aruco board pose.");
+      ROS_WARN_STREAM_THROTTLE_NAMED(1., LOGNAME, "Cannot estimate ChArUco board pose.");
       return false;
     }
 

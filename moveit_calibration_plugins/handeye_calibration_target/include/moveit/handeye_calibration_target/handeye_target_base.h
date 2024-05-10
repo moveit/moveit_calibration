@@ -107,6 +107,21 @@ public:
       else
         ROS_ERROR("Invalid default option for enum parameter %s", name.c_str());
     }
+
+    std::string toString() const
+    {
+      switch (parameter_type_)
+      {
+        case ParameterType::Int:
+          return std::to_string(value_.i);
+        case ParameterType::Float:
+          return std::to_string(value_.f);
+        case ParameterType::Enum:
+          return enum_values_[value_.e];
+        default:
+          return std::string();
+      }
+    }
   };
 
   const std::string LOGNAME = "handeye_target_base";
@@ -282,6 +297,23 @@ public:
   virtual std::vector<Parameter> getParameters()
   {
     return parameters_;
+  }
+
+  /**
+   * @brief Set target parameter using param type
+   * @return True if successful setting parameter
+   */
+  virtual bool setParameter(Parameter param)
+  {
+    for (auto& this_param : parameters_)
+    {
+      if (param.name_ == this_param.name_ && param.parameter_type_ == this_param.parameter_type_)
+      {
+        this_param.value_ = param.value_;
+        return true;
+      }
+    }
+    return false;
   }
 
   /**

@@ -140,8 +140,14 @@ TEST_F(MoveItHandEyeTargetTester, DetectArucoMarkerPose)
   std::cout << "Translation:\n"
             << ret.translation() << "\nRotation:\n"
             << ret.rotation().eulerAngles(0, 1, 2) << std::endl;
+#if CV_VERSION_MAJOR == 3 && CV_VERSION_MINOR == 2
+  // OpenCV 3.2.0 (which is the default on Ubuntu 18.04) has a buggy ArUco pose detection implementation
   Eigen::Vector3d t(0.412949, -0.198895, 11.1761);
   Eigen::Vector3d r(0.324172, -2.03144, 2.90114);
+#else
+  Eigen::Vector3d t(0.0148984, 0.0123107, 0.58609);
+  Eigen::Vector3d r(2.12328, -1.50481, -1.29729);
+#endif
   ASSERT_TRUE(ret.translation().isApprox(t, 0.01));
   ASSERT_TRUE(ret.rotation().eulerAngles(0, 1, 2).isApprox(r, 0.01));
 }

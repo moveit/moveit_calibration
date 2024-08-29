@@ -113,7 +113,9 @@ public:
   const std::size_t CAMERA_MATRIX_VECTOR_DIMENSION = 9;  // 3x3 camera intrinsic matrix
   const std::size_t CAMERA_MATRIX_WIDTH = 3;
   const std::size_t CAMERA_MATRIX_HEIGHT = 3;
-  const std::size_t CAMERA_DISTORTION_VECTOR_DIMENSION = 5;  // distortion parameters (k1, k2, t1, t2, k3)
+  const std::map<std::string, std::size_t> CAMERA_DISTORTION_MODELS_VECTOR_DIMENSIONS = { { "none", 0 },
+                                                                                          { "plumb_bob", 5 },
+                                                                                          { "rational_polynomial", 8 } };
 
   virtual ~HandEyeTargetBase() = default;
   HandEyeTargetBase()
@@ -210,7 +212,7 @@ public:
    * @param msg Input camera info message.
    * @return True if the input camera info format is correct, false otherwise.
    */
-  virtual bool setCameraIntrinsicParams(const sensor_msgs::CameraInfoPtr& msg)
+  virtual bool setCameraIntrinsicParams(const sensor_msgs::CameraInfoConstPtr& msg)
   {
     if (!msg)
     {
@@ -225,10 +227,19 @@ public:
       return false;
     }
 
-    if (msg->D.size() != CAMERA_DISTORTION_VECTOR_DIMENSION)
+    if (0 == CAMERA_DISTORTION_MODELS_VECTOR_DIMENSIONS.count(msg->distortion_model))
+    {
+      ROS_ERROR_NAMED(LOGNAME, "Invalid camera distortion model, '%s'.", msg->distortion_model.c_str());
+      return false;
+    }
+
+    const size_t camera_distortion_vector_dimension =
+        CAMERA_DISTORTION_MODELS_VECTOR_DIMENSIONS.at(msg->distortion_model);
+
+    if (msg->D.size() != camera_distortion_vector_dimension)
     {
       ROS_ERROR_NAMED(LOGNAME, "Invalid distortion parameters dimension, current is %ld, required is %zu.",
-                      msg->D.size(), CAMERA_DISTORTION_VECTOR_DIMENSION);
+                      msg->D.size(), camera_distortion_vector_dimension);
       return false;
     }
 
@@ -244,13 +255,23 @@ public:
     }
 
     // Store camera distortion info
-    for (size_t i = 0; i < CAMERA_DISTORTION_VECTOR_DIMENSION; i++)
+    distortion_coeffs_ = cv::Mat::zeros(camera_distortion_vector_dimension, 1, CV_64F);
+    for (size_t i = 0; i < camera_distortion_vector_dimension; i++)
     {
       distortion_coeffs_.at<double>(i, 0) = msg->D[i];
     }
 
     ROS_DEBUG_STREAM_NAMED(LOGNAME, "Set camera intrinsic parameter to: " << *msg);
     return true;
+  }
+
+  /**
+   * @brief Check that camera intrinsic parameters are reasonable.
+   * @return True if intrinsics are reasonable (camera matrix is not all zeros and is not the identity).
+   */
+  virtual bool areIntrinsicsReasonable()
+  {
+    return cv::norm(camera_matrix_) != 0. && cv::norm(camera_matrix_, cv::Mat::eye(3, 3, CV_64F)) != 0.;
   }
 
   /**

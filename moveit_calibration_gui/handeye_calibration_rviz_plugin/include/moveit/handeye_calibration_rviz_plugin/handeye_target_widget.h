@@ -34,8 +34,7 @@
 
 /* Author: Yu Yan */
 
-#ifndef MOVEIT_HANDEYE_CALIBRATION_RVIZ_PLUGIN_HANDEYE_TARGET_WIDGET_
-#define MOVEIT_HANDEYE_CALIBRATION_RVIZ_PLUGIN_HANDEYE_TARGET_WIDGET_
+#pragma once
 
 // qt
 #include <QSet>
@@ -68,6 +67,7 @@
 #include <pluginlib/class_loader.hpp>
 #include <rviz_visual_tools/tf_visual_tools.h>
 #include <moveit/handeye_calibration_target/handeye_target_base.h>
+#include <moveit/handeye_calibration_rviz_plugin/handeye_calibration_display.h>
 
 #ifndef Q_MOC_RUN
 #include <ros/ros.h>
@@ -79,6 +79,8 @@ Q_DECLARE_METATYPE(std::string);
 
 namespace moveit_rviz_plugin
 {
+class HandEyeCalibrationDisplay;
+
 // **************************************************
 // Custom QComboBox for image and camera_info topic
 // **************************************************
@@ -108,7 +110,7 @@ class TargetTabWidget : public QWidget
 {
   Q_OBJECT
 public:
-  explicit TargetTabWidget(QWidget* parent = Q_NULLPTR);
+  explicit TargetTabWidget(HandEyeCalibrationDisplay* pdisplay, QWidget* parent = Q_NULLPTR);
   ~TargetTabWidget()
   {
     target_.reset();
@@ -156,6 +158,8 @@ Q_SIGNALS:
   void opticalFrameChanged(const std::string& frame_id);
 
 private:
+  HandEyeCalibrationDisplay* calibration_display_;
+
   // **************************************************************
   // Qt components
   // **************************************************************
@@ -184,7 +188,7 @@ private:
 
   std::string optical_frame_;
 
-  sensor_msgs::CameraInfoPtr camera_info_;
+  sensor_msgs::CameraInfoConstPtr camera_info_;
 
   // **************************************************************
   // Ros components
@@ -201,5 +205,3 @@ private:
 };
 
 }  // namespace moveit_rviz_plugin
-
-#endif

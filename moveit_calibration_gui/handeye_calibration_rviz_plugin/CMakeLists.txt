@@ -1,7 +1,8 @@
-find_package(OpenCV REQUIRED) 
+find_package(OpenCV REQUIRED)
 
 set(HEADERS
-  include/moveit/handeye_calibration_rviz_plugin/handeye_calibration_gui.h
+  include/moveit/handeye_calibration_rviz_plugin/handeye_calibration_display.h
+  include/moveit/handeye_calibration_rviz_plugin/handeye_calibration_frame.h
   include/moveit/handeye_calibration_rviz_plugin/handeye_target_widget.h
   include/moveit/handeye_calibration_rviz_plugin/handeye_context_widget.h
   include/moveit/handeye_calibration_rviz_plugin/handeye_control_widget.h
@@ -12,7 +13,8 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 # Plugin Source
 set(SOURCE_FILES
-  src/handeye_calibration_gui.cpp
+  src/handeye_calibration_display.cpp
+  src/handeye_calibration_frame.cpp
   src/handeye_target_widget.cpp
   src/handeye_context_widget.cpp
   src/handeye_control_widget.cpp

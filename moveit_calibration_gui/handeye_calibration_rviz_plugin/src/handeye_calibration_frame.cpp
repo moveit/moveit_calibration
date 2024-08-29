@@ -34,14 +34,17 @@
 
 /* Author: Yu Yan */
 
-#include <moveit/handeye_calibration_rviz_plugin/handeye_calibration_gui.h>
+#include <moveit/handeye_calibration_rviz_plugin/handeye_calibration_display.h>
+#include <moveit/handeye_calibration_rviz_plugin/handeye_calibration_frame.h>
 
 #include <Eigen/Geometry>
 #include <cmath>
 
 namespace moveit_rviz_plugin
 {
-HandEyeCalibrationGui::HandEyeCalibrationGui(QWidget* parent) : rviz::Panel(parent)
+HandEyeCalibrationFrame::HandEyeCalibrationFrame(HandEyeCalibrationDisplay* pdisplay, rviz::DisplayContext* context,
+                                                 QWidget* parent)
+  : QWidget(parent), calibration_display_(pdisplay), context_(context)
 {
   setMinimumSize(695, 460);
   // Basic widget container
@@ -57,18 +60,18 @@ HandEyeCalibrationGui::HandEyeCalibrationGui(QWidget* parent) : rviz::Panel(pare
 
   // Tab menu ------------------------------------------------------------
   QTabWidget* tabs = new QTabWidget(this);
-  tab_target_ = new TargetTabWidget();
+  tab_target_ = new TargetTabWidget(calibration_display_);
 
   tf_tools_.reset(new rviz_visual_tools::TFVisualTools(250));
 
-  tab_context_ = new ContextTabWidget();
+  tab_context_ = new ContextTabWidget(calibration_display_);
   tab_context_->setTFTool(tf_tools_);
   connect(tab_target_, SIGNAL(cameraInfoChanged(sensor_msgs::CameraInfo)), tab_context_,
           SLOT(setCameraInfo(sensor_msgs::CameraInfo)));
   connect(tab_target_, SIGNAL(opticalFrameChanged(const std::string&)), tab_context_,
           SLOT(setOpticalFrame(const std::string&)));
 
-  tab_control_ = new ControlTabWidget();
+  tab_control_ = new ControlTabWidget(calibration_display_);
   tab_control_->setTFTool(tf_tools_);
   tab_control_->UpdateSensorMountType(0);
   connect(tab_context_, SIGNAL(sensorMountTypeChanged(int)), tab_control_, SLOT(UpdateSensorMountType(int)));
@@ -85,21 +88,18 @@ HandEyeCalibrationGui::HandEyeCalibrationGui(QWidget* parent) : rviz::Panel(pare
   ROS_INFO_STREAM("handeye calibration gui created.");
 }
 
-HandEyeCalibrationGui::~HandEyeCalibrationGui() = default;
+HandEyeCalibrationFrame::~HandEyeCalibrationFrame() = default;
 
-void HandEyeCalibrationGui::save(rviz::Config config) const
+void HandEyeCalibrationFrame::saveWidget(rviz::Config config) const
 {
   tab_target_->saveWidget(config);
   tab_context_->saveWidget(config);
   tab_control_->saveWidget(config);
-  rviz::Panel::save(config);
 }
 
 // Load all configuration data for this panel from the given Config object.
-void HandEyeCalibrationGui::load(const rviz::Config& config)
+void HandEyeCalibrationFrame::loadWidget(const rviz::Config& config)
 {
-  rviz::Panel::load(config);
-
   tab_target_->loadWidget(config);
   tab_context_->loadWidget(config);
   tab_control_->loadWidget(config);

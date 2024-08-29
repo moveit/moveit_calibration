@@ -1,13 +1,6 @@
 cmake_minimum_required(VERSION 3.1.3)
 project(moveit_calibration_gui)
 
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_EXTENSIONS OFF)
-
-if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE Release)
-endif()
-
 find_package(catkin REQUIRED COMPONENTS
   class_loader
   cv_bridge
@@ -29,6 +22,8 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 find_package(Eigen3 REQUIRED)
+
+moveit_build_options()
 
 # Qt Stuff
 if(rviz_QT_VERSION VERSION_LESS "5")

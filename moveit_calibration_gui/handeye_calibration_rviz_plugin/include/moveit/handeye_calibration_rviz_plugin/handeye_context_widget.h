@@ -34,8 +34,7 @@
 
 /* Author: Yu Yan */
 
-#ifndef MOVEIT_HANDEYE_CALIBRATION_RVIZ_PLUGIN_HANDEYE_CONTEXT_WIDGET_
-#define MOVEIT_HANDEYE_CALIBRATION_RVIZ_PLUGIN_HANDEYE_CONTEXT_WIDGET_
+#pragma once
 
 // qt
 #include <QLabel>
@@ -59,6 +58,7 @@
 #include <image_geometry/pinhole_camera_model.h>
 #include <moveit_visual_tools/moveit_visual_tools.h>
 #include <moveit/handeye_calibration_solver/handeye_solver_base.h>
+#include <moveit/handeye_calibration_rviz_plugin/handeye_calibration_display.h>
 
 #ifndef Q_MOC_RUN
 #include <ros/ros.h>
@@ -70,6 +70,8 @@ namespace mhc = moveit_handeye_calibration;
 
 namespace moveit_rviz_plugin
 {
+class HandEyeCalibrationDisplay;
+
 enum FRAME_SOURCE
 {
   ROBOT_FRAME = 0,
@@ -149,7 +151,7 @@ class ContextTabWidget : public QWidget
 {
   Q_OBJECT
 public:
-  explicit ContextTabWidget(QWidget* parent = Q_NULLPTR);
+  explicit ContextTabWidget(HandEyeCalibrationDisplay* pdisplay, QWidget* parent = Q_NULLPTR);
   ~ContextTabWidget()
   {
     camera_info_.reset();
@@ -194,9 +196,6 @@ private Q_SLOTS:
   // Called when the slider of initial camera pose guess changed
   void updateCameraMarkerPose(double value);
 
-  // Called when the fov_on_off_ button toggled
-  void fovOnOffBtnToggled(bool checked);
-
 Q_SIGNALS:
 
   void sensorMountTypeChanged(int index);
@@ -204,6 +203,8 @@ Q_SIGNALS:
   void frameNameChanged(std::map<std::string, std::string> names);
 
 private:
+  HandEyeCalibrationDisplay* calibration_display_;
+
   // **************************************************************
   // Qt components
   // **************************************************************
@@ -213,10 +214,6 @@ private:
 
   // Frame selection area
   std::map<std::string, TFFrameNameComboBox*> frames_;
-
-  // FOV setting area
-  QRadioButton* fov_on_off_;
-  SliderWidget* fov_alpha_;
 
   // Initial camera pose
   std::map<std::string, SliderWidget*> guess_pose_;
@@ -246,5 +243,3 @@ private:
 };
 
 }  // namespace moveit_rviz_plugin
-
-#endif

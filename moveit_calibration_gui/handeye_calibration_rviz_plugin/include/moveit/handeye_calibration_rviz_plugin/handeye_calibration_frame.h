@@ -36,52 +36,57 @@
 
 #pragma once
 
-#include <moveit/handeye_calibration_solver/handeye_solver_base.h>
-#include <ros/ros.h>
+// qt
 
-// Disable clang warnings
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-register"
-#include <Python.h>
-#pragma clang diagnostic pop
-#elif defined(__GNUC__) || defined(__GNUG__)
-#include <Python.h>
+// ros
+#include <rviz_visual_tools/tf_visual_tools.h>
+
+// local
+#include <moveit/handeye_calibration_rviz_plugin/handeye_calibration_display.h>
+#include <moveit/handeye_calibration_rviz_plugin/handeye_target_widget.h>
+#include <moveit/handeye_calibration_rviz_plugin/handeye_context_widget.h>
+#include <moveit/handeye_calibration_rviz_plugin/handeye_control_widget.h>
+
+#ifndef Q_MOC_RUN
+#include <ros/ros.h>
+#include <rviz/display_factory.h>
+#include <rviz/display_context.h>
 #endif
 
-#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
-#include <numpy/arrayobject.h>
-
-namespace moveit_handeye_calibration
+namespace moveit_rviz_plugin
 {
-constexpr auto TRANSFORM_MATRIX_DIMENSION = 4;  // Width and height of a 4x4 transform matrix
+class HandEyeCalibrationDisplay;
+class TargetTabWidget;
+class ContextTabWidget;
+class ControlTabWidget;
 
-class HandEyeSolverDefault : public HandEyeSolverBase
+class HandEyeCalibrationFrame : public QWidget
 {
+  friend class HandEyeCalibrationDisplay;
+  Q_OBJECT
+
 public:
-  HandEyeSolverDefault() = default;
-  ~HandEyeSolverDefault() = default;
+  explicit HandEyeCalibrationFrame(HandEyeCalibrationDisplay* pdisplay, rviz::DisplayContext* context,
+                                   QWidget* parent = 0);
+  ~HandEyeCalibrationFrame() override;
 
-  virtual void initialize() override;
+  virtual void loadWidget(const rviz::Config& config);
+  virtual void saveWidget(rviz::Config config) const;
 
-  virtual const std::vector<std::string>& getSolverNames() const override;
+protected:
+  // ******************************************************************************************
+  // Qt Components
+  // ******************************************************************************************
 
-  virtual bool solve(const std::vector<Eigen::Isometry3d>& effector_wrt_world,
-                     const std::vector<Eigen::Isometry3d>& object_wrt_sensor, SensorMountType setup = EYE_TO_HAND,
-                     const std::string& solver_name = "TsaiLenz1989", std::string* error_message = nullptr) override;
-
-  virtual const Eigen::Isometry3d& getCameraRobotPose() const override;
+  TargetTabWidget* tab_target_;
+  ContextTabWidget* tab_context_;
+  ControlTabWidget* tab_control_;
 
 private:
-  /**
-   * @brief Convert a Eigen::Isometry3d pose to a 4x4 C array
-   * @param pose A Eigen::Isometry3d pose.
-   * @param c_arr Pointer to a C array of 4 elements.
-   */
-  bool toCArray(const Eigen::Isometry3d& pose, double (*c_arr)[TRANSFORM_MATRIX_DIMENSION]) const;
+  rviz::DisplayContext* context_;
+  HandEyeCalibrationDisplay* calibration_display_;
 
-  std::vector<std::string> solver_names_;  // Solver algorithm names
-  Eigen::Isometry3d camera_robot_pose_;    // Computed camera pose with respect to a robot
+  rviz_visual_tools::TFVisualToolsPtr tf_tools_;
 };
 
-}  // namespace moveit_handeye_calibration
+}  // namespace moveit_rviz_plugin

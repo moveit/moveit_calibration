@@ -34,52 +34,56 @@
 
 /* Author: Yu Yan */
 
-#ifndef MOVEIT_HANDEYE_CALIBRATION_RVIZ_PLUGIN_HANDEYE_CALIBRATION_GUI_
-#define MOVEIT_HANDEYE_CALIBRATION_RVIZ_PLUGIN_HANDEYE_CALIBRATION_GUI_
-
-// qt
+#pragma once
 
 // ros
 #include <rviz_visual_tools/tf_visual_tools.h>
 
 // local
-#include <moveit/handeye_calibration_rviz_plugin/handeye_target_widget.h>
-#include <moveit/handeye_calibration_rviz_plugin/handeye_context_widget.h>
-#include <moveit/handeye_calibration_rviz_plugin/handeye_control_widget.h>
+#include <moveit/handeye_calibration_rviz_plugin/handeye_calibration_frame.h>
 
 #ifndef Q_MOC_RUN
 #include <ros/ros.h>
-#include <rviz/panel.h>
+#include <rviz/display.h>
+#include <rviz/panel_dock_widget.h>
+#include <rviz/properties/property.h>
+#include <rviz/properties/float_property.h>
+#include <rviz/properties/ros_topic_property.h>
+#include <rviz/properties/string_property.h>
 #endif
 
 namespace moveit_rviz_plugin
 {
-class HandEyeCalibrationGui : public rviz::Panel
+class HandEyeCalibrationDisplay : public rviz::Display
 {
   Q_OBJECT
 public:
-  explicit HandEyeCalibrationGui(QWidget* parent = 0);
-  ~HandEyeCalibrationGui() override;
+  explicit HandEyeCalibrationDisplay(QWidget* parent = 0);
+  ~HandEyeCalibrationDisplay() override;
 
-  virtual void load(const rviz::Config& config);
-  virtual void save(rviz::Config config) const;
+  void load(const rviz::Config& config) override;
+  void save(rviz::Config config) const override;
+
+  rviz::StringProperty* move_group_ns_property_;
+  rviz::RosTopicProperty* planning_scene_topic_property_;
+  rviz::BoolProperty* fov_marker_enabled_property_;
+  rviz::FloatProperty* fov_marker_alpha_property_;
+  rviz::FloatProperty* fov_marker_size_property_;
+
+private Q_SLOTS:
+
+  // ******************************************************************************************
+  // Slot Event Functions
+  // ******************************************************************************************
+  void fillPlanningGroupNameComboBox();
+  void updateMarkers();
+
+protected:
+  void onInitialize() override;
 
 private:
-  // ******************************************************************************************
-  // Qt Components
-  // ******************************************************************************************
-
-  TargetTabWidget* tab_target_;
-  ContextTabWidget* tab_context_;
-  ControlTabWidget* tab_control_;
-
-  // ******************************************************************************************
-  // Ros Components
-  // ******************************************************************************************
-
-  rviz_visual_tools::TFVisualToolsPtr tf_tools_;
+  rviz::PanelDockWidget* frame_dock_;
+  HandEyeCalibrationFrame* frame_;
 };
 
 }  // namespace moveit_rviz_plugin
-
-#endif

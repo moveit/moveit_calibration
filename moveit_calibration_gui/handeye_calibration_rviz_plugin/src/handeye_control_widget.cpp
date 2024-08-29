@@ -95,8 +95,9 @@ int ProgressBarWidget::getValue()
   return bar_->value();
 }
 
-ControlTabWidget::ControlTabWidget(QWidget* parent)
+ControlTabWidget::ControlTabWidget(HandEyeCalibrationDisplay* pdisplay, QWidget* parent)
   : QWidget(parent)
+  , calibration_display_(pdisplay)
   , tf_buffer_(new tf2_ros::Buffer())
   , tf_listener_(*tf_buffer_)
   , sensor_mount_type_(mhc::EYE_TO_HAND)
@@ -134,6 +135,8 @@ ControlTabWidget::ControlTabWidget(QWidget* parent)
   sample_tree_view_->setHeaderHidden(true);
   sample_tree_view_->setIndentation(10);
   sample_layout->addWidget(sample_tree_view_);
+  reprojection_error_label_ = new QLabel("Reprojection error: N/A");
+  sample_layout->addWidget(reprojection_error_label_);
 
   // Settings area
   QVBoxLayout* layout_right = new QVBoxLayout();
@@ -141,35 +144,39 @@ ControlTabWidget::ControlTabWidget(QWidget* parent)
 
   QGroupBox* setting_group = new QGroupBox("Settings");
   layout_right->addWidget(setting_group);
-  QFormLayout* setting_layout = new QFormLayout();
+  QVBoxLayout* setting_layout = new QVBoxLayout();
   setting_group->setLayout(setting_layout);
+  QFormLayout* setting_layout_top = new QFormLayout();
+  QGridLayout* setting_layout_bottom = new QGridLayout();
+  setting_layout->insertLayout(0, setting_layout_top);
+  setting_layout->insertLayout(1, setting_layout_bottom);
 
   calibration_solver_ = new QComboBox();
-  setting_layout->addRow("AX=XB Solver", calibration_solver_);
+  setting_layout_top->addRow("AX=XB Solver", calibration_solver_);
 
   group_name_ = new QComboBox();
   connect(group_name_, SIGNAL(activated(const QString&)), this, SLOT(planningGroupNameChanged(const QString&)));
-  setting_layout->addRow("Planning Group", group_name_);
+  setting_layout_top->addRow("Planning Group", group_name_);
 
   load_joint_state_btn_ = new QPushButton("Load joint states");
   connect(load_joint_state_btn_, SIGNAL(clicked(bool)), this, SLOT(loadJointStateBtnClicked(bool)));
-  setting_layout->addRow(load_joint_state_btn_);
+  setting_layout_bottom->addWidget(load_joint_state_btn_, 0, 0);
 
   save_joint_state_btn_ = new QPushButton("Save joint states");
   connect(save_joint_state_btn_, SIGNAL(clicked(bool)), this, SLOT(saveJointStateBtnClicked(bool)));
-  setting_layout->addRow(save_joint_state_btn_);
+  setting_layout_bottom->addWidget(save_joint_state_btn_, 0, 1);
 
   load_samples_btn_ = new QPushButton("Load samples");
   connect(load_samples_btn_, SIGNAL(clicked(bool)), this, SLOT(loadSamplesBtnClicked(bool)));
-  setting_layout->addRow(load_samples_btn_);
+  setting_layout_bottom->addWidget(load_samples_btn_, 1, 0);
 
   save_samples_btn_ = new QPushButton("Save samples");
   connect(save_samples_btn_, SIGNAL(clicked(bool)), this, SLOT(saveSamplesBtnClicked(bool)));
-  setting_layout->addRow(save_samples_btn_);
+  setting_layout_bottom->addWidget(save_samples_btn_, 1, 1);
 
   save_camera_pose_btn_ = new QPushButton("Save camera pose");
   connect(save_camera_pose_btn_, SIGNAL(clicked(bool)), this, SLOT(saveCameraPoseBtnClicked(bool)));
-  setting_layout->addRow(save_camera_pose_btn_);
+  setting_layout_bottom->addWidget(save_camera_pose_btn_, 2, 0, 1, 2);
 
   // Manual calibration area
   QGroupBox* manual_cal_group = new QGroupBox("Manual Calibration");
@@ -223,32 +230,8 @@ ControlTabWidget::ControlTabWidget(QWidget* parent)
   if (loadSolverPlugin(plugins))
     fillSolverTypes(plugins);
 
-  // Fill in available planning group names
-  planning_scene_monitor_.reset(
-      new planning_scene_monitor::PlanningSceneMonitor("robot_description", tf_buffer_, "planning_scene_monitor"));
-  if (planning_scene_monitor_)
-  {
-    planning_scene_monitor_->startSceneMonitor("move_group/monitored_planning_scene");
-    std::string service_name = planning_scene_monitor::PlanningSceneMonitor::DEFAULT_PLANNING_SCENE_SERVICE;
-    if (planning_scene_monitor_->requestPlanningSceneState(service_name))
-    {
-      const robot_model::RobotModelConstPtr& kmodel = planning_scene_monitor_->getRobotModel();
-      for (const std::string& group_name : kmodel->getJointModelGroupNames())
-        group_name_->addItem(group_name.c_str());
-      if (!group_name_->currentText().isEmpty())
-        try
-        {
-          moveit::planning_interface::MoveGroupInterface::Options opt(group_name_->currentText().toStdString());
-          opt.node_handle_ = nh_;
-          move_group_.reset(
-              new moveit::planning_interface::MoveGroupInterface(opt, tf_buffer_, ros::WallDuration(30, 0)));
-        }
-        catch (std::exception& ex)
-        {
-          ROS_ERROR_NAMED(LOGNAME, "%s", ex.what());
-        }
-    }
-  }
+  // Connect PSM and get group names
+  fillPlanningGroupNameComboBox();
 
   // Set plan and execution watcher
   plan_watcher_ = new QFutureWatcher<void>(this);
@@ -256,6 +239,9 @@ ControlTabWidget::ControlTabWidget(QWidget* parent)
 
   execution_watcher_ = new QFutureWatcher<void>(this);
   connect(execution_watcher_, &QFutureWatcher<void>::finished, this, &ControlTabWidget::executeFinished);
+
+  // Set initial status
+  calibration_display_->setStatus(rviz::StatusProperty::Ok, "Calibration", "Collect 5 samples to start calibration.");
 }
 
 void ControlTabWidget::loadWidget(const rviz::Config& config)
@@ -305,6 +291,8 @@ bool ControlTabWidget::loadSolverPlugin(std::vector<std::string>& plugins)
     }
     catch (pluginlib::PluginlibException& ex)
     {
+      calibration_display_->setStatus(rviz::StatusProperty::Error, "Calibration",
+                                      "Couldn't create solver plugin loader.");
       QMessageBox::warning(this, tr("Exception while creating handeye solver plugin loader "), tr(ex.what()));
       return false;
     }
@@ -324,6 +312,7 @@ bool ControlTabWidget::createSolverInstance(const std::string& plugin_name)
   }
   catch (pluginlib::PluginlibException& ex)
   {
+    calibration_display_->setStatus(rviz::StatusProperty::Error, "Calibration", "Couldn't load solver plugin.");
     ROS_ERROR_STREAM_NAMED(LOGNAME, "Exception while loading handeye solver plugin: " << plugin_name << ex.what());
     solver_ = nullptr;
   }
@@ -404,8 +393,9 @@ bool ControlTabWidget::solveCameraRobotPose()
 {
   if (solver_ && !calibration_solver_->currentText().isEmpty())
   {
+    std::string error_message;
     bool res = solver_->solve(effector_wrt_world_, object_wrt_sensor_, sensor_mount_type_,
-                              parseSolverName(calibration_solver_->currentText().toStdString(), '/'));
+                              parseSolverName(calibration_solver_->currentText().toStdString(), '/'), &error_message);
     if (res)
     {
       camera_robot_pose_ = solver_->getCameraRobotPose();
@@ -415,12 +405,21 @@ bool ControlTabWidget::solveCameraRobotPose()
       Eigen::Vector3d r = camera_robot_pose_.rotation().eulerAngles(0, 1, 2);
       Q_EMIT sensorPoseUpdate(t[0], t[1], t[2], r[0], r[1], r[2]);
 
+      // Calculate reprojection error
+      const auto& reproj_err = solver_->getReprojectionError(effector_wrt_world_, object_wrt_sensor_,
+                                                             camera_robot_pose_, sensor_mount_type_);
+      std::ostringstream reproj_err_text;
+      reproj_err_text << "Reprojection error:\n" << reproj_err.first << " m, " << reproj_err.second << " rad";
+      ROS_WARN_NAMED(LOGNAME, "%s", reproj_err_text.str().c_str());
+      reprojection_error_label_->setText(QString(reproj_err_text.str().c_str()));
+
       // Publish camera pose tf
       const std::string& from_frame = frame_names_[from_frame_tag_];
       const std::string& to_frame = frame_names_["sensor"];
       if (!from_frame.empty() && !to_frame.empty())
       {
         tf_tools_->clearAllTransforms();
+        calibration_display_->setStatus(rviz::StatusProperty::Ok, "Calibration", "Calibration successful.");
         ROS_INFO_STREAM_NAMED(LOGNAME, "Publish camera transformation" << std::endl
                                                                        << camera_robot_pose_.matrix() << std::endl
                                                                        << "from " << from_frame_tag_ << " frame '"
@@ -446,17 +445,21 @@ bool ControlTabWidget::solveCameraRobotPose()
                    << "</pre>but <b>" << from_frame_tag_ << "</b> or <b>sensor</b> frame is undefined.";
           QMessageBox::warning(this, "Solver Failed", QString::fromStdString(warn_msg.str()));
         }
+        calibration_display_->setStatus(rviz::StatusProperty::Warn, "Calibration",
+                                        "Calibration successful but frames are undefined.");
         return false;
       }
     }
     else
     {
-      QMessageBox::warning(this, tr("Solver Failed"), tr("Solver failed to return a calibration."));
+      calibration_display_->setStatus(rviz::StatusProperty::Error, "Calibration", "Solver failed.");
+      QMessageBox::warning(this, tr("Solver Failed"), tr((std::string("Error: ") + error_message).c_str()));
       return false;
     }
   }
   else
   {
+    calibration_display_->setStatus(rviz::StatusProperty::Error, "Calibration", "No solver available.");
     QMessageBox::warning(this, tr("No Solver Available"), tr("No available handeye calibration solver instance."));
     return false;
   }
@@ -645,27 +648,57 @@ void ControlTabWidget::planningGroupNameChanged(const QString& text)
 {
   if (!text.isEmpty())
   {
-    if (move_group_ && move_group_->getName() == text.toStdString())
-      return;
-
-    try
-    {
-      moveit::planning_interface::MoveGroupInterface::Options opt(group_name_->currentText().toStdString());
-      opt.node_handle_ = nh_;
-      move_group_.reset(new moveit::planning_interface::MoveGroupInterface(opt, tf_buffer_, ros::WallDuration(30, 0)));
-
-      // Clear the joint values aligning with other group
-      joint_states_.clear();
-      auto_progress_->setMax(0);
-    }
-    catch (const std::exception& e)
-    {
-      ROS_ERROR_NAMED(LOGNAME, "%s", e.what());
-    }
+    setGroupName(text.toStdString());
   }
   else
   {
     QMessageBox::warning(this, tr("Invalid Group Name"), "Group name is empty");
+  }
+}
+
+void ControlTabWidget::setGroupName(const std::string& group_name)
+{
+  if (move_group_ && move_group_->getName() == group_name)
+    return;
+
+  try
+  {
+    moveit::planning_interface::MoveGroupInterface::Options opt(group_name);
+    opt.node_handle_ = ros::NodeHandle(calibration_display_->move_group_ns_property_->getStdString());
+    move_group_.reset(new moveit::planning_interface::MoveGroupInterface(opt, tf_buffer_, ros::WallDuration(5, 0)));
+
+    // Clear the joint values from any previous group
+    joint_states_.clear();
+    auto_progress_->setMax(0);
+  }
+  catch (std::exception& ex)
+  {
+    ROS_ERROR_NAMED(LOGNAME, "%s", ex.what());
+  }
+}
+
+void ControlTabWidget::fillPlanningGroupNameComboBox()
+{
+  group_name_->clear();
+  // Fill in available planning group names
+  planning_scene_monitor_.reset(
+      new planning_scene_monitor::PlanningSceneMonitor("robot_description", tf_buffer_, "planning_scene_monitor"));
+  if (planning_scene_monitor_)
+  {
+    planning_scene_monitor_->startSceneMonitor(calibration_display_->planning_scene_topic_property_->getStdString());
+    std::string service_name = planning_scene_monitor::PlanningSceneMonitor::DEFAULT_PLANNING_SCENE_SERVICE;
+    if (!calibration_display_->move_group_ns_property_->getStdString().empty())
+      service_name = ros::names::append(calibration_display_->move_group_ns_property_->getStdString(), service_name);
+    if (planning_scene_monitor_->requestPlanningSceneState(service_name))
+    {
+      const robot_model::RobotModelConstPtr& kmodel = planning_scene_monitor_->getRobotModel();
+      for (const std::string& group_name : kmodel->getJointModelGroupNames())
+      {
+        group_name_->addItem(group_name.c_str());
+      }
+      if (!group_name_->currentText().isEmpty())
+        setGroupName(group_name_->currentText().toStdString());
+    }
   }
 }
 

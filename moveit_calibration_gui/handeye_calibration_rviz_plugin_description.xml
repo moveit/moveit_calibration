@@ -1,5 +1,5 @@
-<library path="libmoveit_handeye_calibration_rviz_plugin">
-  <class name="moveit_rviz_plugin/HandEyeCalibration" type="moveit_rviz_plugin::HandEyeCalibrationDisplay" base_class_type="rviz::Display">
+<library path="moveit_handeye_calibration_rviz_plugin">
+  <class name="moveit_rviz_plugin/HandEyeCalibration" type="moveit_rviz_plugin::HandEyeCalibrationDisplay" base_class_type="rviz_common::Display">
     <description>
       RViz display for the hand-eye calibration.
     </description>

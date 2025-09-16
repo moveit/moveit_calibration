@@ -39,13 +39,10 @@
 
 namespace moveit_rviz_plugin
 {
-const std::string LOGNAME = "handeye_context_widget";
-
-void TFFrameNameComboBox::mousePressEvent(QMouseEvent* event)
+void TFFrameNameComboBox::mousePressEvent([[maybe_unused]] QMouseEvent* event)
 {
-  std::vector<std::string> names;
-  frame_manager_->update();
-  frame_manager_->getTF2BufferPtr()->_getFrameStrings(names);
+  context_->getFrameManager()->update();
+  std::vector<std::string> names = context_->getFrameManager()->getAllFrameNames();
 
   clear();
   addItem(QString(""));
@@ -76,15 +73,15 @@ void TFFrameNameComboBox::mousePressEvent(QMouseEvent* event)
 bool TFFrameNameComboBox::hasFrame(const std::string& frame_name)
 {
   std::vector<std::string> names;
-  frame_manager_->update();
-  frame_manager_->getTF2BufferPtr()->_getFrameStrings(names);
+  context_->getFrameManager()->update();
+  moveit::planning_interface::getSharedTF()->_getFrameStrings(names);
 
   auto it = std::find(names.begin(), names.end(), frame_name);
   return it != names.end();
 }
 
 SliderWidget::SliderWidget(QWidget* parent, std::string name, double min, double max)
-  : QWidget(parent), min_position_(min), max_position_(max)
+  : QWidget(parent), max_position_(max), min_position_(min)
 {
   QHBoxLayout* row = new QHBoxLayout(this);
   row->setContentsMargins(0, 10, 0, 10);
@@ -154,8 +151,14 @@ void SliderWidget::changeSlider()
   Q_EMIT valueChanged(value);
 }
 
-ContextTabWidget::ContextTabWidget(HandEyeCalibrationDisplay* pdisplay, QWidget* parent)
-  : QWidget(parent), calibration_display_(pdisplay), tf_listener_(tf_buffer_)
+ContextTabWidget::ContextTabWidget(rclcpp::Node::SharedPtr node, HandEyeCalibrationDisplay* pdisplay,
+                                   rviz_common::DisplayContext* context, QWidget* parent)
+  : QWidget(parent)
+  , calibration_display_(pdisplay)
+  , node_(node)
+  , context_(context)
+  , tf_buffer_(std::make_shared<tf2_ros::Buffer>(node_->get_clock()))
+  , tf_listener_(std::make_shared<tf2_ros::TransformListener>(*tf_buffer_))
 {
   // Context setting tab ----------------------------------------------------
   QHBoxLayout* layout = new QHBoxLayout();
@@ -183,23 +186,23 @@ ContextTabWidget::ContextTabWidget(HandEyeCalibrationDisplay* pdisplay, QWidget*
   QFormLayout* frame_layout = new QFormLayout();
   frame_group->setLayout(frame_layout);
 
-  frames_.insert(std::make_pair("sensor", new TFFrameNameComboBox(CAMERA_FRAME)));
+  frames_.insert(std::make_pair("sensor", new TFFrameNameComboBox(context_, node_, CAMERA_FRAME)));
   frame_layout->addRow("Sensor frame:", frames_["sensor"]);
 
-  frames_.insert(std::make_pair("object", new TFFrameNameComboBox(ENVIRONMENT_FRAME)));
+  frames_.insert(std::make_pair("object", new TFFrameNameComboBox(context_, node_, ENVIRONMENT_FRAME)));
   frame_layout->addRow("Object frame:", frames_["object"]);
 
-  frames_.insert(std::make_pair("eef", new TFFrameNameComboBox(ROBOT_FRAME)));
+  frames_.insert(std::make_pair("eef", new TFFrameNameComboBox(context_, node_, ROBOT_FRAME)));
   frame_layout->addRow("End-effector frame:", frames_["eef"]);
 
-  frames_.insert(std::make_pair("base", new TFFrameNameComboBox(ROBOT_FRAME)));
+  frames_.insert(std::make_pair("base", new TFFrameNameComboBox(context_, node_, ROBOT_FRAME)));
   frame_layout->addRow("Robot base frame:", frames_["base"]);
 
   for (std::pair<const std::string, TFFrameNameComboBox*>& frame : frames_)
     connect(frame.second, SIGNAL(activated(int)), this, SLOT(updateFrameName(int)));
 
   // Camera Pose initial guess area
-  QGroupBox* pose_group = new QGroupBox("Camera Pose Inital Guess", this);
+  QGroupBox* pose_group = new QGroupBox("Camera Pose Initial Guess", this);
   pose_group->setMinimumWidth(300);
   layout_right->addWidget(pose_group);
   QFormLayout* pose_layout = new QFormLayout();
@@ -234,19 +237,19 @@ ContextTabWidget::ContextTabWidget(HandEyeCalibrationDisplay* pdisplay, QWidget*
   fov_pose_ = Eigen::Quaterniond(0.5, -0.5, 0.5, -0.5);
   fov_pose_.translate(Eigen::Vector3d(0.0149, 0.0325, 0.0125));
 
-  camera_info_.reset(new sensor_msgs::CameraInfo());
+  camera_info_.reset(new sensor_msgs::msg::CameraInfo());
 
-  visual_tools_.reset(new moveit_visual_tools::MoveItVisualTools("world"));
+  visual_tools_.reset(new moveit_visual_tools::MoveItVisualTools(node_, "world", "/moveit_visual_tools"));
   visual_tools_->enableFrameLocking(true);
   visual_tools_->setAlpha(1.0);
   visual_tools_->setLifetime(0.0);
   visual_tools_->trigger();
 
-  calibration_display_->setStatus(rviz::StatusProperty::Warn, "Calibration context",
+  calibration_display_->setStatus(rviz_common::properties::StatusProperty::Warn, "Calibration context",
                                   "Not all calibration frames have been selected.");
 }
 
-void ContextTabWidget::loadWidget(const rviz::Config& config)
+void ContextTabWidget::loadWidget(const rviz_common::Config& config)
 {
   int index;
   if (config.mapGetInt("sensor_mount_type", &index))
@@ -280,7 +283,7 @@ void ContextTabWidget::loadWidget(const rviz::Config& config)
   Q_EMIT frameNameChanged(names);
 }
 
-void ContextTabWidget::saveWidget(rviz::Config& config)
+void ContextTabWidget::saveWidget(rviz_common::Config& config)
 {
   config.mapSetValue("sensor_mount_type", sensor_mount_type_->currentIndex());
 
@@ -315,7 +318,7 @@ void ContextTabWidget::updateAllMarkers()
         from_frame = frames_["eef"]->currentText();
         break;
       default:
-        ROS_ERROR_STREAM_NAMED(LOGNAME, "Error sensor mount type.");
+        RCLCPP_ERROR_STREAM(node_->get_logger(), "Error sensor mount type.");
         break;
     }
 
@@ -347,7 +350,7 @@ void ContextTabWidget::updateAllMarkers()
         // Publish new FOV marker
         if (calibration_display_->fov_marker_enabled_property_->getBool())
         {
-          shape_msgs::Mesh mesh =
+          shape_msgs::msg::Mesh mesh =
               getCameraFOVMesh(*camera_info_, calibration_display_->fov_marker_size_property_->getFloat());
           visual_tools_->setBaseFrame(to_frame.toStdString());
           visual_tools_->setAlpha(calibration_display_->fov_marker_alpha_property_->getFloat());
@@ -359,36 +362,37 @@ void ContextTabWidget::updateAllMarkers()
     visual_tools_->trigger();
   }
   else
-    ROS_ERROR("Visual or TF tool is NULL.");
+    RCLCPP_ERROR(node_->get_logger(), "Visual or TF tool is NULL.");
 }
 
 void ContextTabWidget::updateFOVPose()
 {
   QString sensor_frame = frames_["sensor"]->currentText();
-  geometry_msgs::TransformStamped tf_msg;
+  geometry_msgs::msg::TransformStamped tf_msg;
   if (!optical_frame_.empty() && !sensor_frame.isEmpty())
   {
     try
     {
       // Get FOV pose W.R.T sensor frame
-      tf_msg = tf_buffer_.lookupTransform(sensor_frame.toStdString(), optical_frame_, ros::Time(0));
+      tf_msg = tf_buffer_->lookupTransform(sensor_frame.toStdString(), optical_frame_, rclcpp::Time(0));
       fov_pose_ = tf2::transformToEigen(tf_msg);
-      ROS_DEBUG_STREAM_NAMED(LOGNAME, "FOV pose from '" << sensor_frame.toStdString() << "' to '" << optical_frame_
-                                                        << "' is:"
-                                                        << "\nTranslation:\n"
-                                                        << fov_pose_.translation() << "\nRotation:\n"
-                                                        << fov_pose_.rotation());
+      RCLCPP_DEBUG_STREAM(node_->get_logger(), "FOV pose from '" << sensor_frame.toStdString() << "' to '"
+                                                                 << optical_frame_ << "' is:"
+                                                                 << "\nTranslation:\n"
+                                                                 << fov_pose_.translation() << "\nRotation:\n"
+                                                                 << fov_pose_.rotation());
     }
     catch (tf2::TransformException& e)
     {
-      ROS_WARN_STREAM("TF exception: " << e.what());
+      RCLCPP_WARN_STREAM(node_->get_logger(), "TF exception: " << e.what());
     }
   }
 }
 
-shape_msgs::Mesh ContextTabWidget::getCameraFOVMesh(const sensor_msgs::CameraInfo& camera_info, double max_dist)
+shape_msgs::msg::Mesh ContextTabWidget::getCameraFOVMesh(const sensor_msgs::msg::CameraInfo& camera_info,
+                                                         double max_dist)
 {
-  shape_msgs::Mesh mesh;
+  shape_msgs::msg::Mesh mesh;
   image_geometry::PinholeCameraModel camera_model;
   camera_model.fromCameraInfo(camera_info);
   double delta_x = camera_model.getDeltaX(camera_info.width / 2, max_dist);
@@ -400,13 +404,13 @@ shape_msgs::Mesh ContextTabWidget::getCameraFOVMesh(const sensor_msgs::CameraInf
   // Get corners
   mesh.vertices.clear();
   // Add the first corner at origin of the optical frame
-  mesh.vertices.push_back(geometry_msgs::Point());
+  mesh.vertices.push_back(geometry_msgs::msg::Point());
 
   // Add the four corners at bottom
   for (const double& x_it : x_cords)
     for (const double& y_it : y_cords)
     {
-      geometry_msgs::Point vertex;
+      geometry_msgs::msg::Point vertex;
       // Check in case camera info is not valid
       if (std::isfinite(x_it) && std::isfinite(y_it) && std::isfinite(max_dist))
       {
@@ -426,24 +430,26 @@ shape_msgs::Mesh ContextTabWidget::getCameraFOVMesh(const sensor_msgs::CameraInf
   return mesh;
 }
 
-visualization_msgs::Marker ContextTabWidget::getCameraFOVMarker(const Eigen::Isometry3d& pose,
-                                                                const shape_msgs::Mesh& mesh, rvt::colors color,
-                                                                double alpha, std::string frame_id)
+visualization_msgs::msg::Marker ContextTabWidget::getCameraFOVMarker(const Eigen::Isometry3d& pose,
+                                                                     const shape_msgs::msg::Mesh& mesh,
+                                                                     rvt::Colors color, double alpha,
+                                                                     std::string frame_id)
 {
   return getCameraFOVMarker(rvt::RvizVisualTools::convertPose(pose), mesh, color, alpha, frame_id);
 }
 
-visualization_msgs::Marker ContextTabWidget::getCameraFOVMarker(const geometry_msgs::Pose& pose,
-                                                                const shape_msgs::Mesh& mesh, rvt::colors color,
-                                                                double alpha, std::string frame_id)
+visualization_msgs::msg::Marker ContextTabWidget::getCameraFOVMarker(const geometry_msgs::msg::Pose& pose,
+                                                                     const shape_msgs::msg::Mesh& mesh,
+                                                                     rvt::Colors color, double alpha,
+                                                                     std::string frame_id)
 {
-  visualization_msgs::Marker marker;
+  visualization_msgs::msg::Marker marker;
   marker.header.frame_id = frame_id;
   marker.ns = "camera_fov";
   marker.id = 0;
-  marker.type = visualization_msgs::Marker::TRIANGLE_LIST;
-  marker.action = visualization_msgs::Marker::ADD;
-  marker.lifetime = ros::Duration(0.0);
+  marker.type = visualization_msgs::msg::Marker::TRIANGLE_LIST;
+  marker.action = visualization_msgs::msg::Marker::ADD;
+  marker.lifetime = rclcpp::Duration(0, 0);
   visual_tools_->setAlpha(alpha);
   marker.color = visual_tools_->getColor(color);
   marker.pose = pose;
@@ -452,7 +458,7 @@ visualization_msgs::Marker ContextTabWidget::getCameraFOVMarker(const geometry_m
   marker.scale.z = 1.0;
 
   marker.points.clear();
-  for (const shape_msgs::MeshTriangle& triangle : mesh.triangles)
+  for (const shape_msgs::msg::MeshTriangle& triangle : mesh.triangles)
     for (const uint32_t& index : triangle.vertex_indices)
       marker.points.push_back(mesh.vertices[index]);
 
@@ -465,17 +471,17 @@ void ContextTabWidget::setCameraPose(double tx, double ty, double tz, double rx,
   camera_pose_ = visual_tools_->convertFromXYZRPY(tx, ty, tz, rx, ry, rz, rviz_visual_tools::XYZ);
 }
 
-void ContextTabWidget::setCameraInfo(sensor_msgs::CameraInfo camera_info)
+void ContextTabWidget::setCameraInfo(sensor_msgs::msg::CameraInfo camera_info)
 {
   camera_info_->header = camera_info.header;
   camera_info_->height = camera_info.height;
   camera_info_->width = camera_info.width;
   camera_info_->distortion_model = camera_info.distortion_model;
-  camera_info_->D = camera_info.D;
-  camera_info_->K = camera_info.K;
-  camera_info_->R = camera_info.R;
-  camera_info_->P = camera_info.P;
-  ROS_DEBUG_STREAM_NAMED(LOGNAME, "Camera info changed: " << *camera_info_);
+  camera_info_->d = camera_info.d;
+  camera_info_->k = camera_info.k;
+  camera_info_->r = camera_info.r;
+  camera_info_->p = camera_info.p;
+  RCLCPP_DEBUG_STREAM(node_->get_logger(), "Camera info changed: " << camera_info_);
 }
 
 void ContextTabWidget::setOpticalFrame(const std::string& frame_id)
@@ -506,7 +512,7 @@ void ContextTabWidget::updateSensorMountType(int index)
   Q_EMIT sensorMountTypeChanged(index);
 }
 
-void ContextTabWidget::updateFrameName(int index)
+void ContextTabWidget::updateFrameName([[maybe_unused]] int index)
 {
   updateAllMarkers();
   updateFOVPose();
@@ -520,19 +526,19 @@ void ContextTabWidget::updateFrameName(int index)
   }
   if (any_empty)
   {
-    calibration_display_->setStatus(rviz::StatusProperty::Warn, "Calibration context",
+    calibration_display_->setStatus(rviz_common::properties::StatusProperty::Warn, "Calibration context",
                                     "Not all calibration frames have been selected.");
   }
   else
   {
-    calibration_display_->setStatus(rviz::StatusProperty::Ok, "Calibration context",
+    calibration_display_->setStatus(rviz_common::properties::StatusProperty::Ok, "Calibration context",
                                     "Calibration frames have been selected.");
   }
 
   Q_EMIT frameNameChanged(names);
 }
 
-void ContextTabWidget::updateCameraMarkerPose(double value)
+void ContextTabWidget::updateCameraMarkerPose([[maybe_unused]] double value)
 {
   updateAllMarkers();
 }

@@ -63,8 +63,14 @@ protected:
   virtual bool setTargetDimension(double board_size_meters, double marker_size_meters);
 
 private:
-  // Predefined dictionary map
-  std::map<std::string, cv::aruco::PREDEFINED_DICTIONARY_NAME> marker_dictionaries_;
+  // Predefined ARUCO dictionaries in OpenCV for creating CHARUCO marker board
+  const std::map<std::string, cv::aruco::PREDEFINED_DICTIONARY_NAME> ARUCO_DICTIONARY = {
+    { "DICT_4X4_250", cv::aruco::DICT_4X4_250 },
+    { "DICT_5X5_250", cv::aruco::DICT_5X5_250 },
+    { "DICT_6X6_250", cv::aruco::DICT_6X6_250 },
+    { "DICT_7X7_250", cv::aruco::DICT_7X7_250 },
+    { "DICT_ARUCO_ORIGINAL", cv::aruco::DICT_ARUCO_ORIGINAL }
+  };
 
   // Target intrinsic params
   int squares_x_;                                        // Number of squares along X axis

@@ -38,8 +38,6 @@
 
 namespace moveit_rviz_plugin
 {
-const std::string LOGNAME = "handeye_target_widget";
-
 void RosTopicComboBox::addMsgsFilterType(QString msgs_type)
 {
   message_types_.insert(msgs_type);
@@ -54,18 +52,17 @@ bool RosTopicComboBox::hasTopic(const QString& topic_name)
 bool RosTopicComboBox::getFilteredTopics()
 {
   // Get all topic names
-  ros::master::V_TopicInfo ros_topic_vec;
-  if (ros::master::getTopics(ros_topic_vec))
+  std::map<std::string, std::vector<std::string>> topic_names_and_types = node_->get_topic_names_and_types();
+  image_topics_.clear();
+  // Filter out the topic names with specific topic type
+  for (const auto& topic_info : topic_names_and_types)
   {
-    image_topics_.clear();
-    // Filter out the topic names with specific topic type
-    for (const ros::master::TopicInfo& topic_info : ros_topic_vec)
-    {
-      if (message_types_.contains(QString(topic_info.datatype.c_str())))
+    std::for_each(topic_info.second.begin(), topic_info.second.end(), [&](std::string topic_type) {
+      if (message_types_.contains(QString(topic_type.c_str())))
       {
-        image_topics_.insert(QString(topic_info.name.c_str()));
+        image_topics_.insert(QString(topic_info.first.c_str()));
       }
-    }
+    });
   }
 
   clear();
@@ -78,20 +75,22 @@ bool RosTopicComboBox::getFilteredTopics()
   return !image_topics_.isEmpty();
 }
 
-void RosTopicComboBox::mousePressEvent(QMouseEvent* event)
+void RosTopicComboBox::mousePressEvent([[maybe_unused]] QMouseEvent* event)
 {
   getFilteredTopics();
   showPopup();
 }
 
-TargetTabWidget::TargetTabWidget(HandEyeCalibrationDisplay* pdisplay, QWidget* parent)
+TargetTabWidget::TargetTabWidget(rclcpp::Node::SharedPtr node, HandEyeCalibrationDisplay* pdisplay, QWidget* parent)
   : QWidget(parent)
   , calibration_display_(pdisplay)
-  , nh_("~")
-  , it_(nh_)
+  , target_param_layout_(new QFormLayout())
+  , node_(node)
   , target_plugins_loader_(nullptr)
   , target_(nullptr)
-  , target_param_layout_(new QFormLayout())
+  , it_(node_)
+  , tf_pub_(std::make_shared<tf2_ros::TransformBroadcaster>(node_))
+
 {
   // Target setting tab area -----------------------------------------------
   QHBoxLayout* layout = new QHBoxLayout();
@@ -115,19 +114,13 @@ TargetTabWidget::TargetTabWidget(HandEyeCalibrationDisplay* pdisplay, QWidget* p
   QFormLayout* layout_left_bottom = new QFormLayout();
   group_left_bottom->setLayout(layout_left_bottom);
 
-  ros_topics_.insert(std::make_pair("image_topic", new RosTopicComboBox(this)));
-  ros_topics_["image_topic"]->addMsgsFilterType("sensor_msgs/Image");
-  layout_left_bottom->addRow("Image Topic", ros_topics_["image_topic"]);
+  ros_topics_.insert(std::make_pair("image_topic", new RosTopicComboBox(node_, this)));
+  ros_topics_["image_topic"]->addMsgsFilterType("sensor_msgs/msg/Image");
+  layout_left_bottom->addRow("Camera Image Topic", ros_topics_["image_topic"]);
   connect(ros_topics_["image_topic"], SIGNAL(activated(const QString&)), this,
           SLOT(imageTopicComboboxChanged(const QString&)));
 
-  ros_topics_.insert(std::make_pair("camera_info_topic", new RosTopicComboBox(this)));
-  ros_topics_["camera_info_topic"]->addMsgsFilterType("sensor_msgs/CameraInfo");
-  layout_left_bottom->addRow("CameraInfo Topic", ros_topics_["camera_info_topic"]);
-  connect(ros_topics_["camera_info_topic"], SIGNAL(activated(const QString&)), this,
-          SLOT(cameraInfoComboBoxChanged(const QString&)));
-
-  // Target image dislay, create and save area
+  // Target image display, create and save area
   QGroupBox* group_right = new QGroupBox("Target", this);
   group_right->setMinimumWidth(330);
   layout->addWidget(group_right);
@@ -146,21 +139,22 @@ TargetTabWidget::TargetTabWidget(HandEyeCalibrationDisplay* pdisplay, QWidget* p
   layout_right->addWidget(save_target_btn);
   connect(save_target_btn, SIGNAL(clicked(bool)), this, SLOT(saveTargetImageBtnClicked(bool)));
 
-  // Load availible target plugins
+  // Load available target plugins
   loadAvailableTargetPlugins();
 
   // Initialize image publisher
   image_pub_ = it_.advertise("/handeye_calibration/target_detection", 1);
 
   // Register custom types
-  qRegisterMetaType<sensor_msgs::CameraInfo>();
+  qRegisterMetaType<sensor_msgs::msg::CameraInfo>();
   qRegisterMetaType<std::string>();
 
   // Initialize status
-  calibration_display_->setStatusStd(rviz::StatusProperty::Warn, "Target detection", "Not subscribed to image topic.");
+  calibration_display_->setStatusStd(rviz_common::properties::StatusProperty::Warn, "Target detection",
+                                     "Not subscribed to image topic.");
 }
 
-void TargetTabWidget::loadWidget(const rviz::Config& config)
+void TargetTabWidget::loadWidget(const rviz_common::Config& config)
 {
   if (target_type_->count() > 0)
   {
@@ -209,26 +203,21 @@ void TargetTabWidget::loadWidget(const rviz::Config& config)
         {
           if (!topic.first.compare("image_topic"))
           {
-            image_sub_.shutdown();
-            image_sub_ = it_.subscribe(topic_name.toStdString(), 1, &TargetTabWidget::imageCallback, this);
-          }
-
-          if (!topic.first.compare("camera_info_topic"))
-          {
-            camerainfo_sub_.shutdown();
-            camerainfo_sub_ = nh_.subscribe(topic_name.toStdString(), 1, &TargetTabWidget::cameraInfoCallback, this);
+            camera_sub_.shutdown();
+            camera_sub_ = it_.subscribeCamera(topic_name.toStdString(), 1, &TargetTabWidget::cameraCallback, this);
           }
         }
         catch (const image_transport::TransportLoadException& e)
         {
-          ROS_ERROR_STREAM_NAMED(LOGNAME, "Subscribe to " << topic_name.toStdString() << " fail: " << e.what());
+          RCLCPP_ERROR_STREAM(node_->get_logger(),
+                              "Subscribe to " << topic_name.toStdString() << " fail: " << e.what());
         }
       }
     }
   }
 }
 
-void TargetTabWidget::saveWidget(rviz::Config& config)
+void TargetTabWidget::saveWidget(rviz_common::Config& config)
 {
   config.mapSetValue("target_type", target_type_->currentText());
 
@@ -374,14 +363,21 @@ bool TargetTabWidget::createTargetInstance()
   return true;
 }
 
-void TargetTabWidget::imageCallback(const sensor_msgs::ImageConstPtr& msg)
+void TargetTabWidget::cameraCallback(const sensor_msgs::msg::Image::ConstSharedPtr& image,
+                                     const sensor_msgs::msg::CameraInfo::ConstSharedPtr& camera_info)
+{
+  cameraInfoCallback(camera_info);
+  imageCallback(image);
+}
+
+void TargetTabWidget::imageCallback(const sensor_msgs::msg::Image::ConstSharedPtr& msg)
 {
   createTargetInstance();
 
   // Depth image format `16UC1` cannot be converted to `MONO8`
   if (msg->encoding == "16UC1")
   {
-    calibration_display_->setStatus(rviz::StatusProperty::Error, "Target detection",
+    calibration_display_->setStatus(rviz_common::properties::StatusProperty::Error, "Target detection",
                                     "Received 16-bit image, which cannot be processed.");
     return;
   }
@@ -397,16 +393,17 @@ void TargetTabWidget::imageCallback(const sensor_msgs::ImageConstPtr& msg)
   }
   else
   {
-    ROS_ERROR_STREAM_NAMED(LOGNAME, "Image msg has empty frame_id.");
-    calibration_display_->setStatus(rviz::StatusProperty::Error, "Target detection",
+    RCLCPP_ERROR_STREAM(node_->get_logger(), "Image msg has empty frame_id.");
+    calibration_display_->setStatus(rviz_common::properties::StatusProperty::Error, "Target detection",
                                     "Image message has empty frame ID.");
     return;
   }
 
   if (msg->data.empty())
   {
-    ROS_ERROR_STREAM_NAMED(LOGNAME, "Image msg has empty data.");
-    calibration_display_->setStatus(rviz::StatusProperty::Error, "Target detection", "Image message is empty.");
+    RCLCPP_ERROR_STREAM(node_->get_logger(), "Image msg has empty data.");
+    calibration_display_->setStatus(rviz_common::properties::StatusProperty::Error, "Target detection",
+                                    "Image message is empty.");
     return;
   }
 
@@ -415,54 +412,67 @@ void TargetTabWidget::imageCallback(const sensor_msgs::ImageConstPtr& msg)
   {
     cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::MONO8);
 
-    sensor_msgs::ImagePtr pub_msg;
+    sensor_msgs::msg::Image::SharedPtr pub_msg;
     if (target_ && target_->detectTargetPose(cv_ptr->image))
     {
-      pub_msg = cv_bridge::CvImage(std_msgs::Header(), "rgb8", cv_ptr->image).toImageMsg();
+      pub_msg = cv_bridge::CvImage(std_msgs::msg::Header(), "rgb8", cv_ptr->image).toImageMsg();
 
-      geometry_msgs::TransformStamped tf2_msg = target_->getTransformStamped(optical_frame_);
-      tf_pub_.sendTransform(tf2_msg);
+      geometry_msgs::msg::TransformStamped tf2_msg = target_->getTransformStamped(optical_frame_);
+      tf_pub_->sendTransform(tf2_msg);
       if (!target_->areIntrinsicsReasonable())
       {
         calibration_display_->setStatus(
-            rviz::StatusProperty::Warn, "Target detection",
+            rviz_common::properties::StatusProperty::Warn, "Target detection",
             "Target detector has not received reasonable intrinsics. Attempted detection anyway.");
       }
       else
       {
-        calibration_display_->setStatus(rviz::StatusProperty::Ok, "Target detection", "Target pose detected.");
+        calibration_display_->setStatus(rviz_common::properties::StatusProperty::Ok, "Target detection",
+                                        "Target pose detected.");
       }
     }
     else
     {
-      pub_msg = cv_bridge::CvImage(std_msgs::Header(), "mono8", cv_ptr->image).toImageMsg();
-      calibration_display_->setStatus(rviz::StatusProperty::Error, "Target detection", "Target detection failed.");
+      pub_msg = cv_bridge::CvImage(std_msgs::msg::Header(), "mono8", cv_ptr->image).toImageMsg();
+      calibration_display_->setStatus(rviz_common::properties::StatusProperty::Error, "Target detection",
+                                      "Target detection failed.");
     }
     image_pub_.publish(pub_msg);
   }
   catch (cv_bridge::Exception& e)
   {
     std::string error_message = "cv_bridge exception: " + std::string(e.what());
-    calibration_display_->setStatusStd(rviz::StatusProperty::Error, "Target detection", error_message);
-    ROS_ERROR_NAMED(LOGNAME, "%s", error_message.c_str());
+    calibration_display_->setStatusStd(rviz_common::properties::StatusProperty::Error, "Target detection",
+                                       error_message);
+    RCLCPP_ERROR(node_->get_logger(), "%s", error_message.c_str());
   }
   catch (cv::Exception& e)
   {
     std::string error_message = "cv exception: " + std::string(e.what());
-    calibration_display_->setStatusStd(rviz::StatusProperty::Error, "Target detection", error_message);
-    ROS_ERROR_NAMED(LOGNAME, "%s", error_message.c_str());
+    calibration_display_->setStatusStd(rviz_common::properties::StatusProperty::Error, "Target detection",
+                                       error_message);
+    RCLCPP_ERROR(node_->get_logger(), "%s", error_message.c_str());
   }
 }
 
-void TargetTabWidget::cameraInfoCallback(const sensor_msgs::CameraInfoConstPtr& msg)
+void TargetTabWidget::cameraInfoCallback(sensor_msgs::msg::CameraInfo::ConstSharedPtr msg)
 {
-  if (target_ && msg->height > 0 && msg->width > 0 && !msg->K.empty() && !msg->D.empty() &&
-      (!camera_info_ || msg->K != camera_info_->K || msg->P != camera_info_->P))
+  if (!camera_info_ || msg->k != camera_info_->k || msg->p != camera_info_->p)
   {
-    ROS_DEBUG_NAMED(LOGNAME, "Received camera info.");
-    camera_info_ = msg;
-    target_->setCameraIntrinsicParams(camera_info_);
-    Q_EMIT cameraInfoChanged(*camera_info_);
+    if (target_ && msg->height > 0 && msg->width > 0 && !msg->k.empty() && !msg->d.empty())
+    {
+      RCLCPP_DEBUG(node_->get_logger(), "Received camera info.");
+      camera_info_ = msg;
+      target_->setCameraIntrinsicParams(camera_info_);
+      Q_EMIT cameraInfoChanged(*camera_info_);
+    }
+    else
+    {
+      std::string error_message = "Invalid CameraInfo message was received.";
+      calibration_display_->setStatusStd(rviz_common::properties::StatusProperty::Error, "Target detection",
+                                         error_message);
+      RCLCPP_ERROR(node_->get_logger(), "%s", error_message.c_str());
+    }
   }
 }
 
@@ -478,7 +488,7 @@ void TargetTabWidget::targetTypeComboboxChanged(const QString& text)
   }
 }
 
-void TargetTabWidget::createTargetImageBtnClicked(bool clicked)
+void TargetTabWidget::createTargetImageBtnClicked([[maybe_unused]] bool clicked)
 {
   createTargetInstance();
   if (target_)
@@ -500,7 +510,7 @@ void TargetTabWidget::createTargetImageBtnClicked(bool clicked)
   }
 }
 
-void TargetTabWidget::saveTargetImageBtnClicked(bool clicked)
+void TargetTabWidget::saveTargetImageBtnClicked([[maybe_unused]] bool clicked)
 {
   if (target_image_.empty())
   {
@@ -527,46 +537,27 @@ void TargetTabWidget::saveTargetImageBtnClicked(bool clicked)
   }
 
   if (!cv::imwrite(cv::String(fileName.toStdString()), target_image_))
-    ROS_ERROR_STREAM_NAMED(LOGNAME, "Error OpenCV saving image.");
+    RCLCPP_ERROR_STREAM(node_->get_logger(), "Error OpenCV saving image.");
 }
 
 void TargetTabWidget::imageTopicComboboxChanged(const QString& topic)
 {
-  image_sub_.shutdown();
+  camera_sub_.shutdown();
 
-  calibration_display_->setStatusStd(rviz::StatusProperty::Warn, "Target detection", "Not subscribed to image topic.");
+  calibration_display_->setStatusStd(rviz_common::properties::StatusProperty::Warn, "Target detection",
+                                     "Not subscribed to image topic.");
   if (!topic.isNull() and !topic.isEmpty())
   {
     try
     {
-      image_sub_ = it_.subscribe(topic.toStdString(), 1, &TargetTabWidget::imageCallback, this);
+      camera_sub_ = it_.subscribeCamera(topic.toStdString(), 1, &TargetTabWidget::cameraCallback, this);
     }
     catch (image_transport::TransportLoadException& e)
     {
-      ROS_ERROR_STREAM_NAMED(LOGNAME, "Subscribe to image topic: " << topic.toStdString() << " failed. " << e.what());
-      calibration_display_->setStatusStd(rviz::StatusProperty::Error, "Target detection",
+      RCLCPP_ERROR_STREAM(node_->get_logger(),
+                          "Subscribe to image topic: " << topic.toStdString() << " failed. " << e.what());
+      calibration_display_->setStatusStd(rviz_common::properties::StatusProperty::Error, "Target detection",
                                          "Failed to subscribe to image topic.");
-    }
-  }
-}
-
-void TargetTabWidget::cameraInfoComboBoxChanged(const QString& topic)
-{
-  camerainfo_sub_.shutdown();
-  calibration_display_->setStatusStd(rviz::StatusProperty::Warn, "Target detection",
-                                     "Not subscribed to camera info topic.");
-  if (!topic.isNull() and !topic.isEmpty())
-  {
-    try
-    {
-      camerainfo_sub_ = nh_.subscribe(topic.toStdString(), 1, &TargetTabWidget::cameraInfoCallback, this);
-    }
-    catch (ros::Exception& e)
-    {
-      ROS_ERROR_STREAM_NAMED(LOGNAME,
-                             "Subscribe to camera info topic: " << topic.toStdString() << " failed. " << e.what());
-      calibration_display_->setStatusStd(rviz::StatusProperty::Error, "Target detection",
-                                         "Failed to subscribe to camera info topic.");
     }
   }
 }

@@ -57,24 +57,25 @@
 #include <opencv2/opencv.hpp>
 
 // ros
-#include <sensor_msgs/Image.h>
-#include <sensor_msgs/CameraInfo.h>
-#include <sensor_msgs/JointState.h>
+#include <sensor_msgs/msg/image.hpp>
+#include <sensor_msgs/msg/camera_info.hpp>
+#include <sensor_msgs/msg/joint_state.hpp>
 
-#include <cv_bridge/cv_bridge.h>
-#include <image_transport/image_transport.h>
+#include <cv_bridge/cv_bridge.hpp>
+#include <image_transport/image_transport.hpp>
 
 #include <pluginlib/class_loader.hpp>
-#include <rviz_visual_tools/tf_visual_tools.h>
+#include <rviz_visual_tools/tf_visual_tools.hpp>
 #include <moveit/handeye_calibration_target/handeye_target_base.h>
 #include <moveit/handeye_calibration_rviz_plugin/handeye_calibration_display.h>
 
 #ifndef Q_MOC_RUN
-#include <ros/ros.h>
-#include <rviz/panel.h>
+#include <rclcpp/rclcpp.hpp>
+#include <rviz_common/config.hpp>
+#include <rviz_common/render_panel.hpp>
 #endif
 
-Q_DECLARE_METATYPE(sensor_msgs::CameraInfo);
+Q_DECLARE_METATYPE(sensor_msgs::msg::CameraInfo);
 Q_DECLARE_METATYPE(std::string);
 
 namespace moveit_rviz_plugin
@@ -88,7 +89,7 @@ class RosTopicComboBox : public QComboBox
 {
   Q_OBJECT
 public:
-  explicit RosTopicComboBox(QWidget* parent = Q_NULLPTR) : QComboBox(parent)
+  explicit RosTopicComboBox(rclcpp::Node::SharedPtr node, QWidget* parent = Q_NULLPTR) :  QComboBox(parent), node_(node)
   {
   }
   ~RosTopicComboBox() = default;
@@ -104,13 +105,17 @@ protected:
 
   QSet<QString> message_types_;
   QSet<QString> image_topics_;
+
+private:
+  rclcpp::Node::SharedPtr node_;
 };
 
 class TargetTabWidget : public QWidget
 {
   Q_OBJECT
 public:
-  explicit TargetTabWidget(HandEyeCalibrationDisplay* pdisplay, QWidget* parent = Q_NULLPTR);
+  explicit TargetTabWidget(rclcpp::Node::SharedPtr node, HandEyeCalibrationDisplay* pdisplay,
+                           QWidget* parent = Q_NULLPTR);
   ~TargetTabWidget()
   {
     target_.reset();
@@ -118,8 +123,8 @@ public:
     camera_info_.reset();
   }
 
-  void loadWidget(const rviz::Config& config);
-  void saveWidget(rviz::Config& config);
+  void loadWidget(const rviz_common::Config& config);
+  void saveWidget(rviz_common::Config& config);
 
   bool loadAvailableTargetPlugins();
 
@@ -127,10 +132,12 @@ public:
 
   void fillDictionaryIds(std::string id = "");
 
-  void imageCallback(const sensor_msgs::ImageConstPtr& msg);
+  void cameraCallback(const sensor_msgs::msg::Image::ConstSharedPtr& image,
+                      const sensor_msgs::msg::CameraInfo::ConstSharedPtr& camera_info);
 
-  void cameraInfoCallback(const sensor_msgs::CameraInfoConstPtr& msg);
+  void imageCallback(const sensor_msgs::msg::Image::ConstSharedPtr& msg);
 
+  void cameraInfoCallback(sensor_msgs::msg::CameraInfo::ConstSharedPtr msg);
 private Q_SLOTS:
 
   // Called when the current item of target_type_ changed
@@ -148,12 +155,9 @@ private Q_SLOTS:
   // Called when the item of image_topic_field_ combobox is selected
   void imageTopicComboboxChanged(const QString& topic);
 
-  // Called when the item of camera_info_topic_field_ combobox is selected
-  void cameraInfoComboBoxChanged(const QString& topic);
-
 Q_SIGNALS:
 
-  void cameraInfoChanged(sensor_msgs::CameraInfo msg);
+  void cameraInfoChanged(sensor_msgs::msg::CameraInfo msg);
 
   void opticalFrameChanged(const std::string& frame_id);
 
@@ -188,20 +192,20 @@ private:
 
   std::string optical_frame_;
 
-  sensor_msgs::CameraInfoConstPtr camera_info_;
+  std::shared_ptr<const sensor_msgs::msg::CameraInfo> camera_info_;
 
   // **************************************************************
   // Ros components
   // **************************************************************
-  ros::NodeHandle nh_;
+  rclcpp::Node::SharedPtr node_;
   std::unique_ptr<pluginlib::ClassLoader<moveit_handeye_calibration::HandEyeTargetBase> > target_plugins_loader_;
   pluginlib::UniquePtr<moveit_handeye_calibration::HandEyeTargetBase> target_;
   image_transport::ImageTransport it_;
-  image_transport::Subscriber image_sub_;
+  image_transport::CameraSubscriber camera_sub_;
   image_transport::Publisher image_pub_;
-  ros::Subscriber camerainfo_sub_;
+
   // tf broadcaster
-  tf2_ros::TransformBroadcaster tf_pub_;
+  std::shared_ptr<tf2_ros::TransformBroadcaster> tf_pub_;
 };
 
 }  // namespace moveit_rviz_plugin

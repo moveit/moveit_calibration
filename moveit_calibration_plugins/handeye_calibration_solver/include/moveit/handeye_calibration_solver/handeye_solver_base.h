@@ -36,17 +36,21 @@
 
 #pragma once
 
-#include <tf2_eigen/tf2_eigen.h>
-#include <ros/console.h>
+#include <tf2_eigen/tf2_eigen.hpp>
+#include <rclcpp/rclcpp.hpp>
 
 namespace moveit_handeye_calibration
 {
+namespace
+{
+const rclcpp::Logger LOGGER_CALIBRATION_SOLVER = rclcpp::get_logger("moveit_handeye_calibration_solver");
+}
+
 enum SensorMountType
 {
   EYE_TO_HAND = 0,
   EYE_IN_HAND = 1,
 };
-
 class HandEyeSolverBase
 {
 public:
@@ -101,8 +105,8 @@ public:
     auto ret = std::make_pair(std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::quiet_NaN());
     if (effector_wrt_world.size() != object_wrt_sensor.size())
     {
-      ROS_ERROR_NAMED("moveit_calibration_handeye_solver",
-                      "Different number of optical and kinematic transforms when calculating reprojection error.");
+      RCLCPP_ERROR(LOGGER_CALIBRATION_SOLVER,
+                   "Different number of optical and kinematic transforms when calculating reprojection error.");
       return ret;
     }
 

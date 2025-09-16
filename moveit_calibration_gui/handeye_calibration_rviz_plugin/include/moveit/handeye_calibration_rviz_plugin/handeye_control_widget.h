@@ -55,19 +55,19 @@
 #include <QStandardItemModel>
 
 // ros
-#include <tf2_eigen/tf2_eigen.h>
+#include <tf2_eigen/tf2_eigen.hpp>
 #include <pluginlib/class_loader.hpp>
 #include <tf2_ros/transform_listener.h>
-#include <rviz_visual_tools/tf_visual_tools.h>
-#include <moveit/move_group_interface/move_group_interface.h>
-#include <moveit/planning_scene_monitor/planning_scene_monitor.h>
+#include <rviz_visual_tools/tf_visual_tools.hpp>
+#include <moveit/move_group_interface/move_group_interface.hpp>
+#include <moveit/planning_scene_monitor/planning_scene_monitor.hpp>
 #include <moveit/handeye_calibration_solver/handeye_solver_base.h>
-#include <moveit/background_processing/background_processing.h>
+#include <moveit/planning_scene_rviz_plugin/background_processing.hpp>
 #include <moveit/handeye_calibration_rviz_plugin/handeye_calibration_display.h>
 
 #ifndef Q_MOC_RUN
-#include <ros/ros.h>
-#include <rviz/panel.h>
+#include <rclcpp/rclcpp.hpp>
+#include <rviz_common/panel.hpp>
 #endif
 
 #include <yaml-cpp/yaml.h>
@@ -114,7 +114,8 @@ class ControlTabWidget : public QWidget
   };
 
 public:
-  explicit ControlTabWidget(HandEyeCalibrationDisplay* pdisplay, QWidget* parent = Q_NULLPTR);
+  explicit ControlTabWidget(rclcpp::Node::SharedPtr node, HandEyeCalibrationDisplay* pdisplay,
+                            QWidget* parent = Q_NULLPTR);
   ~ControlTabWidget()
   {
     tf_tools_.reset();
@@ -125,13 +126,13 @@ public:
     planning_scene_monitor_.reset();
   }
 
-  void loadWidget(const rviz::Config& config);
-  void saveWidget(rviz::Config& config);
+  void loadWidget(const rviz_common::Config& config);
+  void saveWidget(rviz_common::Config& config);
 
   void setTFTool(rviz_visual_tools::TFVisualToolsPtr& tf_pub);
 
-  void addPoseSampleToTreeView(const geometry_msgs::TransformStamped& camera_to_object_tf,
-                               const geometry_msgs::TransformStamped& base_to_eef_tf, int id);
+  void addPoseSampleToTreeView(const geometry_msgs::msg::TransformStamped& camera_to_object_tf,
+                               const geometry_msgs::msg::TransformStamped& base_to_eef_tf, int id);
 
   bool loadSolverPlugin(std::vector<std::string>& plugins);
 
@@ -168,6 +169,8 @@ public Q_SLOTS:
 private Q_SLOTS:
 
   void takeSampleBtnClicked(bool clicked);
+
+  void deleteLatestSampleBtnClicked(bool clicked);
 
   void clearSamplesBtnClicked(bool clicked);
 
@@ -221,6 +224,7 @@ private:
 
   // Manual calibration
   QPushButton* take_sample_btn_;
+  QPushButton* delete_latest_btn_;
   QPushButton* reset_sample_btn_;
   QPushButton* solve_btn_;
 
@@ -255,10 +259,7 @@ private:
   // **************************************************************
   // Ros components
   // **************************************************************
-
-  ros::NodeHandle nh_;
-  // ros::CallbackQueue callback_queue_;
-  // ros::AsyncSpinner spinner_;
+  rclcpp::Node::SharedPtr node_;
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
   tf2_ros::TransformListener tf_listener_;
   rviz_visual_tools::TFVisualToolsPtr tf_tools_;
@@ -267,6 +268,19 @@ private:
   planning_scene_monitor::PlanningSceneMonitorPtr planning_scene_monitor_;
   moveit::planning_interface::MoveGroupInterfacePtr move_group_;
   moveit::planning_interface::MoveGroupInterface::PlanPtr current_plan_;
+
+  // **************************************************************
+  // Launch script exporters
+  // **************************************************************
+  std::stringstream generateCalibrationPython(std::string& from_frame, std::string& to_frame, Eigen::Vector3d& t,
+                                              Eigen::Quaterniond& r_quat, Eigen::Vector3d& r_euler,
+                                              std::string& mount_type);
+  std::stringstream generateCalibrationXml(std::string& from_frame, std::string& to_frame, Eigen::Vector3d& t,
+                                           Eigen::Quaterniond& r_quat, Eigen::Vector3d& r_euler,
+                                           std::string& mount_type);
+  std::stringstream generateCalibrationYaml(std::string& from_frame, std::string& to_frame, Eigen::Vector3d& t,
+                                            Eigen::Quaterniond& r_quat, Eigen::Vector3d& r_euler,
+                                            std::string& mount_type);
 };
 
 }  // namespace moveit_rviz_plugin

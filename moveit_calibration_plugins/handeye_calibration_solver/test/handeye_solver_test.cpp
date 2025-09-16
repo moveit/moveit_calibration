@@ -39,8 +39,10 @@
 #include <jsoncpp/json/json.h>
 #include <moveit/handeye_calibration_solver/handeye_solver_base.h>
 #include <pluginlib/class_loader.hpp>
-#include <ros/package.h>
+#include <rclcpp/rclcpp.hpp>
+#include <ament_index_cpp/get_package_share_directory.hpp>
 
+static const rclcpp::Logger LOGGER = rclcpp::get_logger("handeye_solver_test");
 class MoveItHandEyeSolverTester : public ::testing::Test
 {
 protected:
@@ -51,17 +53,22 @@ protected:
     {
       solver_plugins_loader_.reset(new pluginlib::ClassLoader<moveit_handeye_calibration::HandEyeSolverBase>(
           "moveit_calibration_plugins", "moveit_handeye_calibration::HandEyeSolverBase"));
-      solver_ = solver_plugins_loader_->createUniqueInstance("crigroup");
+      // solver_plugins_loader_ =
+      // std::make_unique<pluginlib::ClassLoader<moveit_handeye_calibration::HandEyeSolverBase>>("moveit_calibration_plugins",
+      // "moveit_handeye_calibration::HandEyeSolverBase");
+      solver_ = solver_plugins_loader_->createUniqueInstance("OpenCV");
       solver_->initialize();
     }
     catch (const pluginlib::PluginlibException& ex)
     {
-      ROS_ERROR_STREAM("Exception while creating handeye target plugin: " << ex.what());
+      RCLCPP_ERROR_STREAM(LOGGER, "Exception while creating handeye target plugin: " << ex.what());
       return;
     }
 
     Json::Reader reader;
-    std::string moveit_calibration_plugins_package_path = ros::package::getPath("moveit_calibration_plugins");
+    // std::string moveit_calibration_plugins_package_path = ros::package::getPath("moveit_calibration_plugins");
+    std::string moveit_calibration_plugins_package_path =
+        ament_index_cpp::get_package_share_directory("moveit_calibration_plugins");
     moveit_calibration_plugins_package_path += "/handeye_calibration_solver/test/pose_samples.json";
     std::ifstream ifs(moveit_calibration_plugins_package_path);
 
@@ -72,10 +79,10 @@ protected:
         solver_ok_ = true;
       }
       else
-        ROS_ERROR_STREAM("Can't parse json file: ./pose_samples.json");
+        RCLCPP_ERROR_STREAM(LOGGER, "Can't parse json file: ./pose_samples.json");
     }
     else
-      ROS_ERROR_STREAM("Can't load file: ./pose_samples.json");
+      RCLCPP_ERROR_STREAM(LOGGER, "Can't load file: ./pose_samples.json");
   }
 
   void TearDown() override
@@ -110,23 +117,23 @@ TEST_F(MoveItHandEyeSolverTester, SolveAXEQXB)
   std::vector<Eigen::Isometry3d> eef_wrt_world(root_.size(), Eigen::Isometry3d::Identity());
   std::vector<Eigen::Isometry3d> obj_wrt_sensor(root_.size(), Eigen::Isometry3d::Identity());
 
-  for (int i = 0; i < root_.size(); ++i)
+  for (Json::Value::ArrayIndex i = 0; i < root_.size(); ++i)
   {
     Json::Value json_eef_wrt_world = root_[i][0];
     ASSERT_EQ(json_eef_wrt_world.size(), 4);
-    for (int m = 0; m < json_eef_wrt_world.size(); ++m)
+    for (Json::Value::ArrayIndex m = 0; m < json_eef_wrt_world.size(); ++m)
     {
       ASSERT_EQ(json_eef_wrt_world[m].size(), 4);
-      for (int n = 0; n < json_eef_wrt_world[m].size(); ++n)
+      for (Json::Value::ArrayIndex n = 0; n < json_eef_wrt_world[m].size(); ++n)
         eef_wrt_world[i](m, n) = json_eef_wrt_world[m][n].asDouble();
     }
 
     Json::Value json_obj_wrt_sensor = root_[i][1];
     ASSERT_EQ(json_obj_wrt_sensor.size(), 4);
-    for (int m = 0; m < json_obj_wrt_sensor.size(); ++m)
+    for (Json::Value::ArrayIndex m = 0; m < json_obj_wrt_sensor.size(); ++m)
     {
       ASSERT_EQ(json_obj_wrt_sensor[m].size(), 4);
-      for (int n = 0; n < json_obj_wrt_sensor[m].size(); ++n)
+      for (Json::Value::ArrayIndex n = 0; n < json_obj_wrt_sensor[m].size(); ++n)
         obj_wrt_sensor[i](m, n) = json_obj_wrt_sensor[m][n].asDouble();
     }
   }
@@ -153,6 +160,6 @@ TEST_F(MoveItHandEyeSolverTester, SolveAXEQXB)
 
 int main(int argc, char** argv)
 {
-  testing::InitGoogleTest(&argc, argv);
+  ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

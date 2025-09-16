@@ -36,19 +36,29 @@
 
 #pragma once
 
-#include <mutex>
 #include <algorithm>
-#include <ros/ros.h>
+#include <mutex>
+// Eigen/Dense should be included before opencv stuff
+// https://stackoverflow.com/questions/9876209/using-eigen-library-with-opencv-2-3-1
+#include <Eigen/Dense>
+#include <opencv2/core/eigen.hpp>
 #include <opencv2/opencv.hpp>
-#include <sensor_msgs/CameraInfo.h>
+
+#include <geometry_msgs/msg/transform_stamped.h>
+#include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/msg/camera_info.hpp>
 #include <tf2/LinearMath/Matrix3x3.h>
 #include <tf2/LinearMath/Quaternion.h>
-#include <tf2_eigen/tf2_eigen.h>
-#include <geometry_msgs/TransformStamped.h>
-#include <opencv2/core/eigen.hpp>
+#include <tf2_eigen/tf2_eigen.hpp>
 
 namespace moveit_handeye_calibration
 {
+namespace
+{
+const rclcpp::Logger LOGGER_CALIBRATION_TARGET = rclcpp::get_logger("moveit_handeye_calibration_target");
+constexpr size_t LOG_THROTTLE_PERIOD = 2;
+}  // namespace
+
 /**
  * @class HandEyeTargetBase
  * @brief Provides an interface for handeye calibration target detectors.
@@ -72,44 +82,47 @@ public:
     const std::vector<std::string> enum_values_;
 
     Parameter(std::string name, ParameterType parameter_type, int default_value = 0)
-      : name_(name), parameter_type_(parameter_type)
+      : parameter_type_(parameter_type), name_(name)
     {
       if (parameter_type_ == ParameterType::Int)
         value_.i = default_value;
       else
-        ROS_ERROR("Integer default value specified for non-integer parameter %s", name.c_str());
+        RCLCPP_ERROR(LOGGER_CALIBRATION_TARGET, "Integer default value specified for non-integer parameter %s",
+                     name.c_str());
     }
 
     Parameter(std::string name, ParameterType parameter_type, float default_value = 0.)
-      : name_(name), parameter_type_(parameter_type)
+      : parameter_type_(parameter_type), name_(name)
     {
       if (parameter_type_ == ParameterType::Float)
         value_.f = default_value;
       else
-        ROS_ERROR("Float default value specified for non-float parameter %s", name.c_str());
+        RCLCPP_ERROR(LOGGER_CALIBRATION_TARGET, "Float default value specified for non-float parameter %s",
+                     name.c_str());
     }
 
     Parameter(std::string name, ParameterType parameter_type, double default_value = 0.)
-      : name_(name), parameter_type_(parameter_type)
+      : parameter_type_(parameter_type), name_(name)
     {
       if (parameter_type_ == ParameterType::Float)
         value_.f = default_value;
       else
-        ROS_ERROR("Float default value specified for non-float parameter %s", name.c_str());
+        RCLCPP_ERROR(LOGGER_CALIBRATION_TARGET, "Float default value specified for non-float parameter %s",
+                     name.c_str());
     }
 
     Parameter(std::string name, ParameterType parameter_type, std::vector<std::string> enum_values,
               size_t default_option = 0)
-      : name_(name), parameter_type_(parameter_type), enum_values_(enum_values)
+      : parameter_type_(parameter_type), name_(name), enum_values_(enum_values)
     {
       if (default_option < enum_values_.size())
         value_.e = default_option;
       else
-        ROS_ERROR("Invalid default option for enum parameter %s", name.c_str());
+        RCLCPP_ERROR(LOGGER_CALIBRATION_TARGET, "Invalid default option for enum parameter %s", name.c_str());
     }
   };
 
-  const std::string LOGNAME = "handeye_target_base";
+  rclcpp::Clock clock;
   const std::size_t CAMERA_MATRIX_VECTOR_DIMENSION = 9;  // 3x3 camera intrinsic matrix
   const std::size_t CAMERA_MATRIX_WIDTH = 3;
   const std::size_t CAMERA_MATRIX_HEIGHT = 3;
@@ -151,10 +164,10 @@ public:
    * @param frame_id The name of the frame this transform is with respect to.
    * @return A `TransformStamped` message.
    */
-  virtual geometry_msgs::TransformStamped getTransformStamped(const std::string& frame_id) const
+  virtual geometry_msgs::msg::TransformStamped getTransformStamped(const std::string& frame_id) const
   {
-    geometry_msgs::TransformStamped transform_stamped;
-    transform_stamped.header.stamp = ros::Time::now();
+    geometry_msgs::msg::TransformStamped transform_stamped;
+    transform_stamped.header.stamp = rclcpp::Clock(RCL_ROS_TIME).now();  // Not sure if this is the right approach
     transform_stamped.header.frame_id = frame_id;
     transform_stamped.child_frame_id = "handeye_target";
 
@@ -164,8 +177,8 @@ public:
     return transform_stamped;
   }
 
-  // Convert cv::Vec3d rotation vector to geometry_msgs::Quaternion
-  geometry_msgs::Quaternion convertToQuaternionROSMsg(const cv::Vec3d& input_rvect) const
+  // Convert cv::Vec3d rotation vector to geometry_msgs::msg::Quaternion
+  geometry_msgs::msg::Quaternion convertToQuaternionROSMsg(const cv::Vec3d& input_rvect) const
   {
     cv::Mat cv_rotation_matrix;
     cv::Rodrigues(input_rvect, cv_rotation_matrix);
@@ -175,12 +188,12 @@ public:
     return tf2::toMsg(Eigen::Quaterniond(eigen_rotation_matrix));
   }
 
-  // Convert cv::Vec3d translation vector to geometry_msgs::Vector3
-  geometry_msgs::Vector3 convertToVectorROSMsg(const cv::Vec3d& input_tvect) const
+  // Convert cv::Vec3d translation vector to geometry_msgs::msg::Vector3
+  geometry_msgs::msg::Vector3 convertToVectorROSMsg(const cv::Vec3d& input_tvect) const
   {
     Eigen::Vector3d eigen_tvect;
     cv::cv2eigen(input_tvect, eigen_tvect);
-    geometry_msgs::Vector3 msg_tvect;
+    geometry_msgs::msg::Vector3 msg_tvect;
     tf2::toMsg(eigen_tvect, msg_tvect);
     return msg_tvect;
   }
@@ -212,34 +225,35 @@ public:
    * @param msg Input camera info message.
    * @return True if the input camera info format is correct, false otherwise.
    */
-  virtual bool setCameraIntrinsicParams(const sensor_msgs::CameraInfoConstPtr& msg)
+  virtual bool setCameraIntrinsicParams(const sensor_msgs::msg::CameraInfo::ConstSharedPtr& msg)
   {
     if (!msg)
     {
-      ROS_ERROR_NAMED(LOGNAME, "CameraInfo msg is NULL.");
+      RCLCPP_ERROR(LOGGER_CALIBRATION_TARGET, "CameraInfo msg is NULL.");
       return false;
     }
 
-    if (msg->K.size() != CAMERA_MATRIX_VECTOR_DIMENSION)
+    if (msg->k.size() != CAMERA_MATRIX_VECTOR_DIMENSION)
     {
-      ROS_ERROR_NAMED(LOGNAME, "Invalid camera matrix dimension, current is %ld, required is %zu.", msg->K.size(),
-                      CAMERA_MATRIX_VECTOR_DIMENSION);
+      RCLCPP_ERROR(LOGGER_CALIBRATION_TARGET, "Invalid camera matrix dimension, current is %ld, required is %zu.",
+                   msg->k.size(), CAMERA_MATRIX_VECTOR_DIMENSION);
       return false;
     }
 
     if (0 == CAMERA_DISTORTION_MODELS_VECTOR_DIMENSIONS.count(msg->distortion_model))
     {
-      ROS_ERROR_NAMED(LOGNAME, "Invalid camera distortion model, '%s'.", msg->distortion_model.c_str());
+      RCLCPP_ERROR(LOGGER_CALIBRATION_TARGET, "Invalid camera distortion model, '%s'.", msg->distortion_model.c_str());
       return false;
     }
 
     const size_t camera_distortion_vector_dimension =
         CAMERA_DISTORTION_MODELS_VECTOR_DIMENSIONS.at(msg->distortion_model);
 
-    if (msg->D.size() != camera_distortion_vector_dimension)
+    if (msg->d.size() != camera_distortion_vector_dimension)
     {
-      ROS_ERROR_NAMED(LOGNAME, "Invalid distortion parameters dimension, current is %ld, required is %zu.",
-                      msg->D.size(), camera_distortion_vector_dimension);
+      RCLCPP_ERROR(LOGGER_CALIBRATION_TARGET,
+                   "Invalid distortion parameters dimension, current is %ld, required is %zu.", msg->d.size(),
+                   camera_distortion_vector_dimension);
       return false;
     }
 
@@ -250,7 +264,7 @@ public:
     {
       for (size_t j = 0; j < CAMERA_MATRIX_HEIGHT; j++)
       {
-        camera_matrix_.at<double>(i, j) = msg->K[i * CAMERA_MATRIX_WIDTH + j];
+        camera_matrix_.at<double>(i, j) = msg->k[i * CAMERA_MATRIX_WIDTH + j];
       }
     }
 
@@ -258,10 +272,10 @@ public:
     distortion_coeffs_ = cv::Mat::zeros(camera_distortion_vector_dimension, 1, CV_64F);
     for (size_t i = 0; i < camera_distortion_vector_dimension; i++)
     {
-      distortion_coeffs_.at<double>(i, 0) = msg->D[i];
+      distortion_coeffs_.at<double>(i, 0) = msg->d[i];
     }
 
-    ROS_DEBUG_STREAM_NAMED(LOGNAME, "Set camera intrinsic parameter to: " << *msg);
+    RCLCPP_DEBUG_STREAM(LOGGER_CALIBRATION_TARGET, "Set camera intrinsic parameter to: " << msg);
     return true;
   }
 

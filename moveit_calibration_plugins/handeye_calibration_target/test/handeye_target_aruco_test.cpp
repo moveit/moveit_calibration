@@ -36,13 +36,16 @@
 
 #include <fstream>
 #include <gtest/gtest.h>
-#include <ros/package.h>
+#include <rclcpp/rclcpp.hpp>
+#include <ament_index_cpp/get_package_share_directory.hpp>
 #include <opencv2/core/core.hpp>
-#include <tf2_eigen/tf2_eigen.h>
-#include <sensor_msgs/CameraInfo.h>
+#include <tf2_eigen/tf2_eigen.hpp>
+#include <sensor_msgs/msg/camera_info.hpp>
 #include <pluginlib/class_loader.hpp>
-#include <geometry_msgs/TransformStamped.h>
+#include <geometry_msgs/msg/transform_stamped.hpp>
 #include <moveit/handeye_calibration_target/handeye_target_base.h>
+
+static const rclcpp::Logger LOGGER = rclcpp::get_logger("handeye_target_aruco_test");
 
 class MoveItHandEyeTargetTester : public ::testing::Test
 {
@@ -51,7 +54,6 @@ protected:
   {
     try
     {
-      ros::Time::init();
       target_plugins_loader_.reset(new pluginlib::ClassLoader<moveit_handeye_calibration::HandEyeTargetBase>(
           "moveit_calibration_plugins", "moveit_handeye_calibration::HandEyeTargetBase"));
       target_ = target_plugins_loader_->createUniqueInstance("HandEyeTarget/Aruco");
@@ -68,18 +70,18 @@ protected:
     }
     catch (const pluginlib::PluginlibException& ex)
     {
-      ROS_ERROR_STREAM("Exception while creating handeye target plugin: " << ex.what());
+      RCLCPP_ERROR_STREAM(LOGGER, "Exception while creating handeye target plugin: " << ex.what());
       return;
     }
 
-    std::string image_path = ros::package::getPath("moveit_calibration_plugins") +
+    std::string image_path = ament_index_cpp::get_package_share_directory("moveit_calibration_plugins") +
                              "/handeye_calibration_target/test/test_aruco_marker_detection.png";
 
     image_ = cv::imread(image_path, cv::IMREAD_COLOR);
 
     resource_ok_ = false;
     if (!image_.data)
-      ROS_ERROR_STREAM("Could not open or find the image file: " << image_path);
+      RCLCPP_ERROR_STREAM(LOGGER, "Could not open or find the image file: " << image_path);
     else
       resource_ok_ = true;
   }
@@ -108,17 +110,17 @@ TEST_F(MoveItHandEyeTargetTester, InitOK)
 TEST_F(MoveItHandEyeTargetTester, DetectArucoMarkerPose)
 {
   // Set camera intrinsic parameters
-  sensor_msgs::CameraInfoPtr camera_info(new sensor_msgs::CameraInfo());
+  std::shared_ptr<sensor_msgs::msg::CameraInfo> camera_info = std::make_shared<sensor_msgs::msg::CameraInfo>();
   camera_info->height = 480;
   camera_info->width = 640;
   camera_info->header.frame_id = "camera_color_optical_frame";
   camera_info->distortion_model = "plumb_bob";
-  camera_info->D = std::vector<double>{ 0.0, 0.0, 0.0, 0.0, 0.0 };
-  camera_info->K = boost::array<double, 9>{
+  camera_info->d = std::vector<double>{ 0.0, 0.0, 0.0, 0.0, 0.0 };
+  camera_info->k = std::array<double, 9>{
     618.6002197265625, 0.0, 321.9837646484375, 0.0, 619.1103515625, 241.1459197998047, 0.0, 0.0, 1.0
   };
-  camera_info->R = boost::array<double, 9>{ 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0 };
-  camera_info->P = boost::array<double, 12>{
+  camera_info->r = std::array<double, 9>{ 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0 };
+  camera_info->p = std::array<double, 12>{
     618.6002197265625, 0.0, 321.9837646484375, 0.0, 0.0, 619.1103515625, 241.1459197998047, 0.0, 0.0, 0.0, 1.0, 0.0
   };
   ASSERT_TRUE(target_->setCameraIntrinsicParams(camera_info));
@@ -133,8 +135,7 @@ TEST_F(MoveItHandEyeTargetTester, DetectArucoMarkerPose)
   ASSERT_TRUE(target_->detectTargetPose(gray_image));
 
   // Get translation and rotation part
-  geometry_msgs::TransformStamped camera_transform;
-  ros::Time::init();
+  geometry_msgs::msg::TransformStamped camera_transform;
   camera_transform = target_->getTransformStamped(camera_info->header.frame_id);
   Eigen::Affine3d ret = tf2::transformToEigen(camera_transform);
   std::cout << "Translation:\n"

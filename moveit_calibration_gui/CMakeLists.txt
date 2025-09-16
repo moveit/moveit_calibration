@@ -1,83 +1,59 @@
-cmake_minimum_required(VERSION 3.1.3)
+cmake_minimum_required(VERSION 3.10.2)
+
+# Silence CMP0167 warnings from downstream packages (MoveIt, geometric_shapes, etc.)
+if(POLICY CMP0167)
+  cmake_policy(SET CMP0167 OLD)
+endif()
+
 project(moveit_calibration_gui)
 
-find_package(catkin REQUIRED COMPONENTS
-  class_loader
+# Common cmake code applied to all moveit packages
+find_package(moveit_common REQUIRED)
+moveit_package()
+
+# find dependencies
+find_package(ament_cmake_ros REQUIRED)
+find_package(cv_bridge REQUIRED)
+find_package(Eigen3 REQUIRED)
+find_package(eigen3_cmake_module REQUIRED)
+find_package(image_geometry REQUIRED)
+find_package(image_transport REQUIRED)
+find_package(moveit_calibration_plugins REQUIRED)
+find_package(moveit_ros_visualization REQUIRED)
+find_package(moveit_ros_planning_interface REQUIRED)
+find_package(moveit_visual_tools REQUIRED)
+find_package(OpenCV REQUIRED)
+find_package(pluginlib REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(rviz_common REQUIRED)
+find_package(rviz_visual_tools REQUIRED)
+find_package(tf2_eigen REQUIRED)
+
+set(THIS_PACKAGE_INCLUDE_DEPENDS
   cv_bridge
-  geometric_shapes
+  Eigen3
   image_geometry
+  image_transport
   moveit_calibration_plugins
-  moveit_core
-  moveit_ros_perception
-  moveit_ros_planning
-  moveit_ros_planning_interface
   moveit_ros_visualization
+  moveit_ros_planning_interface
   moveit_visual_tools
   pluginlib
-  rosconsole
-  roscpp
-  rviz
+  rclcpp
+  rviz_common
   rviz_visual_tools
   tf2_eigen
 )
 
-find_package(Eigen3 REQUIRED)
-
-moveit_build_options()
-
-# Qt Stuff
-if(rviz_QT_VERSION VERSION_LESS "5")
-	find_package(Qt4 ${rviz_QT_VERSION} REQUIRED QtCore QtGui)
-	include(${QT_USE_FILE})
-  macro(qt_wrap_ui)
-    qt4_wrap_ui(${ARGN})
-  endmacro()
-else()
-	find_package(Qt5 ${rviz_QT_VERSION} REQUIRED Core Widgets)
-	set(QT_LIBRARIES Qt5::Widgets)
-  macro(qt_wrap_ui)
-    qt5_wrap_ui(${ARGN})
-  endmacro()
-endif()
-
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-set(CMAKE_AUTOMOC ON)
-add_definitions(-DQT_NO_KEYWORDS)
-
-catkin_package(
-  LIBRARIES
-    moveit_handeye_calibration_rviz_plugin_core
-  INCLUDE_DIRS
-    handeye_calibration_rviz_plugin/include
-  CATKIN_DEPENDS
-    moveit_calibration_plugins
-    moveit_core
-    moveit_ros_perception
-    moveit_ros_planning
-    moveit_ros_planning_interface
-    moveit_visual_tools
-    roscpp
-    rviz
-    rviz_visual_tools
-  DEPENDS
-    EIGEN3
-)
-
-include_directories(
-                    handeye_calibration_rviz_plugin/include
-                    ${Boost_INCLUDE_DIRS}
-                    ${catkin_INCLUDE_DIRS})
-
-include_directories(SYSTEM
-                    ${EIGEN3_INCLUDE_DIRS}
-                    ${QT_INCLUDE_DIR})
-
+# Add project sub-libraries
 add_subdirectory(handeye_calibration_rviz_plugin)
 
-install(FILES
+# Export plugin descriptions to register with pluginlib
+pluginlib_export_plugin_description_file(
+  rviz_common
   handeye_calibration_rviz_plugin_description.xml
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
+)
 
-if (CATKIN_ENABLE_TESTING)
-  find_package(rostest REQUIRED)
-endif()
+ament_export_targets(export_${PROJECT_NAME} HAS_LIBRARY_TARGET)
+ament_export_dependencies(${THIS_PACKAGE_INCLUDE_DEPENDS})
+ament_package()

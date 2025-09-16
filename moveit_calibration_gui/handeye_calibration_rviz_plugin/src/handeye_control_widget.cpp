@@ -35,11 +35,15 @@
 /* Author: Yu Yan */
 
 #include <moveit/handeye_calibration_rviz_plugin/handeye_control_widget.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+#include <rclcpp/rclcpp.hpp>
+#include <moveit/utils/moveit_error_code.hpp>
+
 
 namespace moveit_rviz_plugin
 {
 const std::string LOGNAME = "handeye_control_widget";
+const double MIN_ROTATION = M_PI / 36.;  // Smallest allowed rotation, 5 degrees
 
 ProgressBarWidget::ProgressBarWidget(QWidget* parent, int min, int max, int value) : QWidget(parent)
 {
@@ -95,20 +99,25 @@ int ProgressBarWidget::getValue()
   return bar_->value();
 }
 
-ControlTabWidget::ControlTabWidget(HandEyeCalibrationDisplay* pdisplay, QWidget* parent)
+ControlTabWidget::ControlTabWidget(rclcpp::Node::SharedPtr node, HandEyeCalibrationDisplay* pdisplay, QWidget* parent)
   : QWidget(parent)
   , calibration_display_(pdisplay)
-  , tf_buffer_(new tf2_ros::Buffer())
-  , tf_listener_(*tf_buffer_)
   , sensor_mount_type_(mhc::EYE_TO_HAND)
   , from_frame_tag_("base")
-  , solver_plugins_loader_(nullptr)
-  , solver_(nullptr)
-  , move_group_(nullptr)
   , camera_robot_pose_(Eigen::Isometry3d::Identity())
   , auto_started_(false)
   , planning_res_(ControlTabWidget::SUCCESS)
-// spinner_(0, &callback_queue_)
+
+  , node_(node)
+  , tf_buffer_(std::make_shared<tf2_ros::Buffer>(
+    std::make_shared<rclcpp::Clock>(RCL_ROS_TIME),
+    static_cast<tf2::Duration>(tf2::BUFFER_CORE_DEFAULT_CACHE_TIME),
+    node_))
+  , tf_listener_(*tf_buffer_, node_)
+
+  , solver_plugins_loader_(nullptr)
+  , solver_(nullptr)
+  , move_group_(nullptr)
 {
   QVBoxLayout* layout = new QVBoxLayout();
   this->setLayout(layout);
@@ -181,23 +190,28 @@ ControlTabWidget::ControlTabWidget(HandEyeCalibrationDisplay* pdisplay, QWidget*
   // Manual calibration area
   QGroupBox* manual_cal_group = new QGroupBox("Manual Calibration");
   layout_right->addWidget(manual_cal_group);
-  QHBoxLayout* control_cal_layout = new QHBoxLayout();
+  QGridLayout* control_cal_layout = new QGridLayout();
   manual_cal_group->setLayout(control_cal_layout);
 
   take_sample_btn_ = new QPushButton("Take sample");
-  take_sample_btn_->setMinimumHeight(35);
+  take_sample_btn_->setMinimumHeight(25);
   connect(take_sample_btn_, SIGNAL(clicked(bool)), this, SLOT(takeSampleBtnClicked(bool)));
-  control_cal_layout->addWidget(take_sample_btn_);
+  control_cal_layout->addWidget(take_sample_btn_, 0, 0);
 
-  reset_sample_btn_ = new QPushButton("Clear samples");
-  reset_sample_btn_->setMinimumHeight(35);
+  delete_latest_btn_ = new QPushButton("Delete latest sample");
+  delete_latest_btn_->setMinimumHeight(25);
+  connect(delete_latest_btn_, SIGNAL(clicked(bool)), this, SLOT(deleteLatestSampleBtnClicked(bool)));
+  control_cal_layout->addWidget(delete_latest_btn_, 0, 1);
+
+  reset_sample_btn_ = new QPushButton("Clear all samples");
+  reset_sample_btn_->setMinimumHeight(25);
   connect(reset_sample_btn_, SIGNAL(clicked(bool)), this, SLOT(clearSamplesBtnClicked(bool)));
-  control_cal_layout->addWidget(reset_sample_btn_);
+  control_cal_layout->addWidget(reset_sample_btn_, 1, 0);
 
   solve_btn_ = new QPushButton("Solve");
-  solve_btn_->setMinimumHeight(35);
+  solve_btn_->setMinimumHeight(25);
   connect(solve_btn_, SIGNAL(clicked(bool)), this, SLOT(solveBtnClicked(bool)));
-  control_cal_layout->addWidget(solve_btn_);
+  control_cal_layout->addWidget(solve_btn_, 1, 1);
 
   // Auto calibration area
   QGroupBox* auto_cal_group = new QGroupBox("Calibrate With Recorded Joint States");
@@ -241,10 +255,11 @@ ControlTabWidget::ControlTabWidget(HandEyeCalibrationDisplay* pdisplay, QWidget*
   connect(execution_watcher_, &QFutureWatcher<void>::finished, this, &ControlTabWidget::executeFinished);
 
   // Set initial status
-  calibration_display_->setStatus(rviz::StatusProperty::Ok, "Calibration", "Collect 5 samples to start calibration.");
+  calibration_display_->setStatus(rviz_common::properties::StatusProperty::Ok, "Calibration",
+                                  "Collect 5 samples to start calibration.");
 }
 
-void ControlTabWidget::loadWidget(const rviz::Config& config)
+void ControlTabWidget::loadWidget(const rviz_common::Config& config)
 {
   QString group_name;
   config.mapGetString("group", &group_name);
@@ -255,26 +270,26 @@ void ControlTabWidget::loadWidget(const rviz::Config& config)
     if (it != groups.end())
     {
       group_name_->setCurrentText(group_name);
-      Q_EMIT group_name_->activated(group_name);
+      Q_EMIT group_name_->textActivated(group_name);
     }
   }
   QString solver_name;
   config.mapGetString("solver", &solver_name);
   if (!solver_name.isEmpty())
   {
-    for (size_t i = 0; i < calibration_solver_->count(); ++i)
+    for (size_t i = 0; i < static_cast<size_t>(calibration_solver_->count()); ++i)
     {
       if (calibration_solver_->itemText(i) == solver_name)
       {
         calibration_solver_->setCurrentText(solver_name);
-        Q_EMIT calibration_solver_->activated(solver_name);
+        Q_EMIT calibration_solver_->textActivated(solver_name);
         break;
       }
     }
   }
 }
 
-void ControlTabWidget::saveWidget(rviz::Config& config)
+void ControlTabWidget::saveWidget(rviz_common::Config& config)
 {
   config.mapSetValue("solver", calibration_solver_->currentText());
   config.mapSetValue("group", group_name_->currentText());
@@ -286,12 +301,12 @@ bool ControlTabWidget::loadSolverPlugin(std::vector<std::string>& plugins)
   {
     try
     {
-      solver_plugins_loader_.reset(new pluginlib::ClassLoader<moveit_handeye_calibration::HandEyeSolverBase>(
-          "moveit_calibration_plugins", "moveit_handeye_calibration::HandEyeSolverBase"));
+      solver_plugins_loader_ = std::make_unique<pluginlib::ClassLoader<moveit_handeye_calibration::HandEyeSolverBase>>(
+          "moveit_calibration_plugins", "moveit_handeye_calibration::HandEyeSolverBase");
     }
     catch (pluginlib::PluginlibException& ex)
     {
-      calibration_display_->setStatus(rviz::StatusProperty::Error, "Calibration",
+      calibration_display_->setStatus(rviz_common::properties::StatusProperty::Error, "Calibration",
                                       "Couldn't create solver plugin loader.");
       QMessageBox::warning(this, tr("Exception while creating handeye solver plugin loader "), tr(ex.what()));
       return false;
@@ -312,8 +327,10 @@ bool ControlTabWidget::createSolverInstance(const std::string& plugin_name)
   }
   catch (pluginlib::PluginlibException& ex)
   {
-    calibration_display_->setStatus(rviz::StatusProperty::Error, "Calibration", "Couldn't load solver plugin.");
-    ROS_ERROR_STREAM_NAMED(LOGNAME, "Exception while loading handeye solver plugin: " << plugin_name << ex.what());
+    calibration_display_->setStatus(rviz_common::properties::StatusProperty::Error, "Calibration",
+                                    "Couldn't load solver plugin.");
+    RCLCPP_ERROR_STREAM(node_->get_logger(),
+                        "Exception while loading handeye solver plugin: " << plugin_name << ex.what());
     solver_ = nullptr;
   }
 
@@ -351,14 +368,41 @@ bool ControlTabWidget::takeTransformSamples()
   // Store the pair of two tf transforms and calculate camera_robot pose
   try
   {
-    geometry_msgs::TransformStamped camera_to_object_tf;
-    geometry_msgs::TransformStamped base_to_eef_tf;
+    geometry_msgs::msg::TransformStamped camera_to_object_tf;
+    geometry_msgs::msg::TransformStamped base_to_eef_tf;
 
     // Get the transform of the object w.r.t the camera
-    camera_to_object_tf = tf_buffer_->lookupTransform(frame_names_["sensor"], frame_names_["object"], ros::Time(0));
+    camera_to_object_tf = tf_buffer_->lookupTransform(frame_names_["sensor"], frame_names_["object"], rclcpp::Time(0));
 
     // Get the transform of the end-effector w.r.t the robot base
-    base_to_eef_tf = tf_buffer_->lookupTransform(frame_names_["base"], frame_names_["eef"], ros::Time(0));
+    base_to_eef_tf = tf_buffer_->lookupTransform(frame_names_["base"], frame_names_["eef"], rclcpp::Time(0));
+
+    // Verify that sample contains sufficient rotation
+    Eigen::Isometry3d base_to_eef_eig, camera_to_object_eig;
+    base_to_eef_eig = tf2::transformToEigen(base_to_eef_tf);
+    camera_to_object_eig = tf2::transformToEigen(camera_to_object_tf);
+
+    for (const auto& prior_tf : effector_wrt_world_)
+    {
+      Eigen::AngleAxisd rot((base_to_eef_eig.inverse() * prior_tf).rotation());
+      if (rot.angle() < MIN_ROTATION)
+      {
+        QMessageBox::warning(this, tr("Error"),
+                             tr("End-effector orientation is too similar to a prior sample. Sample not recorded."));
+        return false;
+      }
+    }
+
+    for (const auto& prior_tf : object_wrt_sensor_)
+    {
+      Eigen::AngleAxisd rot((camera_to_object_eig.inverse() * prior_tf).rotation());
+      if (rot.angle() < MIN_ROTATION)
+      {
+        QMessageBox::warning(this, tr("Error"),
+                             tr("Camera orientation is too similar to a prior sample. Sample not recorded."));
+        return false;
+      }
+    }
 
     // Renormalize quaternions, to avoid numerical issues
     tf2::Quaternion tf2_quat;
@@ -370,21 +414,21 @@ bool ControlTabWidget::takeTransformSamples()
     base_to_eef_tf.transform.rotation = tf2::toMsg(tf2_quat);
 
     // save the pose samples
-    effector_wrt_world_.push_back(tf2::transformToEigen(base_to_eef_tf));
-    object_wrt_sensor_.push_back(tf2::transformToEigen(camera_to_object_tf));
+    effector_wrt_world_.push_back(base_to_eef_eig);
+    object_wrt_sensor_.push_back(camera_to_object_eig);
 
     ControlTabWidget::addPoseSampleToTreeView(camera_to_object_tf, base_to_eef_tf, effector_wrt_world_.size());
   }
   catch (tf2::TransformException& e)
   {
-    ROS_WARN("TF exception: %s", e.what());
+    RCLCPP_WARN(node_->get_logger(), "TF exception: %s", e.what());
     return false;
   }
 
   return true;
 }
 
-void ControlTabWidget::solveBtnClicked(bool clicked)
+void ControlTabWidget::solveBtnClicked([[maybe_unused]] bool clicked)
 {
   solveCameraRobotPose();
 }
@@ -410,7 +454,7 @@ bool ControlTabWidget::solveCameraRobotPose()
                                                              camera_robot_pose_, sensor_mount_type_);
       std::ostringstream reproj_err_text;
       reproj_err_text << "Reprojection error:\n" << reproj_err.first << " m, " << reproj_err.second << " rad";
-      ROS_WARN_NAMED(LOGNAME, "%s", reproj_err_text.str().c_str());
+      RCLCPP_WARN(node_->get_logger(), "%s", reproj_err_text.str().c_str());
       reprojection_error_label_->setText(QString(reproj_err_text.str().c_str()));
 
       // Publish camera pose tf
@@ -419,12 +463,13 @@ bool ControlTabWidget::solveCameraRobotPose()
       if (!from_frame.empty() && !to_frame.empty())
       {
         tf_tools_->clearAllTransforms();
-        calibration_display_->setStatus(rviz::StatusProperty::Ok, "Calibration", "Calibration successful.");
-        ROS_INFO_STREAM_NAMED(LOGNAME, "Publish camera transformation" << std::endl
-                                                                       << camera_robot_pose_.matrix() << std::endl
-                                                                       << "from " << from_frame_tag_ << " frame '"
-                                                                       << from_frame << "'"
-                                                                       << "to sensor frame '" << to_frame << "'");
+        calibration_display_->setStatus(rviz_common::properties::StatusProperty::Ok, "Calibration",
+                                        "Calibration successful.");
+        RCLCPP_INFO_STREAM(node_->get_logger(), "Publish camera transformation"
+                                                    << std::endl
+                                                    << camera_robot_pose_.matrix() << std::endl
+                                                    << "from " << from_frame_tag_ << " frame '" << from_frame << "'"
+                                                    << "to sensor frame '" << to_frame << "'");
         return tf_tools_->publishTransform(camera_robot_pose_, from_frame, to_frame);
       }
       else
@@ -435,7 +480,7 @@ bool ControlTabWidget::solveCameraRobotPose()
           warn_msg << "Found camera pose:" << std::endl
                    << camera_robot_pose_.matrix() << std::endl
                    << "but " << from_frame_tag_ << " or sensor frame is undefined.";
-          ROS_ERROR_STREAM_NAMED(LOGNAME, warn_msg.str());
+          RCLCPP_ERROR_STREAM(node_->get_logger(), warn_msg.str());
         }
         // GUI warning message with formatting
         {
@@ -445,21 +490,22 @@ bool ControlTabWidget::solveCameraRobotPose()
                    << "</pre>but <b>" << from_frame_tag_ << "</b> or <b>sensor</b> frame is undefined.";
           QMessageBox::warning(this, "Solver Failed", QString::fromStdString(warn_msg.str()));
         }
-        calibration_display_->setStatus(rviz::StatusProperty::Warn, "Calibration",
+        calibration_display_->setStatus(rviz_common::properties::StatusProperty::Warn, "Calibration",
                                         "Calibration successful but frames are undefined.");
         return false;
       }
     }
     else
     {
-      calibration_display_->setStatus(rviz::StatusProperty::Error, "Calibration", "Solver failed.");
+      calibration_display_->setStatus(rviz_common::properties::StatusProperty::Error, "Calibration", "Solver failed.");
       QMessageBox::warning(this, tr("Solver Failed"), tr((std::string("Error: ") + error_message).c_str()));
       return false;
     }
   }
   else
   {
-    calibration_display_->setStatus(rviz::StatusProperty::Error, "Calibration", "No solver available.");
+    calibration_display_->setStatus(rviz_common::properties::StatusProperty::Error, "Calibration",
+                                    "No solver available.");
     QMessageBox::warning(this, tr("No Solver Available"), tr("No available handeye calibration solver instance."));
     return false;
   }
@@ -494,8 +540,8 @@ void ControlTabWidget::setTFTool(rviz_visual_tools::TFVisualToolsPtr& tf_pub)
   tf_tools_ = tf_pub;
 }
 
-void ControlTabWidget::addPoseSampleToTreeView(const geometry_msgs::TransformStamped& camera_to_object_tf,
-                                               const geometry_msgs::TransformStamped& base_to_eef_tf, int id)
+void ControlTabWidget::addPoseSampleToTreeView(const geometry_msgs::msg::TransformStamped& camera_to_object_tf,
+                                               const geometry_msgs::msg::TransformStamped& base_to_eef_tf, int id)
 {
   std::string item_name = "Sample " + std::to_string(id);
   QStandardItem* parent = new QStandardItem(QString(item_name.c_str()));
@@ -504,13 +550,19 @@ void ControlTabWidget::addPoseSampleToTreeView(const geometry_msgs::TransformSta
   std::ostringstream ss;
 
   QStandardItem* child_1 = new QStandardItem("TF base-to-eef");
-  ss << base_to_eef_tf.transform;
+  ss << "((" << base_to_eef_tf.transform.translation.x << ", " << base_to_eef_tf.transform.translation.y << ", "
+     << base_to_eef_tf.transform.translation.z << ",), (" << base_to_eef_tf.transform.rotation.x << ", "
+     << base_to_eef_tf.transform.rotation.y << ", " << base_to_eef_tf.transform.rotation.z << ", "
+     << base_to_eef_tf.transform.rotation.w << "))";
   child_1->appendRow(new QStandardItem(ss.str().c_str()));
   parent->appendRow(child_1);
 
   QStandardItem* child_2 = new QStandardItem("TF camera-to-target");
   ss.str("");
-  ss << camera_to_object_tf.transform;
+  ss << "((" << camera_to_object_tf.transform.translation.x << ", " << camera_to_object_tf.transform.translation.y
+     << ", " << camera_to_object_tf.transform.translation.z << ",), (" << camera_to_object_tf.transform.rotation.x
+     << ", " << camera_to_object_tf.transform.rotation.y << ", " << camera_to_object_tf.transform.rotation.z << ", "
+     << camera_to_object_tf.transform.rotation.w << "))";
   child_2->appendRow(new QStandardItem(ss.str().c_str()));
   parent->appendRow(child_2);
 }
@@ -529,7 +581,7 @@ void ControlTabWidget::UpdateSensorMountType(int index)
         from_frame_tag_ = "eef";
         break;
       default:
-        ROS_ERROR_STREAM_NAMED(LOGNAME, "Error sensor mount type.");
+        RCLCPP_ERROR_STREAM(node_->get_logger(), "Error sensor mount type.");
         break;
     }
   }
@@ -538,12 +590,12 @@ void ControlTabWidget::UpdateSensorMountType(int index)
 void ControlTabWidget::updateFrameNames(std::map<std::string, std::string> names)
 {
   frame_names_ = names;
-  ROS_DEBUG("Frame names changed:");
+  RCLCPP_DEBUG(node_->get_logger(), "Frame names changed:");
   for (const std::pair<const std::string, std::string>& name : frame_names_)
-    ROS_DEBUG_STREAM(name.first << " : " << name.second);
+    RCLCPP_DEBUG_STREAM(node_->get_logger(), name.first << " : " << name.second);
 }
 
-void ControlTabWidget::takeSampleBtnClicked(bool clicked)
+void ControlTabWidget::takeSampleBtnClicked([[maybe_unused]] bool clicked)
 {
   if (frameNamesEmpty() || !takeTransformSamples())
     return;
@@ -555,12 +607,12 @@ void ControlTabWidget::takeSampleBtnClicked(bool clicked)
   // Save the joint values of current robot state
   if (planning_scene_monitor_)
   {
-    planning_scene_monitor_->waitForCurrentRobotState(ros::Time::now(), 0.1);
+    planning_scene_monitor_->waitForCurrentRobotState(rclcpp::Clock(RCL_ROS_TIME).now(), 0.1);  // Revisit this change
     const planning_scene_monitor::LockedPlanningSceneRO& ps =
         planning_scene_monitor::LockedPlanningSceneRO(planning_scene_monitor_);
     if (ps)
     {
-      const robot_state::RobotState& state = ps->getCurrentState();
+      const moveit::core::RobotState& state = ps->getCurrentState();
       const moveit::core::JointModelGroup* jmg = state.getJointModelGroup(group_name_->currentText().toStdString());
       const std::vector<std::string>& names = jmg->getActiveJointModelNames();
       if (joint_names_.size() != names.size() || joint_names_ != names)
@@ -580,7 +632,25 @@ void ControlTabWidget::takeSampleBtnClicked(bool clicked)
   }
 }
 
-void ControlTabWidget::clearSamplesBtnClicked(bool clicked)
+void ControlTabWidget::deleteLatestSampleBtnClicked([[maybe_unused]] bool clicked)
+{
+  if (joint_states_.empty())
+  {
+    QMessageBox::warning(this, tr("Empty Pose samples"), tr("Cannot delete last sample, list is already empty."));
+    return;
+  }
+
+  // Delete latest recorded transform
+  effector_wrt_world_.pop_back();
+  object_wrt_sensor_.pop_back();
+
+  // Delete latest recorded joint state, update progress bar
+  joint_states_.pop_back();
+  tree_view_model_->takeRow(joint_states_.size());
+  auto_progress_->setMax(joint_states_.size());
+}
+
+void ControlTabWidget::clearSamplesBtnClicked([[maybe_unused]] bool clicked)
 {
   // Clear recorded transforms
   effector_wrt_world_.clear();
@@ -593,7 +663,7 @@ void ControlTabWidget::clearSamplesBtnClicked(bool clicked)
   auto_progress_->setValue(0);
 }
 
-void ControlTabWidget::saveCameraPoseBtnClicked(bool clicked)
+void ControlTabWidget::saveCameraPoseBtnClicked([[maybe_unused]] bool clicked)
 {
   std::string& from_frame = frame_names_[from_frame_tag_];
   std::string& to_frame = frame_names_["sensor"];
@@ -606,15 +676,20 @@ void ControlTabWidget::saveCameraPoseBtnClicked(bool clicked)
   }
 
   // DontUseNativeDialog option set to avoid this issue: https://github.com/ros-planning/moveit/issues/2357
-  QString file_name =
-      QFileDialog::getSaveFileName(this, tr("Save Camera Robot Pose"), "", tr("Target File (*.launch);;All Files (*)"),
-                                   nullptr, QFileDialog::DontUseNativeDialog);
+  QString file_name = QFileDialog::getSaveFileName(
+      this, tr("Save Camera Robot Pose"), "",
+      tr("Launch scripts - ALL (*.launch* *.py *.xml *.yaml *.yml);;Launch scripts - "
+         "PYTHON (*.launch.py *.py);;Launch scripts - XML (*.launch *.launch.xml *.xml);;Launch "
+         "scripts - YAML (*.launch.yaml *.launch.yml *.yaml *.yml);;All Files (*)"),
+      nullptr, QFileDialog::DontUseNativeDialog);
 
   if (file_name.isEmpty())
     return;
 
-  if (!file_name.endsWith(".launch"))
-    file_name += ".launch";
+  if (!file_name.contains("."))
+    file_name += ".launch.py";
+  else if (file_name.endsWith(".launch"))
+    file_name += ".py";
 
   QFile file(file_name);
   if (!file.open(QIODevice::WriteOnly))
@@ -623,24 +698,47 @@ void ControlTabWidget::saveCameraPoseBtnClicked(bool clicked)
     return;
   }
 
-  QTextStream out(&file);
-
   Eigen::Vector3d t = camera_robot_pose_.translation();
   Eigen::Quaterniond r_quat(camera_robot_pose_.rotation());
   Eigen::Vector3d r_euler = camera_robot_pose_.rotation().eulerAngles(0, 1, 2);
+
+  std::string mount_type;
+  switch (sensor_mount_type_)
+  {
+    case mhc::EYE_TO_HAND:
+      mount_type = "EYE-TO-HAND";
+      break;
+    case mhc::EYE_IN_HAND:
+      mount_type = "EYE-IN-HAND";
+      break;
+    default:
+      RCLCPP_ERROR_STREAM(node_->get_logger(), "Error sensor mount type.");
+      break;
+  }
+
   std::stringstream ss;
-  ss << "<launch>" << std::endl;
-  ss << "  <!-- The rpy in the comment uses the extrinsic XYZ convention, which is the same as is used in a URDF. See"
-     << std::endl;
-  ss << "       http://wiki.ros.org/geometry2/RotationMethods and https://en.wikipedia.org/wiki/Euler_angles for more "
-        "info. -->"
-     << std::endl;
-  ss << "  <!-- xyz=\"" << t[0] << " " << t[1] << " " << t[2] << "\" rpy=\"" << r_euler[0] << " " << r_euler[1] << " "
-     << r_euler[2] << "\" -->" << std::endl;
-  ss << "  <node pkg=\"tf2_ros\" type=\"static_transform_publisher\" name=\"camera_link_broadcaster\"" << std::endl;
-  ss << "      args=\"" << t[0] << " " << t[1] << " " << t[2] << "   " << r_quat.x() << " " << r_quat.y() << " "
-     << r_quat.z() << " " << r_quat.w() << " " << from_frame << " " << to_frame << "\" />" << std::endl;
-  ss << "</launch>" << std::endl;
+  if (file_name.endsWith(".py"))
+  {
+    ss = generateCalibrationPython(from_frame, to_frame, t, r_quat, r_euler, mount_type);
+  }
+  else if (file_name.endsWith(".xml"))
+  {
+    ss = generateCalibrationXml(from_frame, to_frame, t, r_quat, r_euler, mount_type);
+  }
+  else if (file_name.endsWith(".yaml") || file_name.endsWith(".yml"))
+  {
+    ss = generateCalibrationYaml(from_frame, to_frame, t, r_quat, r_euler, mount_type);
+  }
+  else
+  {
+    QMessageBox::warning(
+        this, tr("Unknown file type"),
+        tr("Unable to save file, unknown file type. Only `.py`, `.xml`, and `.yaml`/`.yml` are currently "
+           "supported for ROS 2 launch scripts."));
+    return;
+  }
+
+  QTextStream out(&file);
   out << ss.str().c_str();
 }
 
@@ -664,8 +762,10 @@ void ControlTabWidget::setGroupName(const std::string& group_name)
   try
   {
     moveit::planning_interface::MoveGroupInterface::Options opt(group_name);
-    opt.node_handle_ = ros::NodeHandle(calibration_display_->move_group_ns_property_->getStdString());
-    move_group_.reset(new moveit::planning_interface::MoveGroupInterface(opt, tf_buffer_, ros::WallDuration(5, 0)));
+    // opt.node_handle_ = ros::NodeHandle(calibration_display_->move_group_ns_property_->getStdString());  <- Do I need
+    // to assign opt.robot_model and opt.robot_description ?
+    move_group_.reset(
+        new moveit::planning_interface::MoveGroupInterface(node_, opt, tf_buffer_, rclcpp::Duration(5, 0)));
 
     // Clear the joint values from any previous group
     joint_states_.clear();
@@ -673,25 +773,23 @@ void ControlTabWidget::setGroupName(const std::string& group_name)
   }
   catch (std::exception& ex)
   {
-    ROS_ERROR_NAMED(LOGNAME, "%s", ex.what());
+    RCLCPP_ERROR(node_->get_logger(), "%s", ex.what());
   }
 }
 
 void ControlTabWidget::fillPlanningGroupNameComboBox()
 {
   group_name_->clear();
-  // Fill in available planning group names
-  planning_scene_monitor_.reset(
-      new planning_scene_monitor::PlanningSceneMonitor("robot_description", tf_buffer_, "planning_scene_monitor"));
+  planning_scene_monitor_.reset(new planning_scene_monitor::PlanningSceneMonitor(node_, "robot_description","planning_scene_monitor"));
   if (planning_scene_monitor_)
   {
     planning_scene_monitor_->startSceneMonitor(calibration_display_->planning_scene_topic_property_->getStdString());
     std::string service_name = planning_scene_monitor::PlanningSceneMonitor::DEFAULT_PLANNING_SCENE_SERVICE;
     if (!calibration_display_->move_group_ns_property_->getStdString().empty())
-      service_name = ros::names::append(calibration_display_->move_group_ns_property_->getStdString(), service_name);
+      service_name = rclcpp::names::append(calibration_display_->move_group_ns_property_->getStdString(), service_name);
     if (planning_scene_monitor_->requestPlanningSceneState(service_name))
     {
-      const robot_model::RobotModelConstPtr& kmodel = planning_scene_monitor_->getRobotModel();
+      const moveit::core::RobotModelConstPtr& kmodel = planning_scene_monitor_->getRobotModel();
       for (const std::string& group_name : kmodel->getJointModelGroupNames())
       {
         group_name_->addItem(group_name.c_str());
@@ -702,11 +800,11 @@ void ControlTabWidget::fillPlanningGroupNameComboBox()
   }
 }
 
-void ControlTabWidget::saveJointStateBtnClicked(bool clicked)
+void ControlTabWidget::saveJointStateBtnClicked([[maybe_unused]] bool clicked)
 {
   if (!checkJointStates())
   {
-    QMessageBox::warning(this, tr("Error"), tr("No joint states or joint state dosen't match joint names."));
+    QMessageBox::warning(this, tr("Error"), tr("No joint states or joint state doesn't match joint names."));
     return;
   }
 
@@ -756,7 +854,7 @@ void ControlTabWidget::saveJointStateBtnClicked(bool clicked)
   out << emitter.c_str();
 }
 
-void ControlTabWidget::loadSamplesBtnClicked(bool clicked)
+void ControlTabWidget::loadSamplesBtnClicked([[maybe_unused]] bool clicked)
 {
   QString file_name = QFileDialog::getOpenFileName(this, tr("Load Samples"), "", tr("Target File (*.yaml)"), nullptr,
                                                    QFileDialog::DontUseNativeDialog);
@@ -798,11 +896,11 @@ void ControlTabWidget::loadSamplesBtnClicked(bool clicked)
   }
 }
 
-void ControlTabWidget::saveSamplesBtnClicked(bool clicked)
+void ControlTabWidget::saveSamplesBtnClicked([[maybe_unused]] bool clicked)
 {
   if (effector_wrt_world_.size() != object_wrt_sensor_.size())
   {
-    ROS_ERROR_STREAM_NAMED(LOGNAME, "Different number of poses");
+    RCLCPP_ERROR_STREAM(node_->get_logger(), "Different number of poses");
     return;
   }
 
@@ -857,7 +955,7 @@ void ControlTabWidget::saveSamplesBtnClicked(bool clicked)
   out << emitter.c_str();
 }
 
-void ControlTabWidget::loadJointStateBtnClicked(bool clicked)
+void ControlTabWidget::loadJointStateBtnClicked([[maybe_unused]] bool clicked)
 {
   // DontUseNativeDialog option set to avoid this issue: https://github.com/ros-planning/moveit/issues/2357
   QString file_name =
@@ -877,7 +975,7 @@ void ControlTabWidget::loadJointStateBtnClicked(bool clicked)
   // Begin parsing
   try
   {
-    ROS_DEBUG_STREAM_NAMED(LOGNAME, "Load joint states from file: " << file_name.toStdString().c_str());
+    RCLCPP_DEBUG_STREAM(node_->get_logger(), "Load joint states from file: " << file_name.toStdString().c_str());
     YAML::Node doc = YAML::LoadFile(file_name.toStdString());
     if (!doc.IsMap())
       return;
@@ -892,7 +990,7 @@ void ControlTabWidget::loadJointStateBtnClicked(bool clicked)
     }
     else
     {
-      ROS_ERROR_STREAM_NAMED(LOGNAME, "Can't find 'joint_names' in the openned file.");
+      RCLCPP_ERROR_STREAM(node_->get_logger(), "Can't find 'joint_names' in the opened file.");
       return;
     }
 
@@ -913,13 +1011,13 @@ void ControlTabWidget::loadJointStateBtnClicked(bool clicked)
     }
     else
     {
-      ROS_ERROR_STREAM_NAMED(LOGNAME, "Can't find 'joint_values' in the openned file.");
+      RCLCPP_ERROR_STREAM(node_->get_logger(), "Can't find 'joint_values' in the opened file.");
       return;
     }
   }
   catch (YAML::ParserException& e)  // Catch errors
   {
-    ROS_ERROR_STREAM_NAMED(LOGNAME, e.what());
+    RCLCPP_ERROR_STREAM(node_->get_logger(), e.what());
     return;
   }
 
@@ -928,10 +1026,10 @@ void ControlTabWidget::loadJointStateBtnClicked(bool clicked)
     auto_progress_->setMax(joint_states_.size());
     auto_progress_->setValue(0);
   }
-  ROS_INFO_STREAM_NAMED(LOGNAME, "Loaded and parsed: " << file_name.toStdString());
+  RCLCPP_INFO_STREAM(node_->get_logger(), "Loaded and parsed: " << file_name.toStdString());
 }
 
-void ControlTabWidget::autoPlanBtnClicked(bool clicked)
+void ControlTabWidget::autoPlanBtnClicked([[maybe_unused]] bool clicked)
 {
   auto_plan_btn_->setEnabled(false);
   plan_watcher_->setFuture(QtConcurrent::run(this, &ControlTabWidget::computePlan));
@@ -942,7 +1040,7 @@ void ControlTabWidget::computePlan()
   planning_res_ = ControlTabWidget::SUCCESS;
   int max = auto_progress_->bar_->maximum();
 
-  if (max != joint_states_.size() || auto_progress_->getValue() == max)
+  if (max != static_cast<int>(joint_states_.size()) || auto_progress_->getValue() == max)
   {
     planning_res_ = ControlTabWidget::FAILURE_NO_JOINT_STATE;
     return;
@@ -973,33 +1071,33 @@ void ControlTabWidget::computePlan()
   }
 
   // Get current joint state as start state
-  robot_state::RobotStatePtr start_state = move_group_->getCurrentState();
-  planning_scene_monitor_->waitForCurrentRobotState(ros::Time::now(), 0.1);
+  moveit::core::RobotStatePtr start_state = move_group_->getCurrentState();
+  planning_scene_monitor_->waitForCurrentRobotState(rclcpp::Clock(RCL_ROS_TIME).now(), 0.1);
   const planning_scene_monitor::LockedPlanningSceneRO& ps =
       planning_scene_monitor::LockedPlanningSceneRO(planning_scene_monitor_);
   if (ps)
-    start_state.reset(new robot_state::RobotState(ps->getCurrentState()));
+    start_state.reset(new moveit::core::RobotState(ps->getCurrentState()));
 
   // Plan motion to the recorded joint state target
-  if (auto_progress_->getValue() < joint_states_.size())
+if (auto_progress_->getValue() < static_cast<int>(joint_states_.size()))
   {
     move_group_->setStartState(*start_state);
     move_group_->setJointValueTarget(joint_states_[auto_progress_->getValue()]);
     move_group_->setMaxVelocityScalingFactor(0.5);
     move_group_->setMaxAccelerationScalingFactor(0.5);
     current_plan_.reset(new moveit::planning_interface::MoveGroupInterface::Plan());
-    planning_res_ = (move_group_->plan(*current_plan_) == moveit::planning_interface::MoveItErrorCode::SUCCESS) ?
+    planning_res_ = (move_group_->plan(*current_plan_) == moveit::core::MoveItErrorCode::SUCCESS) ?
                         ControlTabWidget::SUCCESS :
                         ControlTabWidget::FAILURE_PLAN_FAILED;
 
     if (planning_res_ == ControlTabWidget::SUCCESS)
-      ROS_DEBUG_STREAM_NAMED(LOGNAME, "Planning succeed.");
+      RCLCPP_DEBUG_STREAM(node_->get_logger(), "Planning succeed.");
     else
-      ROS_ERROR_STREAM_NAMED(LOGNAME, "Planning failed.");
+      RCLCPP_ERROR_STREAM(node_->get_logger(), "Planning failed.");
   }
 }
 
-void ControlTabWidget::autoExecuteBtnClicked(bool clicked)
+void ControlTabWidget::autoExecuteBtnClicked([[maybe_unused]] bool clicked)
 {
   if (plan_watcher_->isRunning())
   {
@@ -1013,16 +1111,16 @@ void ControlTabWidget::autoExecuteBtnClicked(bool clicked)
 void ControlTabWidget::computeExecution()
 {
   if (move_group_ && current_plan_)
-    planning_res_ = (move_group_->execute(*current_plan_) == moveit::planning_interface::MoveItErrorCode::SUCCESS) ?
+    planning_res_ = (move_group_->execute(*current_plan_) == moveit::core::MoveItErrorCode::SUCCESS) ?
                         ControlTabWidget::SUCCESS :
                         ControlTabWidget::FAILURE_PLAN_FAILED;
 
   if (planning_res_ == ControlTabWidget::SUCCESS)
   {
-    ROS_DEBUG_STREAM_NAMED(LOGNAME, "Execution succeed.");
+    RCLCPP_DEBUG_STREAM(node_->get_logger(), "Execution succeed.");
   }
   else
-    ROS_ERROR_STREAM_NAMED(LOGNAME, "Execution failed.");
+    RCLCPP_ERROR_STREAM(node_->get_logger(), "Execution failed.");
 }
 
 void ControlTabWidget::planFinished()
@@ -1055,7 +1153,7 @@ void ControlTabWidget::planFinished()
     case ControlTabWidget::SUCCESS:
       break;
   }
-  ROS_DEBUG_NAMED(LOGNAME, "Plan finished");
+  RCLCPP_DEBUG(node_->get_logger(), "Plan finished");
 }
 
 void ControlTabWidget::executeFinished()
@@ -1070,12 +1168,126 @@ void ControlTabWidget::executeFinished()
     if (effector_wrt_world_.size() == object_wrt_sensor_.size() && effector_wrt_world_.size() > 4)
       solveCameraRobotPose();
   }
-  ROS_DEBUG_NAMED(LOGNAME, "Execution finished");
+  RCLCPP_DEBUG(node_->get_logger(), "Execution finished");
 }
 
-void ControlTabWidget::autoSkipBtnClicked(bool clicked)
+void ControlTabWidget::autoSkipBtnClicked([[maybe_unused]] bool clicked)
 {
   auto_progress_->setValue(auto_progress_->getValue() + 1);
+}
+
+std::stringstream ControlTabWidget::generateCalibrationPython(std::string& from_frame, std::string& to_frame,
+                                                              Eigen::Vector3d& t, Eigen::Quaterniond& r_quat,
+                                                              Eigen::Vector3d& r_euler, std::string& mount_type)
+{
+  std::stringstream ss;
+  ss << "\"\"\" Static transform publisher acquired via MoveIt 2 hand-eye calibration \"\"\"" << std::endl;
+  ss << "\"\"\" " << mount_type << ": " << from_frame << " -> " << to_frame << " \"\"\"" << std::endl;
+  ss << "from launch import LaunchDescription" << std::endl;
+  ss << "from launch_ros.actions import Node" << std::endl;
+  ss << std::endl;
+  ss << std::endl;
+  ss << "def generate_launch_description() -> LaunchDescription:" << std::endl;
+  ss << "    nodes = [" << std::endl;
+  ss << "        Node(" << std::endl;
+  ss << "            package=\"tf2_ros\"," << std::endl;
+  ss << "            executable=\"static_transform_publisher\"," << std::endl;
+  ss << "            output=\"log\"," << std::endl;
+  ss << "            arguments=[" << std::endl;
+  ss << "                \"--frame-id\"," << std::endl;
+  ss << "                \"" << from_frame << "\"," << std::endl;
+  ss << "                \"--child-frame-id\"," << std::endl;
+  ss << "                \"" << to_frame << "\"," << std::endl;
+  ss << "                \"--x\"," << std::endl;
+  ss << "                \"" << t[0] << "\"," << std::endl;
+  ss << "                \"--y\"," << std::endl;
+  ss << "                \"" << t[1] << "\"," << std::endl;
+  ss << "                \"--z\"," << std::endl;
+  ss << "                \"" << t[2] << "\"," << std::endl;
+  ss << "                \"--qx\"," << std::endl;
+  ss << "                \"" << r_quat.x() << "\"," << std::endl;
+  ss << "                \"--qy\"," << std::endl;
+  ss << "                \"" << r_quat.y() << "\"," << std::endl;
+  ss << "                \"--qz\"," << std::endl;
+  ss << "                \"" << r_quat.z() << "\"," << std::endl;
+  ss << "                \"--qw\"," << std::endl;
+  ss << "                \"" << r_quat.w() << "\"," << std::endl;
+  ss << "                # \"--roll\"," << std::endl;
+  ss << "                # \"" << r_euler[0] << "\"," << std::endl;
+  ss << "                # \"--pitch\"," << std::endl;
+  ss << "                # \"" << r_euler[1] << "\"," << std::endl;
+  ss << "                # \"--yaw\"," << std::endl;
+  ss << "                # \"" << r_euler[2] << "\"," << std::endl;
+  ss << "            ]," << std::endl;
+  ss << "        )," << std::endl;
+  ss << "    ]" << std::endl;
+  ss << "    return LaunchDescription(nodes)" << std::endl;
+  return ss;
+}
+
+std::stringstream ControlTabWidget::generateCalibrationXml(std::string& from_frame, std::string& to_frame,
+                                                           Eigen::Vector3d& t, Eigen::Quaterniond& r_quat,
+                                                           Eigen::Vector3d& r_euler, std::string& mount_type)
+{
+  std::stringstream ss;
+  ss << "<!-- Static transform publisher acquired via MoveIt 2 hand-eye calibration -->" << std::endl;
+  ss << "<!-- " << mount_type << ": " << from_frame << " -> " << to_frame << " -->" << std::endl;
+  ss << std::endl;
+  ss << "<launch>" << std::endl;
+  ss << "    <node" << std::endl;
+  ss << "        pkg=\"tf2_ros\"" << std::endl;
+  ss << "        exec=\"static_transform_publisher\"" << std::endl;
+  ss << "        output=\"log\"" << std::endl;
+  ss << "        args=\"" << std::endl;
+  ss << "            --frame-id " << from_frame << std::endl;
+  ss << "            --child-frame-id " << to_frame << std::endl;
+  ss << "            --x " << t[0] << std::endl;
+  ss << "            --y " << t[1] << std::endl;
+  ss << "            --z " << t[2] << std::endl;
+  ss << "            --qx " << r_quat.x() << std::endl;
+  ss << "            --qy " << r_quat.y() << std::endl;
+  ss << "            --qz " << r_quat.z() << std::endl;
+  ss << "            --qw " << r_quat.w() << std::endl;
+  ss << "        \"" << std::endl;
+  ss << "    />" << std::endl;
+  ss << "    <!--" << std::endl;
+  ss << "            roll " << r_euler[0] << std::endl;
+  ss << "            pitch " << r_euler[1] << std::endl;
+  ss << "            yaw " << r_euler[2] << std::endl;
+  ss << "    -->" << std::endl;
+  ss << "</launch>" << std::endl;
+  return ss;
+}
+
+std::stringstream ControlTabWidget::generateCalibrationYaml(std::string& from_frame, std::string& to_frame,
+                                                            Eigen::Vector3d& t, Eigen::Quaterniond& r_quat,
+                                                            Eigen::Vector3d& r_euler, std::string& mount_type)
+{
+  std::stringstream ss;
+  ss << "# Static transform publisher acquired via MoveIt 2 hand-eye calibration" << std::endl;
+  ss << "# " << mount_type << ": " << from_frame << " -> " << to_frame << std::endl;
+  ss << std::endl;
+  ss << "launch:" << std::endl;
+  ss << "    - node:" << std::endl;
+  ss << "          pkg: tf2_ros" << std::endl;
+  ss << "          exec: static_transform_publisher" << std::endl;
+  ss << "          output: log" << std::endl;
+  ss << "          args:" << std::endl;
+  ss << "              \"" << std::endl;
+  ss << "              --frame-id " << from_frame << std::endl;
+  ss << "              --child-frame-id " << to_frame << std::endl;
+  ss << "              --x " << t[0] << std::endl;
+  ss << "              --y " << t[1] << std::endl;
+  ss << "              --z " << t[2] << std::endl;
+  ss << "              --qx " << r_quat.x() << std::endl;
+  ss << "              --qy " << r_quat.y() << std::endl;
+  ss << "              --qz " << r_quat.z() << std::endl;
+  ss << "              --qw " << r_quat.w() << std::endl;
+  ss << "              \"" << std::endl;
+  ss << "              # --roll " << r_euler[0] << std::endl;
+  ss << "              # --pitch " << r_euler[1] << std::endl;
+  ss << "              # --yaw " << r_euler[2] << std::endl;
+  return ss;
 }
 
 }  // namespace moveit_rviz_plugin

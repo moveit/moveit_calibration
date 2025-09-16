@@ -37,38 +37,39 @@
 #pragma once
 
 // ros
-#include <rviz_visual_tools/tf_visual_tools.h>
+#include <rviz_visual_tools/tf_visual_tools.hpp>
 
 // local
 #include <moveit/handeye_calibration_rviz_plugin/handeye_calibration_frame.h>
 
 #ifndef Q_MOC_RUN
-#include <ros/ros.h>
-#include <rviz/display.h>
-#include <rviz/panel_dock_widget.h>
-#include <rviz/properties/property.h>
-#include <rviz/properties/float_property.h>
-#include <rviz/properties/ros_topic_property.h>
-#include <rviz/properties/string_property.h>
+#include <rclcpp/rclcpp.hpp>
+#include <rviz_common/display.hpp>
+#include <rviz_common/panel_dock_widget.hpp>
+#include <rviz_common/properties/property.hpp>
+#include <rviz_common/properties/float_property.hpp>
+#include <rviz_common/properties/ros_topic_property.hpp>
+#include <rviz_common/properties/string_property.hpp>
 #endif
 
 namespace moveit_rviz_plugin
 {
-class HandEyeCalibrationDisplay : public rviz::Display
+class HandEyeCalibrationFrame;
+class HandEyeCalibrationDisplay : public rviz_common::Display
 {
   Q_OBJECT
 public:
   explicit HandEyeCalibrationDisplay(QWidget* parent = 0);
   ~HandEyeCalibrationDisplay() override;
 
-  void load(const rviz::Config& config) override;
-  void save(rviz::Config config) const override;
+  void load(const rviz_common::Config& config) override;
+  void save(rviz_common::Config config) const override;
 
-  rviz::StringProperty* move_group_ns_property_;
-  rviz::RosTopicProperty* planning_scene_topic_property_;
-  rviz::BoolProperty* fov_marker_enabled_property_;
-  rviz::FloatProperty* fov_marker_alpha_property_;
-  rviz::FloatProperty* fov_marker_size_property_;
+  rviz_common::properties::StringProperty* move_group_ns_property_;
+  rviz_common::properties::RosTopicProperty* planning_scene_topic_property_;
+  rviz_common::properties::BoolProperty* fov_marker_enabled_property_;
+  rviz_common::properties::FloatProperty* fov_marker_alpha_property_;
+  rviz_common::properties::FloatProperty* fov_marker_size_property_;
 
 private Q_SLOTS:
 
@@ -82,7 +83,7 @@ protected:
   void onInitialize() override;
 
 private:
-  rviz::PanelDockWidget* frame_dock_;
+  rviz_common::PanelDockWidget* frame_dock_;
   HandEyeCalibrationFrame* frame_;
 };
 

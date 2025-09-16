@@ -34,11 +34,9 @@
 
 /* Author: Yu Yan */
 
-#include <class_loader/class_loader.hpp>
+#include <pluginlib/class_list_macros.hpp>
 #include <moveit/handeye_calibration_target/handeye_target_aruco.h>
 #include <moveit/handeye_calibration_target/handeye_target_charuco.h>
 
-CLASS_LOADER_REGISTER_CLASS(moveit_handeye_calibration::HandEyeArucoTarget,
-                            moveit_handeye_calibration::HandEyeTargetBase)
-CLASS_LOADER_REGISTER_CLASS(moveit_handeye_calibration::HandEyeCharucoTarget,
-                            moveit_handeye_calibration::HandEyeTargetBase)
+PLUGINLIB_EXPORT_CLASS(moveit_handeye_calibration::HandEyeArucoTarget, moveit_handeye_calibration::HandEyeTargetBase)
+PLUGINLIB_EXPORT_CLASS(moveit_handeye_calibration::HandEyeCharucoTarget, moveit_handeye_calibration::HandEyeTargetBase)

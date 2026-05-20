@@ -409,7 +409,7 @@ bool ControlTabWidget::solveCameraRobotPose()
       const auto& reproj_err = solver_->getReprojectionError(effector_wrt_world_, object_wrt_sensor_,
                                                              camera_robot_pose_, sensor_mount_type_);
       std::ostringstream reproj_err_text;
-      reproj_err_text << "Reprojection error:\n" << reproj_err.first << " m, " << reproj_err.second << " rad";
+      reproj_err_text << "Reprojection error:\n" << reproj_err.first << " rad, " << reproj_err.second << " m";
       ROS_WARN_NAMED(LOGNAME, "%s", reproj_err_text.str().c_str());
       reprojection_error_label_->setText(QString(reproj_err_text.str().c_str()));
 

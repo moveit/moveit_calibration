@@ -92,7 +92,7 @@ public:
    * with respect to the camera.
    * @param X The calibration, as a 4X4 transform.
    * @param setup Camera mount type, {EYE_TO_HAND, EYE_IN_HAND}.
-   * @return Pair of translation and rotation reprojection error in meters and radians, or NaNs on error.
+   * @return Pair of rotation and translation reprojection error in radians and meters, or NaNs on error.
    */
   std::pair<double, double> getReprojectionError(const std::vector<Eigen::Isometry3d>& effector_wrt_world,
                                                  const std::vector<Eigen::Isometry3d>& object_wrt_sensor,
